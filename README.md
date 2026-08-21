@@ -1,5 +1,6 @@
 # Agent Factory
 # Uses the ideas and principles from a youtube video whose title and transcript are also in this folder.
+# Implemented in VS code with extension Cline and it's free model deepseek/deepseek-v4-flash
 
 A generic, config-driven toolkit for designing and eventually running a
 **workforce of AI agents** — generated from a short interview instead of
@@ -40,6 +41,7 @@ The `docs/` folder is the project's source of truth:
 - [`docs/DECISION_LOG.md`](docs/DECISION_LOG.md) — running record of design decisions
 - [`docs/TRANSCRIPT_NOTES.md`](docs/TRANSCRIPT_NOTES.md) — distilled ideas from the source video (with timestamps)
 - [`docs/SPEC_AUTHORING.md`](docs/SPEC_AUTHORING.md) — how to write `--spec` YAML by hand
+- [`docs/HOWTO_BOOTSTRAP.md`](docs/HOWTO_BOOTSTRAP.md) — what each bootstrap command does, and which ones to actually run
 
 ## Status
 
