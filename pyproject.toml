@@ -1,0 +1,25 @@
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "agent_factory"
+version = "0.1.0"
+description = "A generic factory for generating and running AI agent workforces from config-driven role charts."
+requires-python = ">=3.10"
+dependencies = [
+    "pydantic>=2.0",
+    "pyyaml>=6.0",
+]
+
+[project.optional-dependencies]
+# Anthropic is the default provider (matches the video's Claude-based fleet),
+# but the adapters are pluggable so any provider can be swapped in later.
+anthropic = ["anthropic>=0.30"]
+openai = ["openai>=1.40"]
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+"agent_factory" = ["templates/**/*.md"]

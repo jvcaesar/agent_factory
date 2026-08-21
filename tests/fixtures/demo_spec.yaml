@@ -1,0 +1,29 @@
+org_name: Acme Labs
+founder: Ada
+north_star: Ship an AI-native CRM that saves users 5 hours a week
+quarterly_goals:
+  - Launch v1 to 100 pilot customers
+  - Reach 90% user retention by end of quarter
+  - Cut customer onboarding time from a day to an hour
+human_team_size: 3
+domains:
+  - product
+  - engineering
+  - marketing
+  - support
+tools:
+  - notion
+  - gmail
+  - calendar
+  - github
+  - files
+  - web
+  - crm
+  - docs
+  - analytics
+  - cms
+risk_tier: review_external
+budget_tier: medium
+add_amplifier: true
+add_observer: true
+use_lead: true
