@@ -35,6 +35,8 @@ The `docs/` folder is the project's source of truth:
 
 - [`docs/PROJECT_PLAN.md`](docs/PROJECT_PLAN.md) — the detailed plan being used for implementation
 - [`docs/IMPLEMENTED_MILESTONE3.md`](docs/IMPLEMENTED_MILESTONE3.md) — everything implemented in the current step (M3 bootstrap)
+- [`docs/IMPLEMENTED_MILESTONE1.md`](docs/IMPLEMENTED_MILESTONE1.md) — everything implemented in the current step (M1 runtime engine)
+- [`docs/IMPLEMENTED_MILESTONE2.md`](docs/IMPLEMENTED_MILESTONE2.md) — everything implemented in the current step (M2 ambition loop)
 - [`docs/ROADMAP.md`](docs/ROADMAP.md) — upcoming steps (M1–M6)
 - [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) — module map, data flow, contracts, seams for later milestones
 - [`docs/DESIGN_PRINCIPLES.md`](docs/DESIGN_PRINCIPLES.md) — the generic patterns and guiding rules
@@ -45,12 +47,13 @@ The `docs/` folder is the project's source of truth:
 
 ## Status
 
-Milestone 3 (of the roadmap) — the **`bootstrap`** command is implemented:
-
-`agent_factory bootstrap` runs an interactive interview and writes a complete
-org chart (role YAML + SOP markdown runbooks + goals + settings). A
-`--spec` mode takes the same answers from a YAML file, which is how the test
-suite drives it deterministically without any LLM or network.
+- **Milestone 2 (Ambition loop)** — implemented. See
+  [`docs/IMPLEMENTED_MILESTONE2.md`](docs/IMPLEMENTED_MILESTONE2.md).
+- **Milestone 1 (Runtime engine)** — implemented. See
+  [`docs/IMPLEMENTED_MILESTONE1.md`](docs/IMPLEMENTED_MILESTONE1.md).
+- **Milestone 3 (Bootstrap)** — implemented. See
+  [`docs/IMPLEMENTED_MILESTONE3.md`](docs/IMPLEMENTED_MILESTONE3.md).
+- Milestones 4, 5, 6 are queued in [`docs/ROADMAP.md`](docs/ROADMAP.md).
 
 ## Quick start
 
@@ -61,22 +64,47 @@ agent_factory bootstrap
 # 2. Generate from a spec file instead (non-interactive)
 agent_factory bootstrap --spec my_answers.yaml --out my_org
 
-# 3. Validate any org tree (all milestones reuse this)
+# 3. Validate any org tree
 agent_factory validate --root orgs/my_org
+
+# 4. Run a job with a configured role (M1)
+set AGENT_FACTORY_PROVIDER=fake     # or openai / ollama — see Providers below
+agent_factory run --org orgs/Acme --role worker_research_1 ^
+    --task "List the quarterly targets." --approval deny
+
+# 5. Inspect the durable job store
+agent_factory jobs --org orgs/Acme
+
+# 6. Capture context, then run the proactive "do smart things" loop (M2)
+agent_factory context --org orgs/Acme --add diary/today --detail "Client wants a demo first"
+agent_factory ambition --org orgs/Acme --role lead_exec --max-actions 2
 ```
 
 Requires Python 3.10+ and `pydantic` + `pyyaml`. Tests run on stdlib
 `unittest` with no extra installs:
 
 ```bash
-py -m unittest discover -s tests -v   # or: python -m unittest discover -s tests
+py -m unittest discover -s tests -v   # 53 tests, offline
 ```
+
+## Providers (M1)
+
+Selected via `AGENT_FACTORY_PROVIDER` (default `openai`) or `--provider`:
+
+- **`openai`** (default) — set `OPENAI_API_KEY`. Optional `OPENAI_BASE_URL` for
+  compatible endpoints. Supports both legacy (`openai` 0.28.x) and modern
+  (`>=1.0`) APIs.
+- **`ollama`** — local Gemma/Qwen via the OpenAI-compatible endpoint at
+  `http://localhost:11434/v1` (override `OLLAMA_BASE_URL` / `OLLAMA_MODEL`).
+- **`fake`** — deterministic offline client for tests and headless smoke runs.
+
+See [`docs/IMPLEMENTED_MILESTONE1.md`](docs/IMPLEMENTED_MILESTONE1.md) for details.
 
 ## Roadmap
 
-- [x] **M3 Bootstrap** — interview → validated org chart (this milestone)
-- [ ] **M1 Runtime** — LLM adapters (Anthropic first), agent loop, SQLite state
-- [ ] **M2 Ambition loop** — "do smart things" proactive loop over goals/context
+- [x] **M1 Runtime** — LLM adapters (OpenAI/Ollama/Fake), agent loop, SQLite state
+- [x] **M2 Ambition loop** — "do smart things" proactive loop over goals/context
+- [x] **M3 Bootstrap** — interview → validated org chart
 - [ ] **M4 Insights** — observers/watchdogs + mission-control view
 - [ ] **M5 Role packs** — business-ops / engineering / research orgs from the
   same primitives

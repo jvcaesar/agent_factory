@@ -13,10 +13,11 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-# Anthropic is the default provider (matches the video's Claude-based fleet),
-# but the adapters are pluggable so any provider can be swapped in later.
-anthropic = ["anthropic>=0.30"]
-openai = ["openai>=1.40"]
+# Runtime providers. OpenAI is the default (per user choice); Ollama covers
+# local Gemma/Qwen; 'fake' is built-in and needs nothing.
+openai = ["openai>=0.27"]
+ollama = ["requests>=2.0"]
+anthropic = ["anthropic>=0.30"]  # future adapter slot
 
 [tool.setuptools.packages.find]
 where = ["src"]

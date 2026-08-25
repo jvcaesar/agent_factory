@@ -3,23 +3,23 @@
 > Ordered so each milestone builds on the last. Milestone 3 (bootstrap) is done;
 > the remaining milestones turn the generated charts into a *running factory*.
 
-## M1 — Runtime engine (next)
+## M1 — Runtime engine ✅ (implemented)
 Convert the generated config into live agents.
 
-- **Goal:** load an `Org` from disk and run it.
-- **LLM adapters:** provider-agnostic client — Anthropic first (video's Claude fleet), then OpenAI. Selected via env vars (`AGENT_FACTORY_PROVIDER`, API keys).
-- **Agent loop:** each `Role` becomes a runnable agent: system prompt = charter + SOP; context = goals doc + org; tools = granted, respecting `requires_approval`.
-- **SQLite state:** durable job queue (pull-based workers) + results ledger, so agents hand off work and are observable.
-- **Tests:** inject a fake LLM for deterministic, offline results.
-- **Exit criteria:** a CLI that enqueues a job and a configured worker completes it end-to-end with recorded state.
+- **Goal:** load an `Org` from disk and run it. **Done** — see `IMPLEMENTED_MILESTONE1.md`.
+- **LLM adapters:** provider-agnostic `LLMClient` — OpenAI (default, dual API-gen support), Ollama (local Gemma/Qwen), Fake (offline). Selected via `AGENT_FACTORY_PROVIDER`.
+- **Agent loop:** each role becomes a runnable agent; JSON action protocol, grants respected, `requires_approval` gated.
+- **SQLite state:** durable `jobs`/`results`/`events` store in the org folder.
+- **Tests:** 40 total, offline via FakeLLM.
+- **Exit criteria met:** `run` CLI enqueues a job and a worker completes it end-to-end with recorded state.
 
-## M2 — Ambition loop ("do smart things")
+## M2 — Ambition loop ✅ (implemented)
 Make the workforce *proactive*, not just reactive.
 
-- **Goal:** the lead role is licensed to initiate net-new work against goals + context, per its `proactivity_level`.
-- **Context store:** capture un-codified knowledge (diary/context flow) so "the company stays queryable" (video 12:25–13:33).
-- **Scope/permission breadth:** more autonomy in breadth, same approval ceiling for risky actions.
-- **Tests:** fake-LLM scenarios proving a role with level ≥ 3 proposes/initiates new work correctly.
+- **Goal:** the lead role is licensed to initiate net-new work against goals + context, per its `proactivity_level`. **Done** — see `IMPLEMENTED_MILESTONE2.md`.
+- **Context store:** diary/context flow added to the SQLite store (`context` table) so "the company stays queryable" (video 12:25–13:33).
+- **Scope/permission breadth:** propose→execute→learn loop (`propose_actions`, `run_ambition_loop`); `max_risk`/`max_actions` gates keep the approval ceiling.
+- **Tests:** 53 total, offline; proactive-vs-passive gating verified with fake-LLM scenarios (role with level ≥ 3 initiates; level < 3 does not).
 
 ## M3 — (done) Bootstrap
 See `IMPLEMENTED_MILESTONE3.md`.
@@ -50,9 +50,9 @@ See `IMPLEMENTED_MILESTONE3.md`.
 
 ## Trackable definition of done (per milestone)
 
-- [x] M3 bootstrap + 16 tests (this doc's step)
-- [ ] M1 runtime: provider adapter, agent loop, SQLite, offline tests
-- [ ] M2 ambition loop: proactive propose/execute, context store, guarded scope
+- [x] M3 bootstrap + 16 tests
+- [x] M1 runtime: provider adapter, agent loop, SQLite, offline tests (24 more — 40 total)
+- [x] M2 ambition loop: proactive propose/execute, context store, guarded scope (13 more — 53 total)
 - [ ] M4 mission control + observers/watchdogs
 - [ ] M5 role packs (business-ops / engineering / research)
 - [ ] M6 multiplayer + wider tool surface

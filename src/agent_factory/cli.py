@@ -11,6 +11,7 @@ from __future__ import annotations
 import argparse
 import sys
 from pathlib import Path
+from typing import Callable
 
 import yaml
 
@@ -19,6 +20,9 @@ from .bootstrap.generator import generate_org, write_org
 from .bootstrap.interview import AskFn, ConfirmFn, ChoiceFn, InterviewAnswers
 from .config import ApprovalPolicy
 from .config.loader import load_org_yaml, validate_org
+from .llm import get_client
+from .runtime import Store, run_job
+from .runtime.ambition import run_ambition_loop
 
 RISK_CHOICES = ["autonomous", "review_external", "approval_first"]
 BUDGET_CHOICES = ["small", "medium", "unlimited"]
@@ -169,6 +173,169 @@ def cmd_validate(args: argparse.Namespace) -> int:
         return 1
     print(f"OK: {root} is a valid org ({len(org.roles)} roles).")
     return 0
+def _approval_policy(args) -> Callable:
+    mode = args.approval
+    if mode == "allow":
+        return lambda _t: True
+    if mode == "deny":
+        return lambda _t: False
+    # "ask" — prompt the user per tool call.
+    from .runtime.tools import Tool
+
+    def _ask(tool: Tool) -> bool:
+        while True:
+            raw = input(f"APPROVE tool call '{tool.name}'? [{tool.description}] (y/n): ").strip().lower()
+            if raw in ("y", "yes"):
+                return True
+            if raw in ("n", "no"):
+                return False
+            print("  answer y or n")
+
+    return _ask
+
+
+def cmd_run(args: argparse.Namespace) -> int:
+    root = Path(args.org)
+    org = load_org_yaml(root / "org.yaml")
+    errors = validate_org(org)
+    if errors:
+        print("Validation errors:", file=sys.stderr)
+        for e in errors:
+            print(f"  - {e}", file=sys.stderr)
+        return 1
+    try:
+        role = org.role(args.role)
+    except KeyError:
+        print(f"No role named {args.role!r} in this org. Available: {[r.id for r in org.roles]}", file=sys.stderr)
+        return 2
+
+    db = root / ".agentfactory" / "jobs.db"
+    store = Store(db)
+    try:
+        llm = get_client(args.provider)
+        approval_fn = _approval_policy(args)
+        job_id, outcome = run_job(
+            org,
+            role,
+            args.task,
+            llm,
+            store,
+            root=root,
+            approval_fn=approval_fn,
+            max_steps=args.max_steps,
+            temperature=args.temperature,
+            provider=args.provider,
+        )
+    except Exception as exc:
+        print(f"Run failed for role {role.id!r}: {exc}", file=sys.stderr)
+        return 1
+    finally:
+        store.close()
+
+    print(f"\njob #{job_id} [{role.id}] -> {'done' if outcome.finished else 'incomplete'} in {outcome.steps} step(s)")
+    print("events:")
+    for e in outcome.events:
+        print(f"  {e}")
+    print("--- output ---")
+    print(outcome.output)
+    return 0
+
+
+def cmd_jobs(args: argparse.Namespace) -> int:
+    db = Path(args.org) / ".agentfactory" / "jobs.db"
+    if not db.exists():
+        print(f"No job store at {db}", file=sys.stderr)
+        return 2
+    store = Store(db)
+    try:
+        print(f"{'id':<4} {'org':<14} {'role':<24} {'status':<9} {'task'}")
+        for j in store.list_jobs(status=args.status, limit=args.limit):
+            print(f"{j['id']:<4} {j['org']:<14} {j['role']:<24} {j['status']:<9} {j['task'][:60]}")
+        return 0
+    finally:
+        store.close()
+
+def cmd_ambition(args: argparse.Namespace) -> int:
+    root = Path(args.org)
+    org = load_org_yaml(root / "org.yaml")
+    errors = validate_org(org)
+    if errors:
+        print("Validation errors:", file=sys.stderr)
+        for e in errors:
+            print(f"  - {e}", file=sys.stderr)
+        return 1
+
+    role_id = args.role or next(
+        (r.id for r in org.roles if r.reports_to is None), None
+    )
+    if role_id is None:
+        print("No lead role found and --role not given.", file=sys.stderr)
+        return 2
+    role = org.role(role_id)
+    if role.proactivity_level < 3:
+        print(f"Role {role_id!r} has proactivity_level {role.proactivity_level} < 3; it cannot initiate work.", file=sys.stderr)
+        return 2
+
+    db = root / ".agentfactory" / "jobs.db"
+    store = Store(db)
+    try:
+        llm = get_client(args.provider)
+        approval_fn = _approval_policy(args)
+        proposals, executed = run_ambition_loop(
+            org,
+            role,
+            llm,
+            store,
+            root=root,
+            approval_fn=approval_fn,
+            max_candidates=args.candidates,
+            max_actions=args.max_actions,
+            max_risk=args.max_risk,
+        )
+    except Exception as exc:
+        print(f"Ambition loop failed for role {role.id!r}: {exc}", file=sys.stderr)
+        return 1
+    finally:
+        store.close()
+
+    print(f"\nProposals from {role.id} (proactivity {role.proactivity_level}):")
+    for p in proposals:
+        print(f"  - {p.title} (risk={p.risk}, priority={p.priority})")
+        print(f"      action: {p.action}")
+    print(f"\nExecuted {len(executed)} action(s):")
+    for proposal, outcome, job_id in executed:
+        print(f"  job #{job_id} [{proposal.title}] -> {'done' if outcome.finished else 'incomplete'}")
+    return 0
+
+
+def cmd_context(args: argparse.Namespace) -> int:
+    root = Path(args.org)
+    db = root / ".agentfactory" / "jobs.db"
+    if not db.exists() and not args.add:
+        print(f"No job store at {db}", file=sys.stderr)
+        return 2
+    store = Store(db)  # Store creates the DB if missing
+    try:
+        if args.add:
+            store.upsert_context(args.add, args.detail, source="diary")
+            print(f"added context entry '{args.add}'")
+            return 0
+        if args.search:
+            rows = store.search_context(args.search)
+        else:
+            rows = store.list_context(limit=args.limit)
+        print(f"{'key':<36} {'source':<10} content")
+        for r in rows:
+            snippet = (r["content"] or "").replace("\n", " ")
+            print(f"{r['key']:<36} {r['source'] or '':<10} {snippet[:70]}")
+        return 0
+    finally:
+        store.close()
+
+
+
+
+
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -183,6 +350,41 @@ def main(argv: list[str] | None = None) -> int:
     vp = sub.add_parser("validate", help="Validate a generated org tree")
     vp.add_argument("--root", default="orgs/MyOrg", help="Root directory of the org")
     vp.set_defaults(func=cmd_validate)
+
+    rp = sub.add_parser("run", help="Enqueue a job and run it with a configured role")
+    rp.add_argument("--org", required=True, help="Path to a generated org tree (contains org.yaml)")
+    rp.add_argument("--role", required=True, help="Role id to execute the job, e.g. worker_research_1")
+    rp.add_argument("--task", required=True, help="The task/job description")
+    rp.add_argument("--provider", default=None, help="openai | ollama | fake (default: env or openai)")
+    rp.add_argument("--approval", choices=["ask", "deny", "allow"], default="ask")
+    rp.add_argument("--max-steps", type=int, default=8)
+    rp.add_argument("--temperature", type=float, default=0.2)
+    rp.set_defaults(func=cmd_run)
+
+    jp = sub.add_parser("jobs", help="List jobs recorded in an org's store")
+    jp.add_argument("--org", required=True, help="Path to a generated org tree")
+    jp.add_argument("--status", default=None, help="Filter: queued|running|done|error|blocked")
+    jp.add_argument("--limit", type=int, default=100)
+    jp.set_defaults(func=cmd_jobs)
+
+    ap = sub.add_parser("ambition", help="Run the proactive 'do smart things' loop for a role")
+    ap.add_argument("--org", required=True, help="Path to a generated org tree")
+    ap.add_argument("--role", default=None, help="Role id to run the loop (default: org lead)")
+    ap.add_argument("--provider", default=None, help="openai | ollama | fake")
+    ap.add_argument("--approval", choices=["ask", "deny", "allow"], default="deny")
+    ap.add_argument("--candidates", type=int, default=5)
+    ap.add_argument("--max-actions", type=int, default=2)
+    ap.add_argument("--max-risk", choices=["low", "medium", "high"], default="medium")
+    ap.set_defaults(func=cmd_ambition)
+
+    cp = sub.add_parser("context", help="Add / list / search captured context (diary flow)")
+    cp.add_argument("--org", required=True, help="Path to a generated org tree")
+    cp.add_argument("--add", default=None, help="Key to add an entry (with --detail)")
+    cp.add_argument("--detail", default="", help="Content of the entry when using --add")
+    cp.add_argument("--search", default=None, help="Search term")
+    cp.add_argument("--limit", type=int, default=50)
+    cp.set_defaults(func=cmd_context)
+
 
     args = parser.parse_args(argv)
     return args.func(args)
