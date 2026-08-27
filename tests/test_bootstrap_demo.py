@@ -39,6 +39,12 @@ class TestBootstrapDemo(unittest.TestCase):
     def test_answers_from_spec_are_valid(self):
         self.assertEqual(self.answers.validate(), [])
 
+    def test_spec_booleans_are_strict(self):
+        data = dict(self.spec)
+        data["use_lead"] = "false"
+        with self.assertRaisesRegex(ValueError, "use_lead must be a boolean"):
+            InterviewAnswers.from_dict(data)
+
     def test_org_has_lead_and_expected_directors(self):
         org = generate_org(self.answers)
         ids = {r.id for r in org.roles}
@@ -70,6 +76,16 @@ class TestBootstrapDemo(unittest.TestCase):
         reloaded = load_org_yaml(self.root / "org.yaml")
         self.assertEqual(len(reloaded.roles), len(org.roles))
         self.assertEqual(reloaded.name, org.name)
+
+    def test_role_model_settings_round_trip(self):
+        org = generate_org(self.answers)
+        org.roles[0].provider = "ollama"
+        org.roles[0].model = "qwen3:8b"
+        write_org(org, self.root)
+        reloaded = load_org_yaml(self.root / "org.yaml")
+        role = reloaded.role(org.roles[0].id)
+        self.assertEqual(role.provider, "ollama")
+        self.assertEqual(role.model, "qwen3:8b")
 
     def test_proactivity_in_range_and_model_tier_plan(self):
         org = generate_org(self.answers)

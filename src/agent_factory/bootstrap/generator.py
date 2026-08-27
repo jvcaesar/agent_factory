@@ -16,6 +16,28 @@ from .interview import InterviewAnswers
 from .prompts import render_goals, render_org_readme, render_sop
 
 
+def role_to_dict(role: Role) -> dict:
+    """Serialize a role without dropping optional provider/model settings."""
+    return {
+        "id": role.id,
+        "display_name": role.display_name,
+        "title": role.title,
+        "charter": role.charter,
+        "sop": role.sop,
+        "proactivity_level": role.proactivity_level,
+        "model_tier": role.model_tier.value,
+        "provider": role.provider,
+        "model": role.model,
+        "approval_policy": role.approval_policy.value,
+        "reports_to": role.reports_to,
+        "tool_grants": [
+            {"tool": g.tool, "access": g.access.value, "requires_approval": g.requires_approval}
+            for g in role.tool_grants
+        ],
+        "subagents": role.subagents,
+    }
+
+
 def _lead_role(tools: set[str], risk: ApprovalPolicy, budget: str) -> Role:
     """The generic org lead that ties directors together (and routes work)."""
     tier = ModelTier.BIG if budget == "unlimited" else ModelTier.SMART
@@ -160,22 +182,7 @@ def write_org(org: Org, root: Path) -> None:
     (root / "goals").mkdir(parents=True, exist_ok=True)
 
     for role in org.roles:
-        role_dict = {
-            "id": role.id,
-            "display_name": role.display_name,
-            "title": role.title,
-            "charter": role.charter,
-            "sop": role.sop,
-            "proactivity_level": role.proactivity_level,
-            "model_tier": role.model_tier.value,
-            "approval_policy": role.approval_policy.value,
-            "reports_to": role.reports_to,
-            "tool_grants": [
-                {"tool": g.tool, "access": g.access.value, "requires_approval": g.requires_approval}
-                for g in role.tool_grants
-            ],
-            "subagents": role.subagents,
-        }
+        role_dict = role_to_dict(role)
         with open(root / "roles" / f"{role.id}.yaml", "w", encoding="utf-8") as fh:
             yaml.safe_dump(role_dict, fh, sort_keys=False, allow_unicode=True)
         with open(root / role.sop, "w", encoding="utf-8") as fh:
@@ -205,25 +212,7 @@ def write_org(org: Org, root: Path) -> None:
         "risk_tier": org.risk_tier.value,
         "budget_tier": org.budget_tier,
         "quarterly_goals": list(org.quarterly_goals),
-    "roles": [
-            {
-                "id": r.id,
-                "display_name": r.display_name,
-                "title": r.title,
-                "charter": r.charter,
-                "sop": r.sop,
-                "proactivity_level": r.proactivity_level,
-                "model_tier": r.model_tier.value,
-                "approval_policy": r.approval_policy.value,
-                "reports_to": r.reports_to,
-                "tool_grants": [
-                    {"tool": g.tool, "access": g.access.value, "requires_approval": g.requires_approval}
-                    for g in r.tool_grants
-                ],
-                "subagents": r.subagents,
-            }
-            for r in org.roles
-        ],
+        "roles": [role_to_dict(r) for r in org.roles],
     }
     with open(root / "org.yaml", "w", encoding="utf-8") as fh:
         yaml.safe_dump(org_dict, fh, sort_keys=False, allow_unicode=True)

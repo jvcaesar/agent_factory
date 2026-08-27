@@ -64,8 +64,25 @@ class OllamaLLM(LLMClient):
             raise LLMError(f"Ollama request failed ({self.base_url}): {exc}") from exc
 
         try:
-            text = data["choices"][0]["message"]["content"]
+            message = data["choices"][0]["message"]
+            text = message["content"]
         except (KeyError, IndexError, TypeError) as exc:
             raise LLMError(f"Unexpected Ollama response shape: {data!r}") from exc
+
+        # Reasoning models (e.g. deepseek-r1, gemma with thinking enabled) put
+        # their chain-of-thought in a separate ``reasoning`` field and may leave
+        # ``content`` empty when the token budget is exhausted mid-reasoning.
+        # Fall back to the reasoning trace rather than returning a blank reply,
+        # and surface a warning so callers know this happened.
+        self.used_reasoning_fallback = False
+        if not (text or "").strip():
+            reasoning = ""
+            try:
+                reasoning = (data["choices"][0]["message"].get("reasoning") or "").strip()
+            except (KeyError, IndexError, TypeError):
+                pass
+            if reasoning:
+                self.used_reasoning_fallback = True
+                text = reasoning
 
         return LLMResult(text=text, model=chosen, raw=data)

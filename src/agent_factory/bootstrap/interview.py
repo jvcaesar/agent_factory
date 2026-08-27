@@ -54,19 +54,37 @@ class InterviewAnswers:
 
     @classmethod
     def from_dict(cls, d: dict) -> "InterviewAnswers":
+        if not isinstance(d, dict):
+            raise ValueError("interview spec must be a mapping")
+
+        def boolean(name: str, default: bool = False) -> bool:
+            value = d.get(name, default)
+            if not isinstance(value, bool):
+                raise ValueError(f"{name} must be a boolean")
+            return value
+
+        def integer(name: str, default: int = 0) -> int:
+            value = d.get(name, default)
+            if isinstance(value, bool):
+                raise ValueError(f"{name} must be an integer")
+            try:
+                return int(value)
+            except (TypeError, ValueError) as exc:
+                raise ValueError(f"{name} must be an integer") from exc
+
         return cls(
             org_name=str(d.get("org_name", "")),
             founder=str(d.get("founder", "")),
             north_star=str(d.get("north_star", "")),
             quarterly_goals=[str(g) for g in d.get("quarterly_goals", [])],
-            human_team_size=int(d.get("human_team_size", 0)),
+            human_team_size=integer("human_team_size"),
             domains=[str(x) for x in d.get("domains", [])],
             tools=set(str(x) for x in d.get("tools", [])),
             risk_tier=ApprovalPolicy(d.get("risk_tier", "review_external")),
             budget_tier=str(d.get("budget_tier", "medium")),
-            add_amplifier=bool(d.get("add_amplifier", False)),
-            add_observer=bool(d.get("add_observer", False)),
-            use_lead=bool(d.get("use_lead", False)),
+            add_amplifier=boolean("add_amplifier"),
+            add_observer=boolean("add_observer"),
+            use_lead=boolean("use_lead"),
         )
 
     def validate(self) -> list[str]:

@@ -10,7 +10,7 @@ from __future__ import annotations
 
 import re
 from enum import Enum
-from typing import Literal, Optional
+from typing import ClassVar, Literal, Optional
 
 from pydantic import BaseModel, Field, field_validator
 
@@ -65,10 +65,30 @@ class Role(BaseModel):
     sop: str
     proactivity_level: int = Field(ge=0, le=5)
     model_tier: ModelTier = ModelTier.SMART
+    provider: Optional[str] = Field(
+        default=None,
+        description="Optional per-role LLM provider ('openai'|'ollama'|'fake'). Defaults to the global provider (env AGENT_FACTORY_PROVIDER).",
+    )
+    model: Optional[str] = Field(
+        default=None,
+        description="Optional per-role model override. Defaults to the model resolved from model_tier + env.",
+    )
     approval_policy: ApprovalPolicy = ApprovalPolicy.AUTONOMOUS
     reports_to: Optional[str] = None
     tool_grants: list[ToolGrant] = Field(default_factory=list)
     subagents: list[str] = Field(default_factory=list, description="Worker archetype ids this role fans out to.")
+
+    _KNOWN_PROVIDERS: ClassVar[set[str]] = {"openai", "ollama", "fake"}
+
+    @field_validator("provider")
+    @classmethod
+    def _provider_must_be_known(cls, v: Optional[str]) -> Optional[str]:
+        if v is None:
+            return v
+        v = (v or "").strip().lower()
+        if v not in cls._KNOWN_PROVIDERS:
+            raise ValueError(f"unknown provider {v!r} (expected openai | ollama | fake)")
+        return v
 
     @field_validator("reports_to", "id")
     @classmethod

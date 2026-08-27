@@ -57,11 +57,26 @@ class Store:
             self.path.parent.mkdir(parents=True, exist_ok=True)
         self._conn = sqlite3.connect(str(self.path))
         self._conn.row_factory = sqlite3.Row
+        self._conn.execute("PRAGMA foreign_keys = ON")
         self._conn.executescript(_SCHEMA)
+        self._conn.executescript(
+            """
+            CREATE INDEX IF NOT EXISTS idx_jobs_status_id ON jobs(status, id);
+            CREATE INDEX IF NOT EXISTS idx_results_job_id ON results(job_id, id);
+            CREATE INDEX IF NOT EXISTS idx_events_job_id ON events(job_id, id);
+            CREATE INDEX IF NOT EXISTS idx_context_updated_id ON context(updated_at, id);
+            """
+        )
         self._conn.commit()
 
     def close(self) -> None:
         self._conn.close()
+
+    def __enter__(self) -> "Store":
+        return self
+
+    def __exit__(self, exc_type, exc_value, traceback) -> None:
+        self.close()
 
     @contextmanager
     def _tx(self) -> Iterator[sqlite3.Connection]:
@@ -85,15 +100,26 @@ class Store:
         """Claim the oldest 'queued' job (mark it running). Returns the row or None."""
         with self._tx() as c:
             row = c.execute(
-                "SELECT * FROM jobs WHERE status='queued' ORDER BY id LIMIT 1"
+                """
+                UPDATE jobs
+                SET status='running', updated_at=datetime('now')
+                WHERE id = (
+                    SELECT id FROM jobs WHERE status='queued' ORDER BY id LIMIT 1
+                ) AND status='queued'
+                RETURNING *
+                """
             ).fetchone()
-            if row is None:
-                return None
-            c.execute(
-                "UPDATE jobs SET status='running', updated_at=datetime('now') WHERE id=?",
-                (row["id"],),
-            )
             return row
+
+    def start(self, job_id: int) -> bool:
+        """Atomically transition one queued job to running."""
+        with self._tx() as c:
+            cur = c.execute(
+                "UPDATE jobs SET status='running', updated_at=datetime('now') "
+                "WHERE id=? AND status='queued'",
+                (job_id,),
+            )
+            return cur.rowcount == 1
 
     def complete(self, job_id: int, result: str) -> None:
         with self._tx() as c:

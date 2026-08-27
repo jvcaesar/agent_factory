@@ -19,7 +19,7 @@ state. It was built to the plan agreed with the user:
 |------|------|
 | `base.py` | `LLMClient` (ABC), `ChatMessage`, `LLMResult`, `LLMError` |
 | `fake.py` | `FakeLLM` — deterministic, scriptable, offline |
-| `openai_client.py` | `OpenAILLM` — legacy (0.28.x) **and** modern (>=1.0) API support |
+| `openai_client.py` | `OpenAILLM` — modern (>=1.0) API support |
 | `ollama_client.py` | `OllamaLLM` — `requests`-based, OpenAI-compatible local endpoint |
 | `factory.py` | `get_client(provider)` — `openai | ollama | fake` via env `AGENT_FACTORY_PROVIDER` |
 
@@ -71,8 +71,8 @@ narrow so it can be swapped for Postgres in M5.
 
 ## 6. Providers
 
-- **OpenAI** (default): set `OPENAI_API_KEY`. Adapter detects and supports both
-  the installed legacy `openai 0.28.1` module API and the modern `>=1.0` client.
+- **OpenAI** (default): set `OPENAI_API_KEY`. The adapter uses the modern
+  `openai>=1.0` client.
   Optional `OPENAI_BASE_URL` for compatible endpoints.
 - **Ollama**: `http://localhost:11434/v1` (or `OLLAMA_BASE_URL`), defaults to
   model `gemma4` (or `OLLAMA_MODEL`) — pass `--model`/provider config as needed
@@ -95,6 +95,11 @@ python -m agent_factory run --org orgs/Acme --role worker_research_1 ^
 python -m agent_factory run --org orgs/Acme --role worker_research_1 ^
     --task "Summarize the quarterly targets." --provider ollama --approval ask
 
+# Explicit model override
+python -m agent_factory run --org orgs/Acme --role worker_research_1 ^
+  --task "Summarize the quarterly targets." --provider ollama ^
+  --model qwen2.5:7b --approval ask
+
 # Offline smoke test (no API key)
 python -m agent_factory run --org orgs/Acme --role worker_research_1 ^
     --task "List the targets." --provider fake --approval deny
@@ -107,7 +112,7 @@ python -m agent_factory jobs --org orgs/Acme
 ## 8. Test coverage
 
 Added `tests/test_runtime_state.py`, `test_runtime_tools.py`,
-`test_runtime_agent.py`. Combined suite is **40 tests, all offline / green**:
+`test_runtime_agent.py`. The current combined suite is **87 tests, all offline / green**:
 
 ```
 python -m unittest discover -s tests

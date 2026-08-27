@@ -20,13 +20,14 @@ import json
 import re
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Optional
+from typing import Callable, Optional
 
 from ..config import Org, Role
 from ..llm.base import ChatMessage, LLMClient
-from .agent import run_agent
+from .agent import AgentOutcome, run_agent
 from .state import Store
-from .tools import tools_for_role
+from .tools import ApprovalFn, tools_for_role
+from .protocol import extract_json_object
 
 RISK_ORDER = {"low": 1, "medium": 2, "high": 3}
 
@@ -44,28 +45,12 @@ class Proposal:
         return s[:48] or "proposal"
 
 
-def _extract_json(text: str) -> Optional[dict]:
-    cleaned = text.strip()
-    if cleaned.startswith("```"):
-        cleaned = re.sub(r"^```[a-z]*", "", cleaned).strip()
-        cleaned = re.sub(r"```$", "", cleaned).strip()
-    try:
-        data = json.loads(cleaned)
-        return data if isinstance(data, dict) else None
-    except json.JSONDecodeError:
-        m = re.search(r"\{.*\}", cleaned, re.DOTALL)
-        if m:
-            try:
-                data = json.loads(m.group(0))
-                return data if isinstance(data, dict) else None
-            except json.JSONDecodeError:
-                return None
-    return None
+ExecutedAction = tuple[Proposal, AgentOutcome, int]
 
 
-def parse_proposals(text: str) -> list[Proposal]:
+def parse_proposals(text: str, max_candidates: Optional[int] = None) -> list[Proposal]:
     """Parse the model's proposal response into a list of :class:`Proposal`."""
-    data = _extract_json(text)
+    data = extract_json_object(text)
     if not data:
         return []
     raw = data.get("proposals", [])
@@ -81,17 +66,21 @@ def parse_proposals(text: str) -> list[Proposal]:
         risk = str(item.get("risk", "medium")).lower()
         if risk not in RISK_ORDER:
             risk = "medium"
+        try:
+            priority = int(item.get("priority", 5) or 5)
+        except (TypeError, ValueError):
+            priority = 5
         proposals.append(
             Proposal(
                 title=str(item.get("title", action[:40])).strip() or action[:40],
                 action=action,
                 rationale=str(item.get("rationale", "")).strip(),
                 risk=risk,
-                priority=int(item.get("priority", 5) or 5),
+                priority=priority,
             )
         )
     proposals.sort(key=lambda p: p.priority)
-    return proposals
+    return proposals[:max_candidates] if max_candidates is not None else proposals
 
 
 def _propose_prompt(org: Org, role: Role, tools: list, context_text: str, max_candidates: int) -> str:
@@ -139,16 +128,19 @@ def propose_actions(
     tools = tools_for_role(role)
     messages = [ChatMessage("user", _propose_prompt(org, role, tools, context_text, max_candidates))]
     result = llm.complete(messages, temperature=temperature)
-    return parse_proposals(result.text)
+    return parse_proposals(result.text, max_candidates=max_candidates)
 
 
-def _pick_worker(org: Org, role: Role) -> Role:
-    """Choose a worker under ``role`` to execute a proposal, or the role itself."""
+def _pick_worker(org: Org, role: Role, index: int = 0) -> Role:
+    """Choose a valid subagent in round-robin order, or the role itself."""
+    workers = []
     for sub in role.subagents:
         try:
-            return org.role(sub)
+            workers.append(org.role(sub))
         except KeyError:
-            continue
+            pass
+    if workers:
+        return workers[index % len(workers)]
     return role
 
 
@@ -159,22 +151,30 @@ def run_ambition_loop(
     store: Store,
     *,
     root: Optional[Path] = None,
-    approval_fn=None,
+    approval_fn: Optional[ApprovalFn] = None,
+    role_client: Optional[Callable[[Role], LLMClient]] = None,
     max_candidates: int = 5,
     max_actions: int = 2,
     max_risk: str = "medium",
     temperature: float = 0.2,
-):
+) -> tuple[list[Proposal], list[ExecutedAction]]:
     """Run one full ambition pass. Returns (proposals, executed).
 
     ``executed`` is a list of (Proposal, AgentOutcome, job_id). Proposals above
     ``max_risk`` are skipped without execution.
-    """
-    context_text = store.context_blob()
-    proposals = propose_actions(org, role, llm, context_text, max_candidates=max_candidates)
 
-    executed = []
-    for proposal in proposals[:max_actions]:
+    ``role_client`` (optional) is a callable ``(Role) -> LLMClient`` used to pick
+    a per-agent model/provider for both the proposing role and each worker. If
+    omitted, the single ``llm`` is used for everything.
+    """
+    client_of = role_client or (lambda _r: llm)
+    context_text = store.context_blob()
+    proposals = propose_actions(
+        org, role, client_of(role), context_text, max_candidates=max_candidates
+    )
+
+    executed: list[ExecutedAction] = []
+    for index, proposal in enumerate(proposals[:max_actions]):
         if RISK_ORDER.get(proposal.risk, 2) > RISK_ORDER.get(max_risk, 2):
             store.upsert_context(
                 f"ambition/skipped-{proposal.slug()}",
@@ -182,13 +182,16 @@ def run_ambition_loop(
                 source="ambition",
             )
             continue
-        worker = _pick_worker(org, role)
-        job_id = store.enqueue(org.name, worker.id, proposal.action, provider=llm.name)
+        worker = _pick_worker(org, role, index)
+        worker_llm = client_of(worker)
+        job_id = store.enqueue(org.name, worker.id, proposal.action, provider=worker_llm.name)
+        if not store.start(job_id):
+            raise RuntimeError(f"could not start queued job {job_id}")
         outcome = run_agent(
             org,
             worker,
             proposal.action,
-            llm,
+            worker_llm,
             root=root,
             approval_fn=approval_fn,
             store=store,

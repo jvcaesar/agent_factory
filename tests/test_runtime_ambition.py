@@ -87,6 +87,16 @@ class TestParseProposals(unittest.TestCase):
     def test_empty_proposals_list(self):
         self.assertEqual(parse_proposals(json.dumps({"type": "proposals", "proposals": []})), [])
 
+    def test_max_candidates_is_enforced(self):
+        self.assertEqual(len(parse_proposals(json.dumps(PROPOSAL_JSON), max_candidates=1)), 1)
+
+    def test_invalid_priority_defaults(self):
+        ps = parse_proposals(json.dumps({
+            "type": "proposals",
+            "proposals": [{"title": "X", "action": "Do X", "priority": "urgent"}],
+        }))
+        self.assertEqual(ps[0].priority, 5)
+
 
 class TestProposeActions(unittest.TestCase):
     def test_proactive_role_proposes(self):
@@ -156,6 +166,25 @@ class TestRunAmbitionLoop(unittest.TestCase):
         )
         proposals, executed = run_ambition_loop(org, LEAD, llm, store, max_actions=1, max_risk="medium")
         self.assertEqual(len(executed), 1)
+        store.close()
+
+    def test_dispatches_proposals_round_robin(self):
+        worker_two = Role(
+            id="worker_research_2", display_name="Research Worker 2",
+            title="Research Worker", charter="Synthesize info.", sop="",
+            proactivity_level=1, tool_grants=[],
+        )
+        lead = LEAD.model_copy(update={"subagents": [WORKER.id, worker_two.id]})
+        org = make_org(lead, extra=[worker_two])
+        store = Store(":memory:")
+        llm = FakeLLM(responses=[
+            json.dumps(PROPOSAL_JSON),
+            '{"type":"final","output":"first"}',
+            '{"type":"final","output":"second"}',
+        ])
+        _, executed = run_ambition_loop(org, lead, llm, store, max_actions=2)
+        self.assertEqual([job[1].output for job in executed], ["first", "second"])
+        self.assertEqual([store.get(job[2])["role"] for job in executed], [WORKER.id, worker_two.id])
         store.close()
 
 

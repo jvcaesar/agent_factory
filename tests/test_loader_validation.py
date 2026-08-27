@@ -9,7 +9,7 @@ from _helpers import SRC  # noqa: F401
 from agent_factory.bootstrap.generator import generate_org
 from agent_factory.bootstrap.interview import InterviewAnswers
 from agent_factory.config import ApprovalPolicy, ModelTier, Role, ToolAccess, ToolGrant
-from agent_factory.config.loader import validate_org
+from agent_factory.config.loader import ConfigError, load_org_yaml, validate_org
 
 
 def answers(**over):
@@ -64,6 +64,38 @@ class TestValidateOrg(unittest.TestCase):
     def test_valid_org_passes(self):
         org = generate_org(answers())
         self.assertEqual(validate_org(org), [])
+
+    def test_sop_root_validation(self):
+        org = generate_org(answers())
+        with tempfile.TemporaryDirectory() as tmp:
+            root = pathlib.Path(tmp)
+            errors = validate_org(org, root)
+        self.assertTrue(any("SOP file not found" in error for error in errors))
+
+    def test_non_boolean_approval_flag_rejected(self):
+        from agent_factory.config.loader import org_from_dict
+
+        with self.assertRaises(ValueError):
+            org_from_dict({
+                "name": "TestCo",
+                "north_star": "Do great things",
+                "roles": [{
+                    "id": "worker",
+                    "display_name": "Worker",
+                    "title": "Worker",
+                    "charter": "Do work",
+                    "sop": "",
+                    "proactivity_level": 1,
+                    "tool_grants": [{"tool": "files", "requires_approval": "false"}],
+                }],
+            })
+
+    def test_invalid_yaml_shape_has_context(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            path = pathlib.Path(tmp) / "org.yaml"
+            path.write_text("- not-an-org\n", encoding="utf-8")
+            with self.assertRaisesRegex(ConfigError, "organization document must be a mapping"):
+                load_org_yaml(path)
 
     def test_schema_rejects_bad_id(self):
         with self.assertRaises(ValueError):

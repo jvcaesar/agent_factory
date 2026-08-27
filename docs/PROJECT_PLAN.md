@@ -1,6 +1,6 @@
 # Agent Factory — Project Plan
 
-> **Status:** Milestone 3 (`bootstrap`) complete · **Working directory:** `c:\MyCodeJunk\LearningAi\AI-agents\agent_factory`
+> **Status:** Milestones 1–3 complete · **Working directory:** `c:\MyCodeJunk\LearningAi\AI-agents\agent_factory`
 > **Origin:** Greg Isenberg × Alli K. Miller video, *"My top secrets to running an AI Agent Workforce"* — used as a source of *patterns*, not a blueprint to copy.
 
 ## 1. Goal
@@ -39,13 +39,13 @@ agent_factory/
 
 | # | Name | Goal | Status |
 |---|-------|------|--------|
-| M3 | **Bootstrap** | Interview → validated org chart | ✅ current (implemented) |
-| M1 | **Runtime** | LLM adapters, agent loop, SQLite state | ⏭ next |
-| M2 | **Ambition loop** | "do smart things" over goals/context | ahead |
+| M3 | **Bootstrap** | Interview → validated org chart | ✅ implemented |
+| M1 | **Runtime** | LLM adapters, agent loop, SQLite state | ✅ implemented |
+| M2 | **Ambition loop** | "do smart things" over goals/context | ✅ implemented |
 | M4 | **Insights** | observers/watchdogs + mission control | ahead |
 | M5 | **Role packs** | specialized orgs from the same engine | ahead |
 
-## 5. Current goal — Milestone 3 (bootstrap)
+## 5. Current goal — Milestone 4 (insights)
 
 See [IMPLEMENTED_MILESTONE3.md](./IMPLEMENTED_MILESTONE3.md) for the build
 detail, and [ROADMAP.md](./ROADMAP.md) for what comes next.

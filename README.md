@@ -72,6 +72,11 @@ set AGENT_FACTORY_PROVIDER=fake     # or openai / ollama — see Providers below
 agent_factory run --org orgs/Acme --role worker_research_1 ^
     --task "List the quarterly targets." --approval deny
 
+# Override the role/environment model (provider prefix is optional)
+agent_factory run --org orgs/Acme --role worker_research_1 ^
+  --provider ollama --model qwen2.5:7b ^
+  --task "List the quarterly targets." --approval deny
+
 # 5. Inspect the durable job store
 agent_factory jobs --org orgs/Acme
 
@@ -84,19 +89,30 @@ Requires Python 3.10+ and `pydantic` + `pyyaml`. Tests run on stdlib
 `unittest` with no extra installs:
 
 ```bash
-py -m unittest discover -s tests -v   # 53 tests, offline
+py -m unittest discover -s tests -v   # 87 tests, offline
 ```
 
 ## Providers (M1)
 
 Selected via `AGENT_FACTORY_PROVIDER` (default `openai`) or `--provider`:
 
+Install the provider extras before using live models:
+
+```bash
+pip install -e ".[openai]"   # OpenAI
+pip install -e ".[ollama]"   # Ollama
+```
+
 - **`openai`** (default) — set `OPENAI_API_KEY`. Optional `OPENAI_BASE_URL` for
-  compatible endpoints. Supports both legacy (`openai` 0.28.x) and modern
-  (`>=1.0`) APIs.
+  compatible endpoints. Requires the modern `openai>=1.0` API.
 - **`ollama`** — local Gemma/Qwen via the OpenAI-compatible endpoint at
   `http://localhost:11434/v1` (override `OLLAMA_BASE_URL` / `OLLAMA_MODEL`).
 - **`fake`** — deterministic offline client for tests and headless smoke runs.
+
+`--model` is currently available on `run`. It overrides role and environment
+model settings. Values may use `provider/model`, for example
+`ollama/qwen2.5:7b`. If `--provider` is also supplied, a conflicting provider
+prefix is rejected with a clear error.
 
 See [`docs/IMPLEMENTED_MILESTONE1.md`](docs/IMPLEMENTED_MILESTONE1.md) for details.
 

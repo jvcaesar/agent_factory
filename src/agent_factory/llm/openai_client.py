@@ -1,12 +1,9 @@
-"""OpenAI provider adapter.
+"""OpenAI provider adapter (modern SDK, ``openai >= 1.0``).
 
-Handles both API generations:
-  * legacy module-level API (``openai.ChatCompletion.create``) — openai <1.0
-  * modern client API (``openai.OpenAI().chat.completions.create``) — openai >=1.0
-
-Detects which is available at construction time. The legacy API is the default
-in this environment (openai 0.28.x). ``base_url`` may be set via
-``OPENAI_BASE_URL`` for compatible endpoints (OpenRouter, proxies, etc.).
+Uses ``openai.OpenAI().chat.completions.create``. ``base_url`` may be set via
+``OPENAI_BASE_URL``/constructor for compatible endpoints (OpenRouter, proxies,
+etc.). For corporate TLS-intercepting proxies set ``OPENAI_VERIFY_SSL=0``
+(unverified ``httpx.Client``); prefer ``REQUESTS_CA_BUNDLE=<corp CA>``.
 """
 
 from __future__ import annotations
@@ -14,7 +11,19 @@ from __future__ import annotations
 import os
 from typing import Optional
 
+from ..config.env import env_get
 from .base import ChatMessage, LLMClient, LLMError, LLMResult
+
+
+def _ssl_verify_disabled() -> bool:
+    """True when OPENAI_VERIFY_SSL is explicitly disabled (0/false/off/no).
+
+    For corporate TLS-intercepting proxies. Prefer ``REQUESTS_CA_BUNDLE``
+    pointing at your company's root CA when possible — disabling verification
+    is a trust downgrade.
+    """
+    value = (env_get("OPENAI_VERIFY_SSL") or "").lower()
+    return value in ("0", "false", "off", "no")
 
 
 class OpenAILLM(LLMClient):
@@ -33,7 +42,6 @@ class OpenAILLM(LLMClient):
         self.base_url = base_url or os.environ.get("OPENAI_BASE_URL")
         self.model = model or os.environ.get("OPENAI_MODEL", "gpt-4o-mini")
         self.timeout = timeout
-        self._modern = False
         self._client = None
         self._init_openai()
 
@@ -45,25 +53,16 @@ class OpenAILLM(LLMClient):
         try:
             import openai
         except ImportError as exc:  # pragma: no cover
-            raise LLMError("OpenAI provider requires the 'openai' package.") from exc
+            raise LLMError("OpenAI provider requires the 'openai' package (>=1.0).") from exc
 
-        if hasattr(openai, "OpenAI"):
-            # modern (>=1.0) client
-            try:
-                kwargs = {"api_key": self.api_key, "timeout": self.timeout}
-                if self.base_url:
-                    kwargs["base_url"] = self.base_url
-                self._client = openai.OpenAI(**kwargs)
-                self._modern = True
-                return
-            except Exception:
-                self._modern = False  # fall through to legacy
-
-        # legacy module-level API
-        openai.api_key = self.api_key
+        kwargs = {"api_key": self.api_key, "timeout": self.timeout}
         if self.base_url:
-            openai.api_base = self.base_url
-        self._modern = False
+            kwargs["base_url"] = self.base_url
+        if _ssl_verify_disabled():
+            import httpx
+
+            kwargs["http_client"] = httpx.Client(verify=False, timeout=self.timeout)
+        self._client = openai.OpenAI(**kwargs)
 
     def complete(
         self,
@@ -76,33 +75,16 @@ class OpenAILLM(LLMClient):
         chosen = model or self.model
         payload = [{"role": m.role, "content": m.content} for m in messages]
         try:
-            if self._modern:
-                resp = self._client.chat.completions.create(
-                    model=chosen,
-                    messages=payload,
-                    temperature=temperature,
-                    max_tokens=max_tokens,
-                )
-                text = resp.choices[0].message.content or ""
-                raw = resp.model_dump() if hasattr(resp, "model_dump") else None
-            else:
-                import openai
-
-                resp = openai.ChatCompletion.create(
-                    model=chosen,
-                    messages=payload,
-                    temperature=temperature,
-                    max_tokens=max_tokens,
-                )
-                text = resp["choices"][0]["message"]["content"] or ""
-                raw = dict(resp)
+            resp = self._client.chat.completions.create(
+                model=chosen,
+                messages=payload,
+                temperature=temperature,
+                max_tokens=max_tokens,
+            )
+            text = resp.choices[0].message.content or ""
+            raw = resp.model_dump() if hasattr(resp, "model_dump") else None
         except Exception as exc:
             raise LLMError(f"OpenAI request failed: {exc}") from exc
 
-        usage = None
-        if raw and isinstance(raw, dict):
-            if "usage" in raw:
-                usage = raw.get("usage")
-            elif "usage" in str(raw):
-                usage = None
+        usage = raw.get("usage") if isinstance(raw, dict) else None
         return LLMResult(text=text, model=chosen, raw=raw, usage=usage)

@@ -2,6 +2,34 @@
 
 > Running record of architectural and scoping decisions. Newest first.
 
+## 2026-08-27 — Modern OpenAI client, explicit model override, and atomic job start
+**Decision:** The project supports the modern `openai>=1.0` client only. The `run` command accepts `--model`; provider-qualified values are supported, but a prefix that conflicts with `--provider` is rejected. Generated role YAML preserves provider/model fields, and jobs transition atomically from queued to running before execution.
+**Why:** Keep provider behavior explicit, prevent silent loss of model configuration during YAML round trips, and make durable job state match actual execution.
+**Consequence:** Users can select a model per run without editing configuration, while invalid provider/model combinations fail early. The test suite covers these contracts.
+
+## 2026-08-25 — `OPENAI_VERIFY_SSL=0` made functional on legacy SDK via raw HTTP
+**Decision:** When SSL verification is disabled and the installed `openai` package is legacy (<1.0, which ignores `verify_ssl_certs`), `OpenAILLM` bypasses the SDK and POSTs directly to `{base_url}/chat/completions` with `requests(verify=False)`.
+**Why:** Corporate TLS-intercepting proxies present self-signed certs; the legacy SDK offers no working disable switch (`verify_ssl_certs is ignored` warning).
+**Consequence:** OpenAI works behind such proxies with `OPENAI_VERIFY_SSL=0`; secure alternative remains `REQUESTS_CA_BUNDLE=<corp CA .pem>`. Verified live: `gpt-4o-mini` → `'OK.'` in 3.5s. All 4 configured models now reachable (3 local Ollama + 1 OpenAI). 87/87 tests pass.
+
+
+## 2026-08-25 — Per-role `MODEL_<role_id>` overrides + provider-qualified models
+**Decision:** `resolve_role` now checks a per-role env var (`MODEL_<role_id>`) before the tier chain, and any model value may carry a provider prefix (`openai/gpt-4o`, `ollama/gemma4:12b`) that forces that provider for the role. Precedence — provider: CLI flag > env prefix > YAML prefix > `Role.provider` > `AGENT_FACTORY_PROVIDER`; model: `MODEL_<role_id>` > `Role.model` > tier chain > `MODEL_default` > built-in.
+**Why:** Provider and model were resolved independently, so a bare `MODEL_lead_exec=gpt-4o` would have been sent to Ollama; users also had no way to mix providers per role from `.env` alone.
+**Consequence:** One `.env` can run a mixed fleet (local default + cloud lead). New `probe` CLI command pings every configured pair; verified live (`ollama/gemma4:12b` → OK in 19.4s). 87/87 tests pass.
+
+
+## 2026-08-25 — Env config: generic `MODEL_*` vars + provider selection
+**Decision:** `model_for_tier` now honors the generic, provider-agnostic env vars documented in `.env.example` — precedence: provider tier env (`OPENAI_MODEL_FAST`…) > provider general (`OPENAI_MODEL`) > `MODEL_fast/smart/big` > `MODEL_default` > built-in default. Provider routing for roles without an explicit `provider:` uses `AGENT_FACTORY_PROVIDER` (openai default; set to `ollama` for local models). Lookup is case-insensitive to survive Windows uppercase env normalization.
+**Why:** The original `.env.example` documented `MODEL_default` etc., but the resolver never read them — a doc/code mismatch that silently routed local Gemma to OpenAI.
+**Consequence:** `.env` alone fully determines per-role model+provider; regression-tested in `tests/test_model_resolution.py`.
+
+## 2026-08-25 — Ollama: reasoning-model fallback
+**Decision:** If the chat response's `content` is empty but a `reasoning` field exists (reasoning models like gemma4/deepseek-r1), use the reasoning trace as the reply text and flag it via `client.used_reasoning_fallback`.
+**Why:** Live probe against local `gemma4:12b` returned empty content when the token budget was consumed by reasoning — blank replies would silently break the agent loop.
+**Consequence:** Reasoning models work out of the box; callers can detect fallback. Verified live end-to-end against `http://localhost:11434/v1`.
+
+
 ## 2026-08-21 — M2: context lives in the SQLite store
 **Decision:** Extend `Store` with a `context` table (`key`, `content`, `source`, timestamps) plus `upsert_context`/`search_context`/`context_blob`.
 **Why:** The "company stays queryable" idea (video 12:25–13:33) means un-codified knowledge must be captured and injectable into prompts; SQLite keeps it durable, searchable, and co-located with jobs/events.

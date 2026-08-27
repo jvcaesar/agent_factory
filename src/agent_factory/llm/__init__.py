@@ -8,7 +8,7 @@ agent code.
 """
 
 from .base import ChatMessage, LLMClient, LLMError, LLMResult
-from .factory import get_client
+from .factory import client_for_role, get_client
 from .fake import FakeLLM
 
 __all__ = [
@@ -18,4 +18,5 @@ __all__ = [
     "ChatMessage",
     "FakeLLM",
     "get_client",
+    "client_for_role",
 ]

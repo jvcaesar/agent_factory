@@ -32,6 +32,8 @@ def run_job(
 ):
     """Enqueue a job on ``role`` and run it. Returns (job_id, outcome)."""
     job_id = store.enqueue(org.name, role.id, task, provider)
+    if not store.start(job_id):
+        raise RuntimeError(f"could not start queued job {job_id}")
     outcome = run_agent(
         org,
         role,

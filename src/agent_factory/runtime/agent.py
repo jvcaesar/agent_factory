@@ -11,7 +11,7 @@ Design goals:
 from __future__ import annotations
 
 import json
-import re
+from collections.abc import Mapping
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Callable, Optional
@@ -20,6 +20,7 @@ from ..config import Org, Role
 from ..llm.base import ChatMessage, LLMClient
 from .state import Store
 from .tools import ApprovalFn, Tool, lookup, tools_for_role
+from .protocol import extract_json_object
 
 
 @dataclass
@@ -107,29 +108,19 @@ For calling a tool:
 
 Never invent tool names that are not in YOUR GRANTED TOOLS."""
 def parse_action(text: str) -> Action:
-    cleaned = text.strip()
-    if cleaned.startswith("```"):
-        cleaned = re.sub(r"^```[a-z]*", "", cleaned).strip()
-        cleaned = re.sub(r"```$", "", cleaned).strip()
-    data = None
-    try:
-        data = json.loads(cleaned)
-    except json.JSONDecodeError:
-        m = re.search(r"\{.*\}", cleaned, re.DOTALL)
-        if m:
-            try:
-                data = json.loads(m.group(0))
-            except json.JSONDecodeError:
-                data = None
+    data = extract_json_object(text)
     if not isinstance(data, dict):
         # Not parseable as an action protocol message -> treat text as final.
         return Action(kind="final", output=text)
     kind = data.get("type", "final")
     if kind == "tool":
+        tool_input = data.get("tool_input") or {}
+        if not isinstance(tool_input, Mapping):
+            return Action(kind="tool", tool="", tool_input={})
         return Action(
             kind="tool",
             tool=str(data.get("tool", "")),
-            tool_input=dict(data.get("tool_input") or {}),
+            tool_input=dict(tool_input),
         )
     return Action(kind="final", output=str(data.get("output") or data.get("answer") or text))
 
@@ -148,7 +139,7 @@ def run_agent(
     job_id: Optional[int] = None,
 ) -> AgentOutcome:
     """Run one role to completion. Returns an :class:`AgentOutcome`."""
-    tools = tools_for_role(role)
+    tools = tools_for_role(role, root=root, org=org)
     deny_all: ApprovalFn = approval_fn or (lambda _t: False)
     system = build_system_prompt(org, role, tools, _read_sop(root, role))
     messages: list[ChatMessage] = [ChatMessage("system", system), ChatMessage("user", task)]
@@ -159,41 +150,46 @@ def run_agent(
         if store is not None and job_id is not None:
             store.add_event(job_id, type_, detail)
 
-    for step in range(max_steps):
-        result = llm.complete(messages, temperature=temperature)
-        action = parse_action(result.text)
-        outcome.steps = step + 1
+    try:
+        for step in range(max_steps):
+            result = llm.complete(messages, temperature=temperature)
+            action = parse_action(result.text)
+            outcome.steps = step + 1
 
-        if action.kind == "final":
-            outcome.finished = True
-            outcome.output = action.output
-            if store is not None and job_id is not None:
-                store.complete(job_id, action.output)
-                store.add_result(job_id, role.id, action.output)
-            return outcome
+            if action.kind == "final":
+                outcome.finished = True
+                outcome.output = action.output
+                if store is not None and job_id is not None:
+                    store.complete(job_id, action.output)
+                    store.add_result(job_id, role.id, action.output)
+                return outcome
 
-        # Tool call
-        tool = lookup(tools, action.tool)
-        if tool is None:
-            _event("error", f"agent requested unknown/un-granted tool {action.tool!r}")
-            messages.append(ChatMessage("user", f"Tool {action.tool!r} is not in your granted tools. Re-answer with a 'final' or an allowed tool."))
-            continue
-
-        if tool.requires_approval:
-            approved = deny_all(tool)
-            if not approved:
-                _event("approval", f"denied approval for {tool.name}")
-                messages.append(ChatMessage("user", f"Your call to {tool.name} was NOT approved. Do not retry it; end with a 'final' answer instead."))
+            # Tool call
+            tool = lookup(tools, action.tool)
+            if tool is None:
+                _event("error", f"agent requested unknown/un-granted tool {action.tool!r}")
+                messages.append(ChatMessage("user", f"Tool {action.tool!r} is not in your granted tools. Re-answer with a 'final' or an allowed tool."))
                 continue
 
-        _event("tool_call", f"{tool.name}({action.tool_input})")
-        try:
-            output = tool.execute(action.tool_input)
-        except Exception as exc:
-            output = f"ERROR executing {tool.name}: {exc}"
-        messages.append(ChatMessage("user", f"Tool {tool.name} returned:\n{output}"))
+            if tool.requires_approval:
+                approved = deny_all(tool)
+                if not approved:
+                    _event("approval", f"denied approval for {tool.name}")
+                    messages.append(ChatMessage("user", f"Your call to {tool.name} was NOT approved. Do not retry it; end with a 'final' answer instead."))
+                    continue
 
-    raise AgentLimitError(
-        f"agent for role {role.id!r} exceeded {max_steps} steps without a final answer"
-    )
+            _event("tool_call", f"{tool.name}({action.tool_input})")
+            try:
+                output = tool.execute(action.tool_input)
+            except Exception as exc:
+                output = f"ERROR executing {tool.name}: {exc}"
+            messages.append(ChatMessage("user", f"Tool {tool.name} returned:\n{output}"))
+
+        raise AgentLimitError(
+            f"agent for role {role.id!r} exceeded {max_steps} steps without a final answer"
+        )
+    except Exception as exc:
+        if store is not None and job_id is not None:
+            store.fail(job_id, str(exc))
+        raise
 

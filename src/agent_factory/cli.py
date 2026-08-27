@@ -19,8 +19,9 @@ from .bootstrap.archetypes import DOMAIN_CHOICES, KNOWN_TOOLS
 from .bootstrap.generator import generate_org, write_org
 from .bootstrap.interview import AskFn, ConfirmFn, ChoiceFn, InterviewAnswers
 from .config import ApprovalPolicy
-from .config.loader import load_org_yaml, validate_org
-from .llm import get_client
+from .config.env import env_get, load_dotenv
+from .config.loader import ConfigError, load_org_yaml, validate_org
+from .llm import client_for_role
 from .runtime import Store, run_job
 from .runtime.ambition import run_ambition_loop
 
@@ -66,7 +67,7 @@ def _def_confirm(prompt: str, default: bool = False) -> bool:
         print("  Please answer y or n.")
 
 
-def _multiselect(prompt: str, options: list[str], ask: ChoiceFn) -> list[str]:
+def _multiselect(prompt: str, options: list[str]) -> list[str]:
     print(f"\n{prompt} (comma-separated numbers, e.g. '1,3,5'; empty=all)")
     for i, opt in enumerate(options, 1):
         print(f"  {i}. {opt}")
@@ -100,11 +101,11 @@ def _interactive() -> InterviewAnswers:
     team = int(ask("How many humans are on the team", "0") or "0")
 
     domain_opts = [label for _, label in DOMAIN_CHOICES]
-    chosen_labels = _multiselect("Which domains should your workforce cover first?", domain_opts, choice)
+    chosen_labels = _multiselect("Which domains should your workforce cover first?", domain_opts)
     chosen = [key for key, label in DOMAIN_CHOICES if label in chosen_labels]
 
     print("\nWhich tools does your organization actually use? (empty=all)")
-    tool_picks = _multiselect("Tools", TOOL_CHOICES, choice)
+    tool_picks = _multiselect("Tools", TOOL_CHOICES)
     tools = set(tool_picks)
 
     risk = choice("How much human sign-off do you want?", RISK_CHOICES, "review_external")
@@ -165,7 +166,7 @@ def cmd_validate(args: argparse.Namespace) -> int:
         print(f"No org.yaml found under {root}", file=sys.stderr)
         return 2
     org = load_org_yaml(org_yaml)
-    errors = validate_org(org)
+    errors = validate_org(org, root)
     if errors:
         print("Validation errors:", file=sys.stderr)
         for e in errors:
@@ -197,7 +198,7 @@ def _approval_policy(args) -> Callable:
 def cmd_run(args: argparse.Namespace) -> int:
     root = Path(args.org)
     org = load_org_yaml(root / "org.yaml")
-    errors = validate_org(org)
+    errors = validate_org(org, root)
     if errors:
         print("Validation errors:", file=sys.stderr)
         for e in errors:
@@ -212,7 +213,11 @@ def cmd_run(args: argparse.Namespace) -> int:
     db = root / ".agentfactory" / "jobs.db"
     store = Store(db)
     try:
-        llm = get_client(args.provider)
+        llm = client_for_role(
+            role,
+            provider_override=args.provider,
+            model_override=args.model,
+        )
         approval_fn = _approval_policy(args)
         job_id, outcome = run_job(
             org,
@@ -226,7 +231,10 @@ def cmd_run(args: argparse.Namespace) -> int:
             temperature=args.temperature,
             provider=args.provider,
         )
-    except Exception as exc:
+    except ValueError as exc:
+        print(f"Configuration error: {exc}", file=sys.stderr)
+        return 2
+    except Exception as exc:  # noqa: BLE001 — report and exit for run
         print(f"Run failed for role {role.id!r}: {exc}", file=sys.stderr)
         return 1
     finally:
@@ -258,7 +266,7 @@ def cmd_jobs(args: argparse.Namespace) -> int:
 def cmd_ambition(args: argparse.Namespace) -> int:
     root = Path(args.org)
     org = load_org_yaml(root / "org.yaml")
-    errors = validate_org(org)
+    errors = validate_org(org, root)
     if errors:
         print("Validation errors:", file=sys.stderr)
         for e in errors:
@@ -279,20 +287,30 @@ def cmd_ambition(args: argparse.Namespace) -> int:
     db = root / ".agentfactory" / "jobs.db"
     store = Store(db)
     try:
-        llm = get_client(args.provider)
+        # Build a per-agent client so the lead and each worker can use
+        # different providers/models (from their role YAML + .env).
+        role_client = lambda r: client_for_role(
+            r,
+            provider_override=args.provider,
+            model_override=args.model,
+        )
         approval_fn = _approval_policy(args)
         proposals, executed = run_ambition_loop(
             org,
             role,
-            llm,
+            role_client(role),
             store,
             root=root,
             approval_fn=approval_fn,
+            role_client=role_client,
             max_candidates=args.candidates,
             max_actions=args.max_actions,
             max_risk=args.max_risk,
         )
-    except Exception as exc:
+    except ValueError as exc:
+        print(f"Configuration error: {exc}", file=sys.stderr)
+        return 2
+    except Exception as exc:  # noqa: BLE001 — integrity from ambition loop
         print(f"Ambition loop failed for role {role.id!r}: {exc}", file=sys.stderr)
         return 1
     finally:
@@ -338,7 +356,81 @@ def cmd_context(args: argparse.Namespace) -> int:
 
 
 
+def cmd_probe(args) -> int:
+    """Ping every LLM configured via the environment and report reachability."""
+    import os
+    import time
+
+    from .llm.base import ChatMessage
+    from .llm.factory import get_client
+    from .llm.models import (
+        model_for_tier,
+        resolve_default_provider,
+        split_provider_model,
+    )
+
+    pairs: set[tuple[str, str]] = set()
+
+    default_provider = resolve_default_provider()
+
+    # Every model actually configured via generic/per-role MODEL_* env vars.
+    entries = []
+    for suffix in ("default", "fast", "smart", "big"):
+        value = env_get(f"MODEL_{suffix}")
+        if value:
+            entries.append(split_provider_model(value))
+    for key, value in os.environ.items():
+        if not key.upper().startswith("MODEL_") or not value.strip():
+            continue
+        tail = key.upper()[len("MODEL_"):]
+        if tail in ("DEFAULT", "FAST", "SMART", "BIG"):
+            continue
+        entries.append(split_provider_model(value))
+
+    if entries:
+        for prefix, model in entries:
+            pairs.add((prefix or default_provider, model))
+    else:
+        # Nothing configured: fall back to built-in defaults of the provider.
+        for tier in ("fast", "smart", "big"):
+            model = model_for_tier(default_provider, tier)
+            if model:
+                pairs.add((default_provider, model))
+
+    if args.only:
+        pairs = {(p, m) for p, m in pairs if p == args.only}
+
+    ordered = sorted(pairs)
+    print(f"Probing {len(ordered)} configured provider/model pair(s)...\n")
+    failures = 0
+    for prov, model in ordered:
+        started = time.time()
+        try:
+            client = get_client(prov, model=model)
+            result = client.complete(
+                [ChatMessage(role="user", content="Reply with the single word: OK.")],
+                max_tokens=200,
+            )
+            elapsed = time.time() - started
+            note = (
+                " [reasoning-fallback]"
+                if getattr(client, "used_reasoning_fallback", False)
+                else ""
+            )
+            reply = result.text.strip().replace("\n", " ")[:60]
+            print(f"[OK]   {prov:<7} {model:<20} {elapsed:5.1f}s{note}  -> {reply!r}")
+        except Exception as exc:  # noqa: BLE001 — probe reports everything
+            failures += 1
+            reason = str(exc).replace("\n", " ")[:100]
+            print(f"[FAIL] {prov:<7} {model:<20} -> {reason}")
+
+    ok = len(ordered) - failures
+    print(f"\n{ok}/{len(ordered)} reachable.")
+    return 0 if failures == 0 else 1
+
+
 def main(argv: list[str] | None = None) -> int:
+    load_dotenv()
     parser = argparse.ArgumentParser(prog="agent_factory", description="Generate and manage AI agent workforces.")
     sub = parser.add_subparsers(dest="command", required=True)
 
@@ -356,6 +448,7 @@ def main(argv: list[str] | None = None) -> int:
     rp.add_argument("--role", required=True, help="Role id to execute the job, e.g. worker_research_1")
     rp.add_argument("--task", required=True, help="The task/job description")
     rp.add_argument("--provider", default=None, help="openai | ollama | fake (default: env or openai)")
+    rp.add_argument("--model", default=None, help="Override the resolved model; optional provider/model prefix")
     rp.add_argument("--approval", choices=["ask", "deny", "allow"], default="ask")
     rp.add_argument("--max-steps", type=int, default=8)
     rp.add_argument("--temperature", type=float, default=0.2)
@@ -371,6 +464,7 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--org", required=True, help="Path to a generated org tree")
     ap.add_argument("--role", default=None, help="Role id to run the loop (default: org lead)")
     ap.add_argument("--provider", default=None, help="openai | ollama | fake")
+    ap.add_argument("--model", default=None, help="Override the resolved model; optional provider/model prefix")
     ap.add_argument("--approval", choices=["ask", "deny", "allow"], default="deny")
     ap.add_argument("--candidates", type=int, default=5)
     ap.add_argument("--max-actions", type=int, default=2)
@@ -385,9 +479,16 @@ def main(argv: list[str] | None = None) -> int:
     cp.add_argument("--limit", type=int, default=50)
     cp.set_defaults(func=cmd_context)
 
+    prp = sub.add_parser("probe", help="Ping every LLM configured via .env and report reachability")
+    prp.add_argument("--only", choices=["openai", "ollama"], default=None, help="Limit to one provider")
+    prp.set_defaults(func=cmd_probe)
 
     args = parser.parse_args(argv)
-    return args.func(args)
+    try:
+        return args.func(args)
+    except ConfigError as exc:
+        print(f"Configuration error: {exc}", file=sys.stderr)
+        return 2
 
 
 if __name__ == "__main__":

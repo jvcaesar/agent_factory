@@ -101,5 +101,5 @@ python -m agent_factory jobs --org orgs/Acme
 python -m agent_factory context --org orgs/Acme --add diary/today --detail "..."
 python -m agent_factory ambition --org orgs/Acme --role lead_exec --max-actions 2
 
-python -m unittest discover -s tests -v   # 53 tests, offline
+python -m unittest discover -s tests -v   # 87 tests, offline
 ```

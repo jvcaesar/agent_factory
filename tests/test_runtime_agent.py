@@ -10,6 +10,7 @@ from _helpers import SRC  # noqa: F401
 from agent_factory.config import Org, Role, ToolAccess, ToolGrant
 from agent_factory.llm.fake import FakeLLM
 from agent_factory.runtime.agent import AgentLimitError, parse_action, run_agent
+from agent_factory.runtime.orchestrator import run_job
 from agent_factory.runtime.state import Store
 
 
@@ -74,6 +75,12 @@ class TestParseAction(unittest.TestCase):
         self.assertEqual(a.kind, "final")
         self.assertEqual(a.output, "Just a normal sentence.")
 
+    def test_invalid_tool_input_is_recoverable(self):
+        a = parse_action('{"type":"tool","tool":"files_read","tool_input":"bad"}')
+        self.assertEqual(a.kind, "tool")
+        self.assertEqual(a.tool, "")
+        self.assertEqual(a.tool_input, {})
+
 
 class TestRunAgent(unittest.TestCase):
     def test_final_direct(self):
@@ -91,15 +98,16 @@ class TestRunAgent(unittest.TestCase):
 
     def test_tool_then_final(self):
         tmp = tempfile.TemporaryDirectory()
-        probe = pathlib.Path(tmp.name) / "note.txt"
+        root = pathlib.Path(tmp.name)
+        probe = root / "note.txt"
         probe.write_text("hi", encoding="utf-8")
         llm = FakeLLM(
             responses=[
-                tool_call("files_read", {"path": str(probe)}),
+                tool_call("files_read", {"path": "note.txt"}),
                 action(type="final", output="saw it"),
             ]
         )
-        out = run_agent(make_org(ROLE_READ), ROLE_READ, "task", llm, max_steps=5)
+        out = run_agent(make_org(ROLE_READ), ROLE_READ, "task", llm, root=root, max_steps=5)
         self.assertTrue(out.finished)
         self.assertEqual(out.output, "saw it")
         self.assertEqual(out.steps, 2)
@@ -108,7 +116,8 @@ class TestRunAgent(unittest.TestCase):
 
     def test_approval_denied_blocks_tool(self):
         tmp = tempfile.TemporaryDirectory()
-        target = pathlib.Path(tmp.name) / "out.txt"
+        root = pathlib.Path(tmp.name)
+        target = root / "out.txt"
         llm = FakeLLM(
             responses=[
                 tool_call("files_write", {"path": str(target), "content": "secret"}),
@@ -116,7 +125,7 @@ class TestRunAgent(unittest.TestCase):
             ]
         )
         # approval_fn -> False (auto-deny)
-        out = run_agent(make_org(ROLE_WRITE), ROLE_WRITE, "task", llm, max_steps=5)
+        out = run_agent(make_org(ROLE_WRITE), ROLE_WRITE, "task", llm, root=root, max_steps=5)
         self.assertTrue(out.finished)
         self.assertTrue(any("approval" in e and "denied" in e for e in out.events))
         self.assertFalse(target.exists(), "tool must not execute when approval denied")
@@ -124,15 +133,16 @@ class TestRunAgent(unittest.TestCase):
 
     def test_approval_allowed_executes_tool(self):
         tmp = tempfile.TemporaryDirectory()
-        target = pathlib.Path(tmp.name) / "out.txt"
+        root = pathlib.Path(tmp.name)
+        target = root / "out.txt"
         llm = FakeLLM(
             responses=[
-                tool_call("files_write", {"path": str(target), "content": "hello"}),
+                tool_call("files_write", {"path": "out.txt", "content": "hello"}),
                 action(type="final", output="wrote it"),
             ]
         )
         out = run_agent(
-            make_org(ROLE_WRITE), ROLE_WRITE, "task", llm,
+            make_org(ROLE_WRITE), ROLE_WRITE, "task", llm, root=root,
             approval_fn=lambda _t: True, max_steps=5,
         )
         self.assertTrue(out.finished)
@@ -155,6 +165,21 @@ class TestRunAgent(unittest.TestCase):
         llm = FakeLLM(responses=[tool_call("files_read", {})] * 10)
         with self.assertRaises(AgentLimitError):
             run_agent(make_org(ROLE_READ), ROLE_READ, "task", llm, max_steps=2)
+
+    def test_failed_run_marks_job_error(self):
+        class FailingLLM(FakeLLM):
+            def complete(self, messages, **kwargs):
+                raise RuntimeError("provider unavailable")
+
+        store = Store(":memory:")
+        with self.assertRaises(RuntimeError):
+            run_job(
+                make_org(ROLE_READ), ROLE_READ, "task", FailingLLM(), store
+            )
+        job_id = store.list_jobs()[0]["id"]
+        self.assertEqual(store.get(job_id)["status"], "error")
+        self.assertIn("provider unavailable", store.get(job_id)["error"])
+        store.close()
 
 
 if __name__ == "__main__":

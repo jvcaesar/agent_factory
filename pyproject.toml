@@ -12,10 +12,13 @@ dependencies = [
     "pyyaml>=6.0",
 ]
 
+[project.scripts]
+agent_factory = "agent_factory.cli:main"
+
 [project.optional-dependencies]
 # Runtime providers. OpenAI is the default (per user choice); Ollama covers
 # local Gemma/Qwen; 'fake' is built-in and needs nothing.
-openai = ["openai>=0.27"]
+openai = ["openai>=1.0"]
 ollama = ["requests>=2.0"]
 anthropic = ["anthropic>=0.30"]  # future adapter slot
 
