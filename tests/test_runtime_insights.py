@@ -91,6 +91,33 @@ class TestObserve(unittest.TestCase):
         self.assertEqual(rows[0]["role"], "observer")
         store.close()
 
+    def test_observe_keeps_similar_titles_with_different_details(self):
+        store = Store(":memory:")
+        payload = {
+            "type": "observations",
+            "observations": [
+                {
+                    "level": "warning",
+                    "kind": "blocker",
+                    "title": "Review is stuck",
+                    "detail": "job #3 is blocked by approval.",
+                    "suggestion": "Ask the human to approve.",
+                },
+                {
+                    "level": "warning",
+                    "kind": "blocker",
+                    "title": "Review is stuck",
+                    "detail": "job #4 is blocked by missing tool access.",
+                    "suggestion": "Grant read access to the reviewer.",
+                },
+            ],
+        }
+        llm = FakeLLM(responses=[json.dumps(payload)])
+        findings = observe(make_org(), OBSERVER, store, llm)
+        self.assertEqual(len(findings), 2)
+        self.assertEqual(len(store.list_insights(status="open")), 2)
+        store.close()
+
 
 class TestInsightStore(unittest.TestCase):
     def setUp(self):
@@ -114,6 +141,11 @@ class TestInsightStore(unittest.TestCase):
         stats = self.store.stats()
         self.assertEqual(stats["jobs"], 1)
         self.assertEqual(stats["open_insights"], 2)
+
+    def test_invalid_status_raises(self):
+        self.store.add_insight("Acme", "observer", title="t1")
+        with self.assertRaises(ValueError):
+            self.store.update_insight_status(1, "archived")
 
 
 class TestDailyBrief(unittest.TestCase):

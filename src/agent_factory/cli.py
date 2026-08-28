@@ -504,9 +504,13 @@ def cmd_status(args: argparse.Namespace) -> int:
               f"done={stats['done']}, error={stats['error']}, blocked={stats['blocked']})")
         print(f"  Open insights: {stats['open_insights']}")
 
-        print("\n  Recent jobs:")
-        for j in store.list_jobs(limit=args.limit):
-            print(f"    #{j['id']} [{j['role']}] {j['status']}: {j['task'][:60]}")
+        recent_jobs = store.list_jobs(limit=args.limit)
+        if recent_jobs:
+            print("\n  Recent jobs:")
+            for j in recent_jobs:
+                print(f"    #{j['id']} [{j['role']}] {j['status']}: {j['task'][:60]}")
+        else:
+            print("\n  Recent jobs: none")
 
         open_insights = store.list_insights(status="open", limit=args.limit)
         if open_insights:
@@ -519,6 +523,8 @@ def cmd_status(args: argparse.Namespace) -> int:
         approvals = [e for e in store.recent_events(limit=200) if e["type"] == "approval"]
         if approvals:
             print(f"\n  Recent approval events: {len(approvals)}")
+        else:
+            print("\n  Recent approval events: none")
         return 0
     finally:
         store.close()

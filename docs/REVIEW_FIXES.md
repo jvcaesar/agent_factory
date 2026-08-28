@@ -1,25 +1,41 @@
-# Review Fixes
+# Review Fixes Summary
 
-This document records the medium- and low-severity review fixes implemented after the runtime review.
+This document captures the fixes implemented after the code review, including the M4 insights review and the broader runtime hardening work.
 
-## Configuration and validation
+## M4 review fixes
 
-- The CLI loads the repository `.env` file at startup. Existing process environment variables retain precedence.
-- Org validation accepts an optional root directory and checks that referenced SOP files exist beneath it. The CLI passes the org root for `validate`, `run`, and `ambition`.
-- Boolean YAML values for tool approvals must be actual booleans. Text such as `"false"` is rejected instead of being silently converted to `True`.
+- Guarded observer/brief prompt injection by sanitizing context before it is embedded in LLM prompts.
+- Fixed deduplication for insights so similar findings with different details are not incorrectly collapsed into one record.
+- Added validation for insight status, level, and kind values so invalid data is rejected instead of silently persisted.
+- Strengthened the SQLite schema with CHECK constraints for insight status and enum fields.
+- Improved mission-control output to show empty job and approval lists clearly instead of implying a broken state.
+- Added regression tests covering invalid insight status updates and multi-item observation deduplication.
 
-## Runtime robustness
+## Additional runtime and validation fixes
 
-- Malformed tool-input payloads are converted into a recoverable invalid-tool action instead of raising during parsing.
-- Non-numeric ambition proposal priorities use the default priority rather than terminating the ambition loop.
-- Queue claims use a conditional `UPDATE ... RETURNING` statement so the exact oldest queued job is claimed atomically by SQLite.
-- Runtime approval is derived from the org and role policies as well as each grant, so hand-authored YAML cannot disable required approval gates.
-- Provider failures and agent step-limit failures mark their durable jobs as `error` before the exception is re-raised.
+- The CLI loads the repository `.env` file at startup while preserving environment precedence.
+- Org validation accepts an optional root directory and ensures referenced SOP files exist under the org tree.
+- Boolean YAML values for tool approvals must be actual booleans; string values like `"false"` are rejected.
+- Malformed tool-input payloads are converted into a recoverable invalid-tool action instead of crashing.
+- Non-numeric ambition proposal priorities fall back to the default priority instead of aborting the loop.
+- Queue claims use an atomic SQLite `UPDATE ... RETURNING` pattern so the oldest queued job is claimed reliably.
+- Runtime approval decisions derive from org/role policy plus role grants so hand-edited YAML cannot bypass required gates.
+- Provider and step-limit failures mark durable jobs as `error` before re-raising the exception.
 
 ## Packaging and documentation
 
 - Added the `agent_factory` console-script entry point.
-- Updated provider documentation to describe modern OpenAI SDK support only.
-- Updated documented test counts to the current 87-test suite.
+- Updated provider documentation for the current OpenAI SDK pattern.
+- Updated the recorded suite size to the currently verified 97-test suite.
 
-Filesystem confinement and SSRF protection are documented and implemented separately in `FILESYSTEM_CONFINEMENT.md` and `SSRF_PROTECTION.md`. Other high-severity findings remain outside the scope of these changes.
+## Verification
+
+The fixes were validated with the project’s standard unittest discovery command:
+
+```bash
+python -m unittest discover -s tests
+```
+
+Result: 97 tests ran and all passed (`OK`).
+
+Filesystem confinement and SSRF protection are covered separately in the project documentation if needed. Other high-severity findings remain outside this review-fix scope.

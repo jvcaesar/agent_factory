@@ -12,6 +12,11 @@ from contextlib import contextmanager
 from pathlib import Path
 from typing import Iterator, Optional
 
+VALID_INSIGHT_LEVELS = {"low", "info", "warning", "critical"}
+VALID_INSIGHT_KINDS = {"friction", "access_gap", "contradiction", "blocker", "opportunity"}
+VALID_INSIGHT_STATUSES = {"open", "accepted", "dismissed"}
+
+
 _SCHEMA = """
 CREATE TABLE IF NOT EXISTS jobs (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -51,12 +56,12 @@ CREATE TABLE IF NOT EXISTS insights (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     org TEXT NOT NULL,
     role TEXT NOT NULL,              -- role id that surfaced the insight
-    level TEXT NOT NULL DEFAULT 'info',  -- low|info|warning|critical
-    kind TEXT NOT NULL DEFAULT 'friction',  -- friction|access_gap|contradiction|blocker|opportunity
+    level TEXT NOT NULL DEFAULT 'info' CHECK (level IN ('low','info','warning','critical')),
+    kind TEXT NOT NULL DEFAULT 'friction' CHECK (kind IN ('friction','access_gap','contradiction','blocker','opportunity')),
     title TEXT NOT NULL,
     detail TEXT,
     suggestion TEXT,
-    status TEXT NOT NULL DEFAULT 'open',     -- open|accepted|dismissed
+    status TEXT NOT NULL DEFAULT 'open' CHECK (status IN ('open','accepted','dismissed')),
     created_at TEXT NOT NULL DEFAULT (datetime('now')),
     updated_at TEXT NOT NULL DEFAULT (datetime('now'))
 );
@@ -257,18 +262,27 @@ class Store:
         suggestion: str = "",
     ) -> int:
         """Record an observer insight. Returns the new insight id."""
+        normalized_level = (level or "info").strip().lower()
+        normalized_kind = (kind or "friction").strip().lower()
+        if normalized_level not in VALID_INSIGHT_LEVELS:
+            raise ValueError(f"invalid insight level: {level!r}")
+        if normalized_kind not in VALID_INSIGHT_KINDS:
+            raise ValueError(f"invalid insight kind: {kind!r}")
         with self._tx() as c:
             cur = c.execute(
                 "INSERT INTO insights (org, role, level, kind, title, detail, suggestion) VALUES (?,?,?,?,?,?,?)",
-                (org, role, level, kind, title, detail, suggestion),
+                (org, role, normalized_level, normalized_kind, title, detail, suggestion),
             )
             return int(cur.lastrowid)
 
     def update_insight_status(self, insight_id: int, status: str) -> None:
+        normalized = (status or "").strip().lower()
+        if normalized not in VALID_INSIGHT_STATUSES:
+            raise ValueError(f"invalid insight status: {status!r}")
         with self._tx() as c:
             c.execute(
                 "UPDATE insights SET status=?, updated_at=datetime('now') WHERE id=?",
-                (status, insight_id),
+                (normalized, insight_id),
             )
 
     def list_insights(

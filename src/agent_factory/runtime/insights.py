@@ -24,6 +24,19 @@ from .state import Store
 
 VALID_LEVELS = ("info", "low", "warning", "critical")
 VALID_KINDS = ("friction", "access_gap", "contradiction", "blocker", "opportunity")
+VALID_INSIGHT_STATUSES = ("open", "accepted", "dismissed")
+
+
+def _sanitize_prompt_text(value: str | None, *, limit: int = 4000) -> str:
+    """Normalize text before injecting it into an LLM prompt."""
+    if value is None:
+        return "(none yet)"
+    text = str(value).replace("\x00", "")
+    text = "".join(ch for ch in text if ch.isprintable() or ch in "\n\r\t")
+    text = re.sub(r"\s+", " ", text).strip()
+    if len(text) > limit:
+        text = text[: limit - 1].rstrip() + "…"
+    return text or "(none yet)"
 
 
 @dataclass
@@ -35,8 +48,11 @@ class Observation:
     suggestion: str = ""
 
     def slug(self) -> str:
-        s = re.sub(r"[^a-z0-9]+", "-", self.title.lower()).strip("-")
-        return s[:48] or "insight"
+        fingerprint = "|".join(
+            part.strip() for part in (self.kind, self.title, self.detail, self.suggestion)
+        )
+        s = re.sub(r"[^a-z0-9]+", "-", fingerprint.lower()).strip("-")
+        return s[:96] or "insight"
 
 
 def _norm(value: str, allowed: tuple[str, ...], default: str) -> str:
@@ -140,8 +156,8 @@ def observe(
     max_count: int = 5,
 ) -> list[Observation]:
     """Run one observer pass: scan state, parse findings, and persist insights."""
-    summary = _state_summary(store)
-    context_text = store.context_blob()
+    summary = _sanitize_prompt_text(_state_summary(store))
+    context_text = _sanitize_prompt_text(store.context_blob())
     messages = [ChatMessage("user", _observe_prompt(org, role, summary, context_text, max_count))]
     result = llm.complete(messages, temperature=temperature)
     observations = parse_observations(result.text, max_count=max_count)
@@ -213,8 +229,8 @@ def build_daily_brief(
 ) -> str:
     """Generate a "what to do today" brief from open insights + state."""
     open_items = store.list_insights(status="open", limit=20)
-    summary = _state_summary(store)
-    context_text = store.context_blob()
+    summary = _sanitize_prompt_text(_state_summary(store))
+    context_text = _sanitize_prompt_text(store.context_blob())
     prompt = _brief_prompt(org, role, summary, open_items, context_text)
     result = llm.complete([ChatMessage("user", prompt)], temperature=temperature)
     return result.text.strip()
