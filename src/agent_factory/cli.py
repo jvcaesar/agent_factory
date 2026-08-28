@@ -24,6 +24,7 @@ from .config.loader import ConfigError, load_org_yaml, validate_org
 from .llm import client_for_role
 from .runtime import Store, run_job
 from .runtime.ambition import run_ambition_loop
+from .runtime.insights import build_daily_brief, observe
 
 RISK_CHOICES = ["autonomous", "review_external", "approval_first"]
 BUDGET_CHOICES = ["small", "medium", "unlimited"]
@@ -429,6 +430,98 @@ def cmd_probe(args) -> int:
     return 0 if failures == 0 else 1
 
 
+def cmd_observe(args: argparse.Namespace) -> int:
+    root = Path(args.org)
+    org = load_org_yaml(root / "org.yaml")
+    role_id = args.role or next(
+        (r.id for r in org.roles if r.id == "observer"), None
+    ) or next((r.id for r in org.roles if r.reports_to is None), None)
+    if role_id is None:
+        print("No observer/lead role found; pass --role.", file=sys.stderr)
+        return 2
+    role = org.role(role_id)
+
+    db = root / ".agentfactory" / "jobs.db"
+    store = Store(db)
+    try:
+        llm = client_for_role(role, provider_override=args.provider, model_override=args.model)
+        findings = observe(org, role, store, llm, max_count=args.limit)
+    except Exception as exc:  # noqa: BLE001
+        print(f"Observe failed for role {role.id!r}: {exc}", file=sys.stderr)
+        return 1
+    finally:
+        store.close()
+
+    print(f"Observer {role.id} surfaced {len(findings)} finding(s):")
+    for f in findings:
+        print(f"  [{f.level}/{f.kind}] {f.title}")
+        if f.detail:
+            print(f"      detail: {f.detail}")
+        if f.suggestion:
+            print(f"      suggest: {f.suggestion}")
+    return 0
+
+
+def cmd_brief(args: argparse.Namespace) -> int:
+    root = Path(args.org)
+    org = load_org_yaml(root / "org.yaml")
+    role_id = args.role or next(
+        (r.id for r in org.roles if r.reports_to is None), None
+    )
+    if role_id is None:
+        print("No lead role found; pass --role.", file=sys.stderr)
+        return 2
+    role = org.role(role_id)
+
+    db = root / ".agentfactory" / "jobs.db"
+    store = Store(db)
+    try:
+        llm = client_for_role(role, provider_override=args.provider, model_override=args.model)
+        brief = build_daily_brief(org, role, store, llm)
+    except Exception as exc:  # noqa: BLE001
+        print(f"Brief failed for role {role.id!r}: {exc}", file=sys.stderr)
+        return 1
+    finally:
+        store.close()
+
+    print(brief)
+    return 0
+
+
+def cmd_status(args: argparse.Namespace) -> int:
+    root = Path(args.org)
+    org = load_org_yaml(root / "org.yaml")
+    db = root / ".agentfactory" / "jobs.db"
+    if not db.exists():
+        print(f"No job store at {db} — run a job first.", file=sys.stderr)
+        return 2
+    store = Store(db)
+    try:
+        stats = store.stats()
+        print(f"Mission control — {org.name}")
+        print(f"  Jobs: {stats['jobs']} total  "
+              f"(queued={stats['queued']}, running={stats['running']}, "
+              f"done={stats['done']}, error={stats['error']}, blocked={stats['blocked']})")
+        print(f"  Open insights: {stats['open_insights']}")
+
+        print("\n  Recent jobs:")
+        for j in store.list_jobs(limit=args.limit):
+            print(f"    #{j['id']} [{j['role']}] {j['status']}: {j['task'][:60]}")
+
+        open_insights = store.list_insights(status="open", limit=args.limit)
+        if open_insights:
+            print("\n  Open insights:")
+            for i in open_insights:
+                print(f"    [{i['level']}/{i['kind']}] {i['title']}")
+        else:
+            print("\n  Open insights: none")
+
+        approvals = [e for e in store.recent_events(limit=200) if e["type"] == "approval"]
+        if approvals:
+            print(f"\n  Recent approval events: {len(approvals)}")
+        return 0
+    finally:
+        store.close()
 def main(argv: list[str] | None = None) -> int:
     load_dotenv()
     parser = argparse.ArgumentParser(prog="agent_factory", description="Generate and manage AI agent workforces.")
@@ -482,6 +575,26 @@ def main(argv: list[str] | None = None) -> int:
     prp = sub.add_parser("probe", help="Ping every LLM configured via .env and report reachability")
     prp.add_argument("--only", choices=["openai", "ollama"], default=None, help="Limit to one provider")
     prp.set_defaults(func=cmd_probe)
+
+    op = sub.add_parser("observe", help="Run an observer to surface friction/access gaps/blockers as insights")
+    op.add_argument("--org", required=True, help="Path to a generated org tree")
+    op.add_argument("--role", default=None, help="Role id of the observer (default: observer or lead)")
+    op.add_argument("--provider", default=None, help="openai | ollama | fake")
+    op.add_argument("--model", default=None, help="Override the resolved model; optional provider/model prefix")
+    op.add_argument("--limit", type=int, default=5, help="Max findings per pass")
+    op.set_defaults(func=cmd_observe)
+
+    bf = sub.add_parser("brief", help="Generate a 'what should I do today' plan from insights")
+    bf.add_argument("--org", required=True, help="Path to a generated org tree")
+    bf.add_argument("--role", default=None, help="Role id for the brief (default: org lead)")
+    bf.add_argument("--provider", default=None, help="openai | ollama | fake")
+    bf.add_argument("--model", default=None, help="Override the resolved model; optional provider/model prefix")
+    bf.set_defaults(func=cmd_brief)
+
+    st = sub.add_parser("status", help="Mission-control report for an org")
+    st.add_argument("--org", required=True, help="Path to a generated org tree")
+    st.add_argument("--limit", type=int, default=20)
+    st.set_defaults(func=cmd_status)
 
     args = parser.parse_args(argv)
     try:

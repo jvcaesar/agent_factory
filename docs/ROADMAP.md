@@ -24,10 +24,10 @@ Make the workforce *proactive*, not just reactive.
 ## M3 — (done) Bootstrap
 See `IMPLEMENTED_MILESTONE3.md`.
 
-## M4 — Insights (observers + mission control)
-- **Observer roles:** low-cost scan agents that log friction, access gaps, contradictions.
-- **Watchdogs:** "insight → action," not just dashboards — tell the user *what to do tomorrow* (video 22:20–23:31, 26:04).
-- **Mission control:** a CLI/report view of queue, agent activity, handoffs, and open approvals.
+## M4 — Insights ✅ (implemented)
+- **Observer roles:** low-cost scan agents log friction, access gaps, blockers, contradictions, opportunities (video 22:20–23:31).
+- **Watchdogs / insight → action:** "what should I do today" brief, not dashboards (video 26:04).
+- **Mission control:** `status` CLI report of queue, agent activity, open insights, approvals. See `IMPLEMENTED_MILESTONE4.md`. 95 tests.
 
 ## M5 — Role packs (specialized orgs)
 - Package the same engine for business-ops, engineering, and research orgs.
@@ -52,8 +52,8 @@ See `IMPLEMENTED_MILESTONE3.md`.
 
 - [x] M3 bootstrap + 16 tests
 - [x] M1 runtime: provider adapter, agent loop, SQLite, offline tests
-- [x] M2 ambition loop: proactive propose/execute, context store, guarded scope (13 more — 53 total)
-- [ ] M4 mission control + observers/watchdogs
+- [x] M2 ambition loop: proactive propose/execute, context store, guarded scope
+- [x] M4 mission control + observers/watchdogs (+8 tests — 95 total)
 - [ ] M5 role packs (business-ops / engineering / research)
 - [ ] M6 multiplayer + wider tool surface
 

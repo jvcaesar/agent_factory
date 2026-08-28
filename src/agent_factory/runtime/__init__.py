@@ -6,6 +6,7 @@ durable state, a real tool framework (files/web + stubs), and approval gating.
 
 from .agent import Action, AgentLimitError, AgentOutcome, build_system_prompt, parse_action, run_agent
 from .ambition import Proposal, propose_actions, run_ambition_loop
+from .insights import Observation, build_daily_brief, observe
 from .state import Store
 from .tools import ApprovalFn, Tool, ToolFunc, tools_for_role
 from .orchestrator import run_job
@@ -20,6 +21,9 @@ __all__ = [
     "Proposal",
     "propose_actions",
     "run_ambition_loop",
+    "Observation",
+    "build_daily_brief",
+    "observe",
     "Store",
     "Tool",
     "ToolFunc",

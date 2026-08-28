@@ -37,6 +37,7 @@ The `docs/` folder is the project's source of truth:
 - [`docs/IMPLEMENTED_MILESTONE3.md`](docs/IMPLEMENTED_MILESTONE3.md) — everything implemented in the current step (M3 bootstrap)
 - [`docs/IMPLEMENTED_MILESTONE1.md`](docs/IMPLEMENTED_MILESTONE1.md) — everything implemented in the current step (M1 runtime engine)
 - [`docs/IMPLEMENTED_MILESTONE2.md`](docs/IMPLEMENTED_MILESTONE2.md) — everything implemented in the current step (M2 ambition loop)
+- [`docs/IMPLEMENTED_MILESTONE4.md`](docs/IMPLEMENTED_MILESTONE4.md) — everything implemented in the current step (M4 insights / observers / mission control)
 - [`docs/ROADMAP.md`](docs/ROADMAP.md) — upcoming steps (M1–M6)
 - [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) — module map, data flow, contracts, seams for later milestones
 - [`docs/DESIGN_PRINCIPLES.md`](docs/DESIGN_PRINCIPLES.md) — the generic patterns and guiding rules
@@ -47,13 +48,15 @@ The `docs/` folder is the project's source of truth:
 
 ## Status
 
+- **Milestone 4 (Insights)** — implemented. See
+  [`docs/IMPLEMENTED_MILESTONE4.md`](docs/IMPLEMENTED_MILESTONE4.md).
+- **Milestone 3 (Bootstrap)** — implemented. See
+  [`docs/IMPLEMENTED_MILESTONE3.md`](docs/IMPLEMENTED_MILESTONE3.md).
 - **Milestone 2 (Ambition loop)** — implemented. See
   [`docs/IMPLEMENTED_MILESTONE2.md`](docs/IMPLEMENTED_MILESTONE2.md).
 - **Milestone 1 (Runtime engine)** — implemented. See
   [`docs/IMPLEMENTED_MILESTONE1.md`](docs/IMPLEMENTED_MILESTONE1.md).
-- **Milestone 3 (Bootstrap)** — implemented. See
-  [`docs/IMPLEMENTED_MILESTONE3.md`](docs/IMPLEMENTED_MILESTONE3.md).
-- Milestones 4, 5, 6 are queued in [`docs/ROADMAP.md`](docs/ROADMAP.md).
+- Milestones 5, 6 are queued in [`docs/ROADMAP.md`](docs/ROADMAP.md).
 
 ## Quick start
 
@@ -83,13 +86,18 @@ agent_factory jobs --org orgs/Acme
 # 6. Capture context, then run the proactive "do smart things" loop (M2)
 agent_factory context --org orgs/Acme --add diary/today --detail "Client wants a demo first"
 agent_factory ambition --org orgs/Acme --role lead_exec --max-actions 2
+
+# 7. Observability & insights (M4)
+agent_factory status   --org orgs/Acme            # mission control
+agent_factory observe  --org orgs/Acme --limit 5  # observer/watchdog pass
+agent_factory brief    --org orgs/Acme            # "what to do today" plan
 ```
 
 Requires Python 3.10+ and `pydantic` + `pyyaml`. Tests run on stdlib
 `unittest` with no extra installs:
 
 ```bash
-py -m unittest discover -s tests -v   # 87 tests, offline
+py -m unittest discover -s tests -v   # 95 tests, offline
 ```
 
 ## Providers (M1)
@@ -121,6 +129,6 @@ See [`docs/IMPLEMENTED_MILESTONE1.md`](docs/IMPLEMENTED_MILESTONE1.md) for detai
 - [x] **M1 Runtime** — LLM adapters (OpenAI/Ollama/Fake), agent loop, SQLite state
 - [x] **M2 Ambition loop** — "do smart things" proactive loop over goals/context
 - [x] **M3 Bootstrap** — interview → validated org chart
-- [ ] **M4 Insights** — observers/watchdogs + mission-control view
+- [x] **M4 Insights** — observers/watchdogs + mission-control view
 - [ ] **M5 Role packs** — business-ops / engineering / research orgs from the
   same primitives

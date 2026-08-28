@@ -2,6 +2,11 @@
 
 > Running record of architectural and scoping decisions. Newest first.
 
+## 2026-08-25 — M4: insights store + observer/brief + mission control
+**Decision:** Add an `insights` table (level/kind/title/detail/suggestion/status) to the SQLite store, a low-cost `observe` watchdog that scans jobs/events/context and persists findings, a `build_daily_brief` "what to do today" planner, and a `status` mission-control report. `Observation` prompts use plain `.format()` templates (not fragile triple-quoted f-strings).
+**Why:** The video's "insight → action, not dashboards" (22:20–23:31, 26:04) requires turning raw state into actionable findings; the observability needs a durable home co-located with jobs/context.
+**Consequence:** `observe`, `brief`, `status` CLI commands added; observer wiring proven via fake provider. (Encountered & fixed editor string-mangling that produced unterminated-string SyntaxErrors — wrote prompts with `.format()` templates to avoid it.) 95 tests pass.
+
 ## 2026-08-27 — Modern OpenAI client, explicit model override, and atomic job start
 **Decision:** The project supports the modern `openai>=1.0` client only. The `run` command accepts `--model`; provider-qualified values are supported, but a prefix that conflicts with `--provider` is rejected. Generated role YAML preserves provider/model fields, and jobs transition atomically from queued to running before execution.
 **Why:** Keep provider behavior explicit, prevent silent loss of model configuration during YAML round trips, and make durable job state match actual execution.

@@ -47,6 +47,19 @@ CREATE TABLE IF NOT EXISTS context (
     created_at TEXT NOT NULL DEFAULT (datetime('now')),
     updated_at TEXT NOT NULL DEFAULT (datetime('now'))
 );
+CREATE TABLE IF NOT EXISTS insights (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    org TEXT NOT NULL,
+    role TEXT NOT NULL,              -- role id that surfaced the insight
+    level TEXT NOT NULL DEFAULT 'info',  -- low|info|warning|critical
+    kind TEXT NOT NULL DEFAULT 'friction',  -- friction|access_gap|contradiction|blocker|opportunity
+    title TEXT NOT NULL,
+    detail TEXT,
+    suggestion TEXT,
+    status TEXT NOT NULL DEFAULT 'open',     -- open|accepted|dismissed
+    created_at TEXT NOT NULL DEFAULT (datetime('now')),
+    updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
 """
 
 
@@ -65,6 +78,7 @@ class Store:
             CREATE INDEX IF NOT EXISTS idx_results_job_id ON results(job_id, id);
             CREATE INDEX IF NOT EXISTS idx_events_job_id ON events(job_id, id);
             CREATE INDEX IF NOT EXISTS idx_context_updated_id ON context(updated_at, id);
+            CREATE INDEX IF NOT EXISTS idx_insights_status ON insights(status, id);
             """
         )
         self._conn.commit()
@@ -178,6 +192,12 @@ class Store:
         return self._conn.execute(
             "SELECT * FROM events WHERE job_id=? ORDER BY id", (job_id,)
         ).fetchall()
+
+    def recent_events(self, limit: int = 60) -> list[sqlite3.Row]:
+        return self._conn.execute(
+            "SELECT * FROM events ORDER BY id DESC LIMIT ?", (limit,)
+        ).fetchall()
+
     # -- context ---------------------------------------------------------------
     def upsert_context(self, key: str, content: str, source: str = "") -> None:
         """Insert or update a context entry by key (diary flow / ambition notes)."""
@@ -223,4 +243,70 @@ class Store:
             head = f"[{e['key']}]" + (f" ({e['source']})" if e["source"] else "")
             blocks.append(f"{head}\n{e['content']}")
         return "\n\n".join(blocks)
+
+    # -- insights --------------------------------------------------------------
+    def add_insight(
+        self,
+        org: str,
+        role: str,
+        *,
+        level: str = "info",
+        kind: str = "friction",
+        title: str,
+        detail: str = "",
+        suggestion: str = "",
+    ) -> int:
+        """Record an observer insight. Returns the new insight id."""
+        with self._tx() as c:
+            cur = c.execute(
+                "INSERT INTO insights (org, role, level, kind, title, detail, suggestion) VALUES (?,?,?,?,?,?,?)",
+                (org, role, level, kind, title, detail, suggestion),
+            )
+            return int(cur.lastrowid)
+
+    def update_insight_status(self, insight_id: int, status: str) -> None:
+        with self._tx() as c:
+            c.execute(
+                "UPDATE insights SET status=?, updated_at=datetime('now') WHERE id=?",
+                (status, insight_id),
+            )
+
+    def list_insights(
+        self,
+        *,
+        status: Optional[str] = None,
+        level: Optional[str] = None,
+        limit: int = 100,
+    ) -> list[sqlite3.Row]:
+        q = "SELECT * FROM insights WHERE 1=1"
+        params: list = []
+        if status:
+            q += " AND status=?"
+            params.append(status)
+        if level:
+            q += " AND level=?"
+            params.append(level)
+        q += " ORDER BY id DESC LIMIT ?"
+        params.append(limit)
+        return self._conn.execute(q, params).fetchall()
+
+    def stats(self) -> dict[str, int]:
+        """Small aggregate used by the mission-control report."""
+        rows = self._conn.execute(
+            "SELECT status, COUNT(*) AS n FROM jobs GROUP BY status"
+        ).fetchall()
+        jobs = {r["status"]: r["n"] for r in rows}
+        open_insights = self._conn.execute(
+            "SELECT COUNT(*) AS n FROM insights WHERE status='open'"
+        ).fetchone()["n"]
+        total_jobs = self._conn.execute("SELECT COUNT(*) AS n FROM jobs").fetchone()["n"]
+        return {
+            "jobs": total_jobs,
+            "queued": jobs.get("queued", 0),
+            "running": jobs.get("running", 0),
+            "done": jobs.get("done", 0),
+            "error": jobs.get("error", 0),
+            "blocked": jobs.get("blocked", 0),
+            "open_insights": open_insights,
+        }
 

@@ -10,6 +10,7 @@ dist/
 # Environments
 .env
 .env.*
+!.env.example
 
 # Generated org charts (user-specific output)
 orgs/
