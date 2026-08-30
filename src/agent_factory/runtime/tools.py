@@ -20,6 +20,7 @@ for third-party integrations. M6 widens the surface:
 from __future__ import annotations
 
 import ipaddress
+import os
 import socket
 from dataclasses import dataclass, replace
 from pathlib import Path
@@ -36,6 +37,11 @@ ApprovalFn = Callable[["Tool"], bool]
 _MAX_WEB_RESPONSE_BYTES = 1024 * 1024
 _MAX_WEB_REDIRECTS = 5
 _ALLOWED_WEB_SCHEMES = {"http", "https"}
+_WEB_ALLOWLIST_ENV_VARS = (
+    "AGENT_FACTORY_WEB_ALLOWED_HOSTS",
+    "WEB_FETCH_ALLOWED_HOSTS",
+    "WEB_ALLOWLIST",
+)
 _BLOCKED_WEB_IPS = {
     "100.100.100.200",  # Alibaba Cloud metadata
     "169.254.169.254",  # common cloud metadata endpoint
@@ -147,6 +153,33 @@ def _files_write(inputs: dict, root: Optional[Path]) -> str:
     return f"WROTE {len(content)} chars to {target.relative_to(Path(root).resolve())}"
 
 
+def _web_allowed_hosts() -> set[str]:
+    for key in _WEB_ALLOWLIST_ENV_VARS:
+        value = os.environ.get(key)
+        if value is None:
+            continue
+        hosts = set()
+        for raw in value.split(","):
+            host = raw.strip().lower().strip(".")
+            if host:
+                hosts.add(host)
+        return hosts
+    return set()
+
+
+def _is_host_allowed(host: str, allowed_hosts: set[str]) -> bool:
+    host = host.rstrip(".").lower()
+    if not host:
+        return False
+    for allowed in allowed_hosts:
+        allowed = allowed.rstrip(".").lower()
+        if not allowed:
+            continue
+        if host == allowed or host.endswith(f".{allowed}"):
+            return True
+    return False
+
+
 def _validate_web_url(url: object) -> tuple[Optional[str], Optional[str]]:
     if not isinstance(url, str) or not url.strip():
         return None, "ERROR: 'url' is required for web_fetch"
@@ -183,6 +216,10 @@ def _validate_web_url(url: object) -> tuple[Optional[str], Optional[str]]:
         for address in addresses
     ):
         return None, "ERROR: web_fetch destination is not a public address"
+
+    allowed_hosts = _web_allowed_hosts()
+    if not allowed_hosts or not _is_host_allowed(host, allowed_hosts):
+        return None, "ERROR: web_fetch host is not in the configured allowlist"
     return url.strip(), None
 
 

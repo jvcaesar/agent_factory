@@ -18,7 +18,7 @@ This can expose cloud metadata, managed-identity tokens, internal admin services
 
 Automatic redirects create another bypass. A public URL can redirect to a private address, so validating only the original URL is insufficient.
 
-## Solution Implemented: Option A
+## Solution Implemented: Option A + host allowlist
 
 The `web_fetch` tool now uses a validated outbound HTTP flow:
 
@@ -29,14 +29,25 @@ The `web_fetch` tool now uses a validated outbound HTTP flow:
 5. Resolve hostnames with `socket.getaddrinfo`.
 6. Reject loopback, private, link-local, multicast, reserved, unspecified, and other non-global addresses.
 7. Explicitly block common cloud metadata addresses.
-8. Disable inherited proxy settings with `Session.trust_env = False`.
-9. Disable automatic redirects and validate each redirect destination.
-10. Limit redirects to five hops.
-11. Stream the response and cap collected content at 1 MiB.
-12. Use separate connection and read timeouts of 10 and 30 seconds.
-13. Return a stable error containing only the exception type, avoiding raw network details in model-visible output.
+8. Enforce a configured host allowlist before the request is sent.
+9. Disable inherited proxy settings with `Session.trust_env = False`.
+10. Disable automatic redirects and validate each redirect destination.
+11. Limit redirects to five hops.
+12. Stream the response and cap collected content at 1 MiB.
+13. Use separate connection and read timeouts of 10 and 30 seconds.
+14. Return a stable error containing only the exception type, avoiding raw network details in model-visible output.
 
 The response still returns at most 8,000 characters to the agent, but the 1 MiB transport limit is enforced before decoding and truncation.
+
+For deployments with a narrow research surface, configure one of the following environment variables before enabling outbound fetches:
+
+```powershell
+$env:AGENT_FACTORY_WEB_ALLOWED_HOSTS = "example.com,docs.example.com"
+# or
+$env:WEB_FETCH_ALLOWED_HOSTS = "example.com,docs.example.com"
+```
+
+When the allowlist is configured, hosts not on the list are rejected regardless of whether they are public and reachable.
 
 ## URL Policy
 
@@ -52,6 +63,7 @@ The following are rejected:
 | Embedded credentials | `https://user:pass@example.com` | Avoid ambiguous or unsafe authorities |
 | Non-web port | `example.com:22` | Reduce access to unrelated services |
 | Private redirect | Public URL -> `http://127.0.0.1` | Every redirect must pass the same policy |
+| Unlisted host | `https://example.net` | Not in the configured allowlist; deny by policy |
 
 IP-aware parsing is used instead of string-prefix checks, covering IPv4, IPv6, and numeric or unusual literal representations handled by Python's address parser.
 
@@ -60,7 +72,7 @@ IP-aware parsing is used instead of string-prefix checks, covering IPv4, IPv6, a
 | Option | Description | Security | Complexity | Assessment |
 |---|---|---:|---:|---|
 | **A. Validated outbound HTTP client** | Validate schemes, DNS/IP destinations, redirects, ports, timeouts, proxy behavior, and response size inside `web_fetch`. | Good | Medium | **Implemented and recommended now.** Fits the current synchronous `requests` adapter without requiring another service. |
-| **B. Host allowlist** | Permit requests only to explicitly configured domains. | Very good | Low to medium | Strongest application-level choice when research sources are known. Can be added as an optional policy on top of Option A. |
+| **B. Host allowlist** | Permit requests only to explicitly configured domains. | Very good | Low to medium | **Implemented as an enforced policy layer.** This is the strongest app-level control when research sources are known. |
 | **C. External fetch proxy** | Route requests through a dedicated service that enforces network and content policy. | Very good | Medium to high | Good for centralized controls, logging, rate limits, and production operations. |
 | **D. Network egress isolation** | Run agents in a container, sandbox, or subnet that cannot reach private networks or metadata endpoints. | Excellent | High | Strong infrastructure defense and appropriate for production or multi-tenant workloads. |
 | **E. Human approval for every URL** | Ask for approval before each request. | Limited | Low | Useful as a secondary control, but does not reliably prevent SSRF or oversized responses. |
@@ -79,9 +91,7 @@ The response is streamed because truncating `response.text` after `requests` has
 
 This is an application-level SSRF defense, not a complete network sandbox. DNS validation and the subsequent HTTP connection are separate operations, so a hostile DNS rebinding race is not fully eliminated. A stronger design would resolve and pin the approved address for the connection and verify the connected peer address.
 
-The current policy allows any public hostname on ports 80 and 443. An optional host allowlist would provide tighter control for deployments with known research sources.
-
-Network-level egress restrictions should still be added for production environments, especially where the process has access to cloud identities or private network resources.
+The host allowlist must be configured for the environment; without it, outbound fetches are denied by policy for safety. Network-level egress restrictions should still be added for production environments, especially where the process has access to cloud identities or private network resources.
 
 ## Tests
 
@@ -91,6 +101,7 @@ The runtime tests cover:
 - Rejection of `file://` URLs
 - Rejection of loopback and metadata addresses
 - Rejection of embedded URL credentials
+- Rejection of unlisted hosts via the configured allowlist
 - Rejection of redirects to private addresses
 - Response-size bounding
 

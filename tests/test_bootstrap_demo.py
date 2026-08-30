@@ -70,6 +70,12 @@ class TestBootstrapDemo(unittest.TestCase):
             self.assertTrue((self.root / f).exists(), f"missing {f}")
         self.assertTrue((self.root / "roles" / "lead_exec.yaml").exists())
 
+    def test_write_org_refuses_overwrite_by_default(self):
+        self.root.mkdir(parents=True, exist_ok=True)
+        (self.root / "existing.txt").write_text("already here", encoding="utf-8")
+        with self.assertRaisesRegex(ValueError, "already exists|refusing to overwrite"):
+            write_org(generate_org(self.answers), self.root)
+
     def test_org_yaml_reloads_equal(self):
         org = generate_org(self.answers)
         write_org(org, self.root)

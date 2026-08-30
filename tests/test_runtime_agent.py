@@ -179,6 +179,7 @@ class TestRunAgent(unittest.TestCase):
         job_id = store.list_jobs()[0]["id"]
         self.assertEqual(store.get(job_id)["status"], "error")
         self.assertIn("provider unavailable", store.get(job_id)["error"])
+        self.assertIn("provider unavailable", store.get_last_error(job_id))
         store.close()
 
 

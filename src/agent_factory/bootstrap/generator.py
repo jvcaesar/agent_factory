@@ -193,6 +193,9 @@ def generate_org(
 def write_org(org: Org, root: Path) -> None:
     """Persist an org as YAML roles, markdown sops/goals, and a settings file."""
     root = Path(root)
+    if root.exists() and any(root.iterdir()):
+        raise ValueError(f"refusing to overwrite existing org directory: {root}")
+
     (root / "roles").mkdir(parents=True, exist_ok=True)
     (root / "sops").mkdir(parents=True, exist_ok=True)
     (root / "goals").mkdir(parents=True, exist_ok=True)

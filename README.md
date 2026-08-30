@@ -33,6 +33,8 @@ reusable primitives:
 
 The `docs/` folder is the project's source of truth:
 
+- [`docs/USER_GUIDE.md`](docs/USER_GUIDE.md) — step-by-step user guide with real command examples and expected output ([styled HTML version](docs/USER_GUIDE.html))
+- [`docs/PRODUCT.md`](docs/PRODUCT.md) — product overview & marketing one-pager: features, benefits, personas, user stories, comparison ([dark-themed HTML version](docs/PRODUCT.html))
 - [`docs/PROJECT_PLAN.md`](docs/PROJECT_PLAN.md) — the detailed plan being used for implementation
 - [`docs/IMPLEMENTED_MILESTONE3.md`](docs/IMPLEMENTED_MILESTONE3.md) — everything implemented in the current step (M3 bootstrap)
 - [`docs/IMPLEMENTED_MILESTONE1.md`](docs/IMPLEMENTED_MILESTONE1.md) — everything implemented in the current step (M1 runtime engine)

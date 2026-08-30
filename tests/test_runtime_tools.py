@@ -1,5 +1,6 @@
 """Tests for the runtime tool framework: grants, approval flags, stubs."""
 
+import os
 import unittest
 import pathlib
 import tempfile
@@ -101,6 +102,7 @@ class TestToolsForRole(unittest.TestCase):
             self.assertIn("WROTE", result)
             self.assertEqual((root / "outputs" / "result.txt").read_text(encoding="utf-8"), "ok")
 
+    @mock.patch.dict(os.environ, {"AGENT_FACTORY_WEB_ALLOWED_HOSTS": "example.com"}, clear=False)
     @mock.patch("agent_factory.runtime.tools.socket.getaddrinfo")
     @mock.patch("requests.Session")
     def test_web_fetch_allows_public_response(self, session_class, getaddrinfo):
@@ -118,12 +120,17 @@ class TestToolsForRole(unittest.TestCase):
             "https://example.com", timeout=(10, 30), allow_redirects=False, stream=True
         )
 
+    @mock.patch.dict(os.environ, {"AGENT_FACTORY_WEB_ALLOWED_HOSTS": "example.com"}, clear=False)
+    def test_web_fetch_rejects_unlisted_host(self):
+        self.assertIn("allowlist", _web_fetch({"url": "https://example.net"}))
+
     def test_web_fetch_rejects_unsafe_urls(self):
         self.assertIn("only permits http and https", _web_fetch({"url": "file:///etc/passwd"}))
         self.assertIn("public address", _web_fetch({"url": "http://127.0.0.1"}))
         self.assertIn("public address", _web_fetch({"url": "http://169.254.169.254"}))
         self.assertIn("cannot include credentials", _web_fetch({"url": "https://user:pass@example.com"}))
 
+    @mock.patch.dict(os.environ, {"AGENT_FACTORY_WEB_ALLOWED_HOSTS": "example.com"}, clear=False)
     @mock.patch("agent_factory.runtime.tools.socket.getaddrinfo")
     @mock.patch("requests.Session")
     def test_web_fetch_rejects_redirect_to_private_address(self, session_class, getaddrinfo):
@@ -137,6 +144,7 @@ class TestToolsForRole(unittest.TestCase):
         self.assertIn("public address", _web_fetch({"url": "https://example.com"}))
         response.close.assert_called_once()
 
+    @mock.patch.dict(os.environ, {"AGENT_FACTORY_WEB_ALLOWED_HOSTS": "example.com"}, clear=False)
     @mock.patch("agent_factory.runtime.tools.socket.getaddrinfo")
     @mock.patch("requests.Session")
     def test_web_fetch_bounds_response_size(self, session_class, getaddrinfo):

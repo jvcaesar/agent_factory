@@ -18,6 +18,10 @@ VALID_INSIGHT_STATUSES = {"open", "accepted", "dismissed"}
 
 
 _SCHEMA = """
+CREATE TABLE IF NOT EXISTS meta (
+    key TEXT PRIMARY KEY,
+    value TEXT NOT NULL
+);
 CREATE TABLE IF NOT EXISTS jobs (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     org TEXT NOT NULL,
@@ -99,6 +103,9 @@ class Store:
             CREATE INDEX IF NOT EXISTS idx_messages_channel_status ON messages(channel, status, id);
             """
         )
+        self._conn.execute(
+            "INSERT OR IGNORE INTO meta (key, value) VALUES ('schema_version', '1')"
+        )
         self._conn.commit()
 
     def close(self) -> None:
@@ -176,6 +183,16 @@ class Store:
 
     def get(self, job_id: int) -> Optional[sqlite3.Row]:
         return self._conn.execute("SELECT * FROM jobs WHERE id=?", (job_id,)).fetchone()
+
+    def get_last_error(self, job_id: int) -> str:
+        row = self._conn.execute("SELECT error FROM jobs WHERE id=?", (job_id,)).fetchone()
+        return row["error"] if row and row["error"] else ""
+
+    def schema_version(self) -> int:
+        row = self._conn.execute("SELECT value FROM meta WHERE key='schema_version'").fetchone()
+        if row is None:
+            return 0
+        return int(row["value"])
 
     def list_jobs(self, status: Optional[str] = None, limit: int = 100) -> list[sqlite3.Row]:
         if status:
