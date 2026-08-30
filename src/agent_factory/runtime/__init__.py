@@ -2,13 +2,24 @@
 
 M1 scope: a provider-agnostic agent loop over a Role + task, with SQLite-backed
 durable state, a real tool framework (files/web + stubs), and approval gating.
+M6 scope: a shared human<->agent channel (Loop Alley), store-backed memory and
+channel tool adapters, MCP-style tool servers, and risk-aware permissions.
 """
 
 from .agent import Action, AgentLimitError, AgentOutcome, build_system_prompt, parse_action, run_agent
 from .ambition import Proposal, propose_actions, run_ambition_loop
+from .channel import Message, channel_blob, default_lead, list_channel, post_to_channel, run_channel_worker
 from .insights import Observation, build_daily_brief, observe
 from .state import Store
-from .tools import ApprovalFn, Tool, ToolFunc, tools_for_role
+from .toolservers import (
+    REGISTERED_SERVERS,
+    ServerTool,
+    ToolServer,
+    get_registered_server,
+    register_tool_server,
+    server_tools,
+)
+from .tools import ApprovalFn, Tool, ToolFunc, approval_needed, tools_for_role
 from .orchestrator import run_job
 
 __all__ = [
@@ -21,6 +32,12 @@ __all__ = [
     "Proposal",
     "propose_actions",
     "run_ambition_loop",
+    "Message",
+    "channel_blob",
+    "default_lead",
+    "list_channel",
+    "post_to_channel",
+    "run_channel_worker",
     "Observation",
     "build_daily_brief",
     "observe",
@@ -28,6 +45,13 @@ __all__ = [
     "Tool",
     "ToolFunc",
     "ApprovalFn",
+    "approval_needed",
     "tools_for_role",
+    "ServerTool",
+    "ToolServer",
+    "REGISTERED_SERVERS",
+    "get_registered_server",
+    "register_tool_server",
+    "server_tools",
     "run_job",
 ]

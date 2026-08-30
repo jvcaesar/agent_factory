@@ -61,7 +61,9 @@ def _lead_role(tools: set[str], risk: ApprovalPolicy, budget: str) -> Role:
         tool_grants=[
             ToolGrant(tool="files", access=ToolAccess.READ, requires_approval=False)
         ]
-        + ([ToolGrant(tool="notion", access=ToolAccess.READ, requires_approval=False)] if "notion" in tools else []),
+        + ([ToolGrant(tool="notion", access=ToolAccess.READ, requires_approval=False)] if "notion" in tools else [])
+        + ([ToolGrant(tool="memory", access=ToolAccess.READ, requires_approval=False)] if "memory" in tools else [])
+        + ([ToolGrant(tool="channel", access=ToolAccess.READ, requires_approval=False)] if "channel" in tools else []),
         subagents=[],
     )
 

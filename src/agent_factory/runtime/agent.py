@@ -139,7 +139,7 @@ def run_agent(
     job_id: Optional[int] = None,
 ) -> AgentOutcome:
     """Run one role to completion. Returns an :class:`AgentOutcome`."""
-    tools = tools_for_role(role, root=root, org=org)
+    tools = tools_for_role(role, root=root, org=org, store=store)
     deny_all: ApprovalFn = approval_fn or (lambda _t: False)
     system = build_system_prompt(org, role, tools, _read_sop(root, role))
     messages: list[ChatMessage] = [ChatMessage("system", system), ChatMessage("user", task)]

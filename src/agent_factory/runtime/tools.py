@@ -1,12 +1,20 @@
 """Runtime tool framework.
 
 Tools are the actions an agent can take on the world. Each role only sees the
-tools it is *granted* (from its ``tool_grants``), and ``requires_approval``
-tools are gated behind a human approval callback.
+tools it is *granted* (from its ``tool_grants``), and approval-gated tools are
+blocked until a human approves.
 
-M1 ships a minimal set of real tools (``files``, ``web``) plus generic stubs
-for the rest, so the *framework* (grants, approval, tool-calling loop) is real
-even where third-party integrations are not yet wired.
+M1 shipped a minimal set of real tools (``files``, ``web``) plus generic stubs
+for third-party integrations. M6 widens the surface:
+
+* **``memory`` / ``channel`` local adapters** — company-memory read/search/write
+  over the ``Store`` context table, and read/post over the shared human->agent
+  channel. Both are *local* tools that need no external service.
+* **MCP-style tool servers** — ``toolservers.register_tool_server`` attaches any
+  local server (description + execute-by-name) to the grant system.
+* **Risk-aware permissions** — every ``Tool`` carries a ``risk`` (low/medium/
+  high); ``approval_needed`` turns access + role/org policy + risk into a single
+  defensible approval decision.
 """
 
 from __future__ import annotations
@@ -19,6 +27,7 @@ from typing import Callable, Optional
 from urllib.parse import urljoin, urlparse
 
 from ..config import ApprovalPolicy, Org, Role, ToolAccess
+from .state import Store
 
 # A tool function takes a dict of inputs and returns a text result.
 ToolFunc = Callable[[dict], str]
@@ -33,6 +42,41 @@ _BLOCKED_WEB_IPS = {
     "169.254.170.2",    # AWS ECS metadata
 }
 
+RISK_ORDER = {"low": 1, "medium": 2, "high": 3}
+
+
+def approval_needed(
+    *,
+    grant_approval: bool,
+    access: ToolAccess,
+    tool: "Tool",
+    role: Optional[Role] = None,
+    org: Optional[Org] = None,
+) -> bool:
+    """The single permission rule: does this tool call need a human approval?
+
+    Order of precedence (first match wins):
+
+    1. the schema-level grant gate (``ToolGrant.requires_approval``) is absolute;
+    2. ``APPROVAL_FIRST`` (role *or* org) gates every tool call;
+    3. ``REVIEW_EXTERNAL`` gates write access and high-risk reads;
+    4. otherwise (autonomous) high-risk tools are still gated — defense in depth,
+       so a self-driving org cannot silently run shell-level or destructive tools.
+    """
+    if grant_approval:
+        return True
+    org_policy = org.risk_tier if org is not None else ApprovalPolicy.AUTONOMOUS
+    role_policy = role.approval_policy if role is not None else org_policy
+    if ApprovalPolicy.APPROVAL_FIRST in (role_policy, org_policy):
+        return True
+    risk = RISK_ORDER.get(tool.risk, RISK_ORDER["medium"])
+    if ApprovalPolicy.REVIEW_EXTERNAL in (role_policy, org_policy):
+        if access == ToolAccess.WRITE:
+            return True
+        return risk >= RISK_ORDER["high"]
+    # Autonomous role + org: only high-risk actions need sign-off.
+    return risk >= RISK_ORDER["high"]
+
 
 @dataclass(frozen=True)
 class Tool:
@@ -40,9 +84,13 @@ class Tool:
     description: str
     func: ToolFunc
     requires_approval: bool = False
+    risk: str = "medium"  # risk tier: low | medium | high
 
     def with_approval(self, value: bool = True) -> "Tool":
         return replace(self, requires_approval=value)
+
+    def with_risk(self, value: str) -> "Tool":
+        return replace(self, risk=value)
 
     def execute(self, inputs: Optional[dict] = None) -> str:
         return self.func(inputs or {})
@@ -201,9 +249,14 @@ def _web_fetch(inputs: dict) -> str:
 # Catalog: tool id -> read/write Tool instances (or a stub fallback).
 # ---------------------------------------------------------------------------
 
-CATALOG: dict[str, dict[str, Tool]] = {
+CATALOG: dict[str, dict[str, Tool | list[Tool]]] = {
     "web": {
-        "read": Tool("web_fetch", "Fetch the text body of a URL. Input: {url}.", _web_fetch),
+        "read": Tool(
+            "web_fetch",
+            "Fetch the text body of a URL. Input: {url}.",
+            _web_fetch,
+            risk="low",
+        ),
     },
 }
 
@@ -214,16 +267,152 @@ def _file_tools(root: Optional[Path]) -> dict[str, Tool]:
             "files_read",
             "Read a local file relative to the agent workspace. Input: {path}.",
             lambda inputs: _files_read(inputs, root),
+            risk="low",
         ),
         "write": Tool(
             "files_write",
             "Write content to a local file relative to the agent workspace. Input: {path, content}.",
             lambda inputs: _files_write(inputs, root),
             requires_approval=True,
+            risk="high",
         ),
     }
 
-# Tool ids that exist in the schema but have no real adapter in M1 -> stub.
+
+# ---------------------------------------------------------------------------
+# M6 local adapters backed by the durable Store (the other extension point).
+#   memory  — read/search/write over the company context store ("memory")
+#   channel — read/post over the shared human<->agent channel
+# Both need a Store instance, so they are built per-resolution like files.
+# ---------------------------------------------------------------------------
+
+def _store_missing(what: str) -> str:
+    return (
+        f"ERROR: the {what!r} tool requires the org job store, which is only "
+        "available while the role runs inside a job/worker loop."
+    )
+
+
+def _memory_read(inputs: dict, store: Optional[Store]) -> str:
+    if store is None:
+        return _store_missing("memory")
+    key = inputs.get("key", "")
+    if not isinstance(key, str) or not key.strip():
+        return "ERROR: 'key' is required for memory_read"
+    row = store.get_context(key.strip())
+    if row is None:
+        return f"memory_read: no entry for key {key!r}"
+    return f"[{row['key']}] (source: {row['source'] or '--'})\n{row['content']}"
+
+
+def _memory_search(inputs: dict, store: Optional[Store]) -> str:
+    if store is None:
+        return _store_missing("memory")
+    term = inputs.get("term", "")
+    if not isinstance(term, str) or not term.strip():
+        return "ERROR: 'term' is required for memory_search"
+    rows = store.search_context(term.strip(), limit=20)
+    if not rows:
+        return "memory_search: no matches"
+    return "\n".join(f"[{r['key']}] {r['content'][:800]}" for r in rows)
+
+
+def _memory_write(inputs: dict, store: Optional[Store]) -> str:
+    if store is None:
+        return _store_missing("memory")
+    key = inputs.get("key", "")
+    content = inputs.get("content", "")
+    if not isinstance(key, str) or not key.strip():
+        return "ERROR: 'key' is required for memory_write"
+    if not isinstance(content, str):
+        return "ERROR: 'content' must be a string"
+    store.upsert_context(key.strip(), content, source="memory")
+    return f"WROTE memory key {key!r} ({len(content)} chars)"
+
+
+def _channel_list(inputs: dict, store: Optional[Store]) -> str:
+    if store is None:
+        return _store_missing("channel")
+    channel = str(inputs.get("channel", "general") or "general")
+    try:
+        limit = int(inputs.get("limit", 20) or 20)
+    except (TypeError, ValueError):
+        return "ERROR: 'limit' must be an integer"
+    messages = store.list_messages(channel=channel, limit=limit)
+    if not messages:
+        return f"channel {channel!r}: no messages yet"
+    lines = []
+    for m in reversed(messages):
+        reply = "->" if m["reply_to"] else "*"
+        lines.append(f"{reply} [{m['author_role']}:{m['author']}] {m['content'][:400]}")
+    return "\n".join(lines)
+
+
+def _channel_post(inputs: dict, store: Optional[Store]) -> str:
+    if store is None:
+        return _store_missing("channel")
+    channel = str(inputs.get("channel", "general") or "general")
+    content = inputs.get("content", "")
+    if not isinstance(content, str) or not content.strip():
+        return "ERROR: 'content' is required for channel_post"
+    reply_to = inputs.get("reply_to")
+    if reply_to is not None:
+        try:
+            reply_to = int(reply_to)
+        except (TypeError, ValueError):
+            return "ERROR: 'reply_to' must be a message id"
+    mid = store.post_message(
+        channel, "agent", "agent", content, requested_role=None, reply_to=reply_to, status="done"
+    )
+    return f"POSTED message #{mid} to channel {channel!r}"
+
+
+def _store_tools(store: Optional[Store]) -> dict[str, dict[str, Tool | list[Tool]]]:
+    """Build the Store-backed ``memory``/``channel`` tool sets for a resolution."""
+    memory_read = Tool(
+        "memory_read",
+        "Read the current value of one company-memory key from the durable context store. Input: {key}.",
+        lambda inputs: _memory_read(inputs, store),
+        risk="low",
+    )
+    memory_search = Tool(
+        "memory_search",
+        "Search company memory by term and return matching context entries. Input: {term}.",
+        lambda inputs: _memory_search(inputs, store),
+        risk="low",
+    )
+    memory_write = Tool(
+        "memory_write",
+        "Write (or update) one key in company memory so the workforce stays queryable. Input: {key, content}.",
+        lambda inputs: _memory_write(inputs, store),
+        risk="medium",
+    )
+    channel_list = Tool(
+        "channel_list",
+        "List recent messages in a shared human<->agent channel. Input: {channel, limit}.",
+        lambda inputs: _channel_list(inputs, store),
+        risk="low",
+    )
+    channel_post = Tool(
+        "channel_post",
+        "Post a message into a shared human<->agent channel. Input: {channel, content, reply_to}.",
+        lambda inputs: _channel_post(inputs, store),
+        risk="medium",
+    )
+    return {
+        "memory": {"read": [memory_read, memory_search], "write": [memory_write]},
+        "channel": {"read": [channel_list], "write": [channel_post]},
+    }
+
+
+# Keep the static catalog authoritative: memory/channel are registered here
+# (bound to no store) so grants resolve even outside a job loop; tools_for_role
+# substitutes the live store spec when one is in scope.
+CATALOG["memory"] = _store_tools(None)["memory"]
+CATALOG["channel"] = _store_tools(None)["channel"]
+
+
+# Tool ids that exist in the schema but still have no live adapter -> stub.
 _STUBBED = {
     "notion", "gmail", "calendar", "slack", "stripe", "supabase",
     "github", "sheets", "docs", "crm", "cms", "payments", "analytics",
@@ -233,13 +422,31 @@ _STUBBED = {
 def _stub_tool(tool_id: str) -> Tool:
     return Tool(
         name=f"{tool_id}_stub",
-        description=f"{tool_id} integration (STUB — not wired in M1 runtime).",
+        description=f"{tool_id} integration (STUB — not wired in the runtime yet).",
         func=lambda _inputs, _tid=tool_id: (
-            f"STUB: the '{_tid}' integration is not implemented in the M1 runtime. "
+            f"STUB: the '{_tid}' integration is not implemented in the runtime. "
             "This tool is declared in the role grants but has no live adapter yet."
         ),
         requires_approval=False,
+        risk="medium",
     )
+
+
+def _resolve_spec(spec: dict, access: ToolAccess) -> list[Tool]:
+    """Pick the read/write candidates a grant should expose from a catalog entry.
+
+    A spec maps ``read``/``write`` to a single :class:`Tool` or a list of Tools
+    (M6 lets a tool id expose several read actions, e.g. memory read + search).
+    """
+    if access == ToolAccess.WRITE and spec.get("write"):
+        candidates = spec["write"]
+    elif spec.get("read"):
+        candidates = spec["read"]
+    else:
+        return []  # write requested but no write impl
+    if not isinstance(candidates, list):
+        candidates = [candidates]
+    return [t for t in candidates if t is not None]
 
 
 def tools_for_role(
@@ -247,39 +454,72 @@ def tools_for_role(
     root: Optional[Path] = None,
     *,
     org: Optional[Org] = None,
+    store: Optional[Store] = None,
+    servers: Optional[dict] = None,
 ) -> list[Tool]:
-    """Resolve a role's ``tool_grants`` into executable Tools (respecting access)."""
+    """Resolve a role's ``tool_grants`` into executable Tools (respecting access).
+
+    ``store`` activates the ``memory``/``channel`` local adapters (M6). ``servers``
+    overrides — or, when omitted, inherits — the registered MCP-style tool servers.
+    """
     tools: dict[str, Tool] = {}
-    org_policy = org.risk_tier if org is not None else ApprovalPolicy.AUTONOMOUS
-    approval_first = (
-        role.approval_policy == ApprovalPolicy.APPROVAL_FIRST
-        or org_policy == ApprovalPolicy.APPROVAL_FIRST
-    )
-    review_external = (
-        role.approval_policy == ApprovalPolicy.REVIEW_EXTERNAL
-        or org_policy == ApprovalPolicy.REVIEW_EXTERNAL
-    )
+    if servers is None:
+        from .toolservers import REGISTERED_SERVERS, server_tools
+
+        server_map = dict(REGISTERED_SERVERS)
+    else:
+        from .toolservers import server_tools
+
+        server_map = dict(servers)
+
+    store_specs = _store_tools(store)
     for g in role.tool_grants:
-        spec = _file_tools(root) if g.tool == "files" else CATALOG.get(g.tool)
-        if spec is None:
-            requires_approval = g.requires_approval or approval_first or (
-                g.access == ToolAccess.WRITE and review_external
-            )
-            tools[g.tool] = _stub_tool(g.tool).with_approval(requires_approval)
+        # MCP-style server grant: expose every tool the server advertises, still
+        # gated by the same grant access + approval rules as built-ins.
+        if g.tool in server_map:
+            for tool in server_tools(server_map[g.tool], tool_prefix=g.tool):
+                requires_approval = approval_needed(
+                    grant_approval=g.requires_approval,
+                    access=g.access,
+                    tool=tool,
+                    role=role,
+                    org=org,
+                )
+                if requires_approval and not tool.requires_approval:
+                    tool = tool.with_approval(True)
+                tools[tool.name] = tool
             continue
-        if g.access == ToolAccess.WRITE and "write" in spec:
-            chosen = spec["write"]
-        elif "read" in spec:
-            chosen = spec["read"]
+
+        if g.tool == "files":
+            spec = _file_tools(root)
+        elif g.tool in ("memory", "channel"):
+            spec = store_specs[g.tool]
         else:
-            continue  # write requested but no write impl
-        # A schema-level approval gate overrides the tool default.
-        requires_approval = g.requires_approval or approval_first or (
-            g.access == ToolAccess.WRITE and review_external
-        )
-        if requires_approval and not chosen.requires_approval:
-            chosen = chosen.with_approval(True)
-        tools[chosen.name] = chosen
+            spec = CATALOG.get(g.tool)
+
+        if spec is None:
+            stub = _stub_tool(g.tool)
+            requires_approval = approval_needed(
+                grant_approval=g.requires_approval,
+                access=g.access,
+                tool=stub,
+                role=role,
+                org=org,
+            )
+            tools[g.tool] = stub.with_approval(requires_approval)
+            continue
+
+        for tool in _resolve_spec(spec, g.access):
+            requires_approval = approval_needed(
+                grant_approval=g.requires_approval,
+                access=g.access,
+                tool=tool,
+                role=role,
+                org=org,
+            )
+            if requires_approval and not tool.requires_approval:
+                tool = tool.with_approval(True)
+            tools[tool.name] = tool
     return list(tools.values())
 
 

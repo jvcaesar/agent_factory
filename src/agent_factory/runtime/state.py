@@ -65,6 +65,18 @@ CREATE TABLE IF NOT EXISTS insights (
     created_at TEXT NOT NULL DEFAULT (datetime('now')),
     updated_at TEXT NOT NULL DEFAULT (datetime('now'))
 );
+CREATE TABLE IF NOT EXISTS messages (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    channel TEXT NOT NULL,           -- shared Slack-style channel id, e.g. 'general'
+    author_role TEXT NOT NULL,       -- 'human' for people, or the role id that answered
+    author TEXT NOT NULL,            -- display name of the author
+    content TEXT NOT NULL,
+    status TEXT NOT NULL DEFAULT 'pending',  -- pending|running|done
+    requested_role TEXT,             -- optional role a human wants to answer
+    reply_to INTEGER,                -- message id this one is answering
+    created_at TEXT NOT NULL DEFAULT (datetime('now')),
+    updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
 """
 
 
@@ -84,6 +96,7 @@ class Store:
             CREATE INDEX IF NOT EXISTS idx_events_job_id ON events(job_id, id);
             CREATE INDEX IF NOT EXISTS idx_context_updated_id ON context(updated_at, id);
             CREATE INDEX IF NOT EXISTS idx_insights_status ON insights(status, id);
+            CREATE INDEX IF NOT EXISTS idx_messages_channel_status ON messages(channel, status, id);
             """
         )
         self._conn.commit()
@@ -304,6 +317,110 @@ class Store:
         params.append(limit)
         return self._conn.execute(q, params).fetchall()
 
+    # -- shared channel (M6: human<->agent "Loop Alley" queue) ------------------
+    def post_message(
+        self,
+        channel: str,
+        author_role: str,
+        author: str,
+        content: str,
+        *,
+        requested_role: Optional[str] = None,
+        reply_to: Optional[int] = None,
+        status: str = "pending",
+    ) -> int:
+        """Post a message into a shared channel. Returns the new message id.
+
+        Human posts land as ``pending`` (the worker answers them). Agent replies
+        are posted ``done`` so a channel worker never re-answers its own output.
+        """
+        with self._tx() as c:
+            cur = c.execute(
+                "INSERT INTO messages (channel, author_role, author, content, requested_role, reply_to, status) "
+                "VALUES (?,?,?,?,?,?,?)",
+                (channel, author_role, author, content, requested_role, reply_to, status),
+            )
+            return int(cur.lastrowid)
+
+    def claim_next_in_channel(self, channel: str) -> Optional[sqlite3.Row]:
+        """Atomically claim the oldest pending message in a channel (pending -> running)."""
+        with self._tx() as c:
+            row = c.execute(
+                """
+                UPDATE messages
+                SET status='running', updated_at=datetime('now')
+                WHERE id = (
+                    SELECT id FROM messages
+                    WHERE channel=? AND status='pending' ORDER BY id LIMIT 1
+                ) AND status='pending'
+                RETURNING *
+                """,
+                (channel,),
+            ).fetchone()
+            return row
+
+    def claim_message(self, message_id: int) -> bool:
+        """Atomically transition one pending message to running. True if claimed."""
+        with self._tx() as c:
+            cur = c.execute(
+                "UPDATE messages SET status='running', updated_at=datetime('now') "
+                "WHERE id=? AND status='pending'",
+                (message_id,),
+            )
+            return cur.rowcount == 1
+
+    def complete_message(self, message_id: int, status: str = "done") -> None:
+        with self._tx() as c:
+            c.execute(
+                "UPDATE messages SET status=?, updated_at=datetime('now') WHERE id=?",
+                (status, message_id),
+            )
+
+    def list_messages(
+        self, channel: Optional[str] = None, limit: int = 100
+    ) -> list[sqlite3.Row]:
+        """Newest-first listing; pass ``channel`` to see one conversation thread."""
+        if channel is not None:
+            return self._conn.execute(
+                "SELECT * FROM messages WHERE channel=? ORDER BY id DESC LIMIT ?",
+                (channel, limit),
+            ).fetchall()
+        return self._conn.execute(
+            "SELECT * FROM messages ORDER BY id DESC LIMIT ?", (limit,)
+        ).fetchall()
+
+    def pending_messages(
+        self, channel: Optional[str] = None, limit: int = 100
+    ) -> list[sqlite3.Row]:
+        """Oldest-first list of messages still waiting for an agent reply."""
+        if channel is not None:
+            return self._conn.execute(
+                "SELECT * FROM messages WHERE channel=? AND status='pending' ORDER BY id ASC LIMIT ?",
+                (channel, limit),
+            ).fetchall()
+        return self._conn.execute(
+            "SELECT * FROM messages WHERE status='pending' ORDER BY id ASC LIMIT ?",
+            (limit,),
+        ).fetchall()
+
+    def channel_blob(self, channel: str = "general", limit: int = 30) -> str:
+        """Flatten recent channel traffic into a text block for prompt injection."""
+        entries = self._conn.execute(
+            "SELECT * FROM messages WHERE channel=? ORDER BY id DESC LIMIT ?",
+            (channel, limit),
+        ).fetchall()
+        if not entries:
+            return ""
+        blocks = []
+        for e in reversed(entries):
+            head = f"[{e['author_role']}:{e['author']}]"
+            if e["requested_role"]:
+                head += f" (-> {e['requested_role']})"
+            if e["reply_to"]:
+                head += f" (re: #{e['reply_to']})"
+            blocks.append(f"{head} {e['content']}")
+        return "\n".join(blocks)
+
     def stats(self) -> dict[str, int]:
         """Small aggregate used by the mission-control report."""
         rows = self._conn.execute(
@@ -312,6 +429,9 @@ class Store:
         jobs = {r["status"]: r["n"] for r in rows}
         open_insights = self._conn.execute(
             "SELECT COUNT(*) AS n FROM insights WHERE status='open'"
+        ).fetchone()["n"]
+        pending_messages = self._conn.execute(
+            "SELECT COUNT(*) AS n FROM messages WHERE status='pending'"
         ).fetchone()["n"]
         total_jobs = self._conn.execute("SELECT COUNT(*) AS n FROM jobs").fetchone()["n"]
         return {
@@ -322,5 +442,6 @@ class Store:
             "error": jobs.get("error", 0),
             "blocked": jobs.get("blocked", 0),
             "open_insights": open_insights,
+            "pending_messages": pending_messages,
         }
 

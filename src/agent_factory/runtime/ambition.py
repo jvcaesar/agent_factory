@@ -121,11 +121,12 @@ def propose_actions(
     *,
     max_candidates: int = 5,
     temperature: float = 0.3,
+    store: Optional[Store] = None,
 ) -> list[Proposal]:
     """Propose net-new actions for a role. Returns [] if the role isn't proactive enough."""
     if role.proactivity_level < 3:
         return []
-    tools = tools_for_role(role)
+    tools = tools_for_role(role, store=store)
     messages = [ChatMessage("user", _propose_prompt(org, role, tools, context_text, max_candidates))]
     result = llm.complete(messages, temperature=temperature)
     return parse_proposals(result.text, max_candidates=max_candidates)
@@ -170,7 +171,7 @@ def run_ambition_loop(
     client_of = role_client or (lambda _r: llm)
     context_text = store.context_blob()
     proposals = propose_actions(
-        org, role, client_of(role), context_text, max_candidates=max_candidates
+        org, role, client_of(role), context_text, max_candidates=max_candidates, store=store
     )
 
     executed: list[ExecutedAction] = []

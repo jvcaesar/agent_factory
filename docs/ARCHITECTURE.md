@@ -27,8 +27,11 @@ src/agent_factory/
 │   └── __init__.py            #   re-exports
 ├── runtime/                   # M1+M2: execute an Org
 │   ├── __init__.py            #   re-exports
-│   ├── tools.py               #   Tool catalog (files/web + stubs), tools_for_role()
-│   ├── state.py               #   SQLite Store: jobs/results/events + context/insights
+│   ├── tools.py               #   Tool catalog (files/web/memory/channel + stubs), risk rules,
+│   │                          #   tools_for_role(), approval_needed()
+│   ├── toolservers.py         #   M6: ToolServer protocol + register_tool_server (local MCP)
+│   ├── channel.py             #   M6: shared human<->agent channel + run_channel_worker()
+│   ├── state.py               #   SQLite Store: jobs/results/events + context/insights/messages
 │   ├── agent.py               #   run_agent() loop, build_system_prompt(), parse_action()
 │   ├── orchestrator.py        #   run_job() — enqueue + run + record
 │   ├── ambition.py            #   M2: propose_actions(), run_ambition_loop(), Proposal
@@ -65,16 +68,23 @@ src/agent_factory/
 approval_policy, reports_to, tool_grants[], subagents[]`
 
 ### built-in tool ids (from `archetypes.KNOWN_TOOLS`)
-`notion gmail calendar slack stripe supabase github files web sheets docs crm cms payments analytics`
+`notion gmail calendar slack stripe supabase github files web sheets docs crm cms payments analytics memory channel`
+(real adapters: `files`, `web`, and — since M6 — `memory`/`channel`, plus any
+`register_tool_server` entry; everything else resolves to a stub)
 
 ### Budget tier → model tier behavior
 - workers → `fast`
 - directors → archetype default (`smart`/`big`), downgraded to `smart` on `small` budget
 - `lead_exec`/`amplifier` → `big` on `unlimited` budget, else `smart`
 
-### Approval gate behavior
-- `ApprovalPolicy.AUTONOMOUS` → writes do **not** require approval.
-- `REVIEW_EXTERNAL` / `APPROVAL_FIRST` → every write grant gets `requires_approval=true`.
+### Approval gate behavior (M6 risk-aware rules — `approval_needed`)
+- `ApprovalPolicy.AUTONOMOUS` → only **high-risk** tools are gated (defense in depth).
+- `REVIEW_EXTERNAL` → every write grant and **high-risk** reads are gated.
+- `APPROVAL_FIRST` → every tool call is gated.
+- A schema-level grant (`ToolGrant.requires_approval`) is always absolute.
+- `files_write` is `risk=high`; `web_fetch`/`memory_read`/`channel_list` are `low`;
+  `memory_write`/`channel_post` are `medium` (so autonomous orgs may post
+  in-channel without approvals, while review-external orgs gate them).
 
 ## 4. Validation model (`config/loader.validate_org`)
 
@@ -88,8 +98,8 @@ Returns a list of error strings (empty == valid). Checks:
 ## 5. Seams for future milestones
 
 - **M4 insights:** done — `observer`/`brief` behavior lives in `runtime/insights.py`, writing to the `context`/`events`/`insights` store.
-- **M5 role packs:** done — `packs/` registry + `--spec` templates; `generator` has an optional override seam but defaults are unchanged. State can still move to Postgres behind `Store`'s interface (M6+).
-- **M6 multiplayer & tool surface:** add a human↔agent channel (e.g. shared Slack-style queue) and richer MCP/local tool adapters; `Store` and `tools.CATALOG` are the extension points.
+- **M5 role packs:** done — `packs/` registry + `--spec` templates; `generator` has an optional override seam but defaults are unchanged. State can still move to Postgres behind `Store`'s interface.
+- **M6 multiplayer & tool surface:** done — shared human↔agent channel (`runtime/channel.py`), store-backed `memory`/`channel` adapters + MCP-style servers (`runtime/toolservers.py`), and risk-aware permissions (`approval_needed`). `Store` and `tools.CATALOG` are still the extension points for external integrations.
 
 ## 6. Running the code
 
@@ -112,5 +122,10 @@ python -m agent_factory jobs --org orgs/Acme
 python -m agent_factory context --org orgs/Acme --add diary/today --detail "..."
 python -m agent_factory ambition --org orgs/Acme --role lead_exec --max-actions 2
 
-python -m unittest discover -s tests -v   # 87 tests, offline
+# M6: talk to the workforce from a shared channel (Loop Alley), then run it
+python -m agent_factory channel post --org orgs/Acme --text "Did the client respond?"
+python -m agent_factory channel worker --org orgs/Acme --provider fake
+python -m agent_factory channel list --org orgs/Acme
+
+python -m unittest discover -s tests -v   # 143 tests, offline
 ```

@@ -24,6 +24,7 @@ from .config.loader import ConfigError, load_org_yaml, validate_org
 from .llm import client_for_role
 from .runtime import Store, run_job
 from .runtime.ambition import run_ambition_loop
+from .runtime.channel import default_lead, post_to_channel, run_channel_worker
 from .runtime.insights import build_daily_brief, observe
 
 RISK_CHOICES = ["autonomous", "review_external", "approval_first"]
@@ -544,6 +545,7 @@ def cmd_status(args: argparse.Namespace) -> int:
               f"(queued={stats['queued']}, running={stats['running']}, "
               f"done={stats['done']}, error={stats['error']}, blocked={stats['blocked']})")
         print(f"  Open insights: {stats['open_insights']}")
+        print(f"  Pending channel messages: {stats['pending_messages']}")
 
         recent_jobs = store.list_jobs(limit=args.limit)
         if recent_jobs:
@@ -569,6 +571,109 @@ def cmd_status(args: argparse.Namespace) -> int:
         return 0
     finally:
         store.close()
+
+
+def cmd_channel_post(args: argparse.Namespace) -> int:
+    """A human posts a message into the shared channel; the workforce replies later."""
+    root = Path(args.org)
+    org = load_org_yaml(root / "org.yaml")
+    errors = validate_org(org, root)
+    if errors:
+        print("Validation errors:", file=sys.stderr)
+        for e in errors:
+            print(f"  - {e}", file=sys.stderr)
+        return 1
+    db = root / ".agentfactory" / "jobs.db"
+    store = Store(db)
+    try:
+        mid = post_to_channel(
+            store,
+            args.channel,
+            args.text,
+            author_role="human",
+            author=args.author or org.founder or "Human",
+            requested_role=args.role,
+        )
+    finally:
+        store.close()
+    dest = f"addressed to {args.role}" if args.role else "for the lead"
+    print(f"posted message #{mid} to #{args.channel} ({dest}) — queued for an agent reply")
+    return 0
+
+
+def cmd_channel_list(args: argparse.Namespace) -> int:
+    db = Path(args.org) / ".agentfactory" / "jobs.db"
+    store = Store(db)
+    try:
+        messages = store.list_messages(channel=args.channel, limit=args.limit)
+    finally:
+        store.close()
+    if not messages:
+        print(f"#{args.channel}: no messages yet.")
+        return 0
+    print(f"#{args.channel} ({len(messages)} message(s), newest first)")
+    for m in messages:
+        reply = "->" if m["reply_to"] else "* "
+        target = f" -> {m['requested_role']}" if m["requested_role"] else ""
+        print(f"{reply} #{m['id']:<3} [{m['author_role']}:{m['author']}]{target} "
+              f"({m['status']}) {m['content'][:70]}")
+    return 0
+
+
+def cmd_channel_worker(args: argparse.Namespace) -> int:
+    """Answer pending channel messages; each agent reply is posted back in-channel."""
+    root = Path(args.org)
+    org = load_org_yaml(root / "org.yaml")
+    errors = validate_org(org, root)
+    if errors:
+        print("Validation errors:", file=sys.stderr)
+        for e in errors:
+            print(f"  - {e}", file=sys.stderr)
+        return 1
+    db = root / ".agentfactory" / "jobs.db"
+    store = Store(db)
+    try:
+        approval_fn = _approval_policy(args)
+        client_of_role = lambda role: client_for_role(
+            role, provider_override=args.provider, model_override=args.model
+        )
+        role_resolver = None
+        if args.role:
+            try:
+                forced = org.role(args.role)
+            except KeyError:
+                print(
+                    f"No role named {args.role!r} in this org. Available: {[r.id for r in org.roles]}",
+                    file=sys.stderr,
+                )
+                return 2
+            role_resolver = lambda _message: forced
+        answered = run_channel_worker(
+            org,
+            store,
+            client_of_role(default_lead(org)),
+            channel=args.channel,
+            role_resolver=role_resolver,
+            role_client=client_of_role,
+            root=root,
+            approval_fn=approval_fn,
+            max_messages=args.max_messages,
+            temperature=args.temperature,
+        )
+    except Exception as exc:  # noqa: BLE001 — report and exit for the worker
+        print(f"Channel worker failed: {exc}", file=sys.stderr)
+        return 1
+    finally:
+        store.close()
+    if not answered:
+        print(f"#{args.channel}: no pending messages to answer")
+    else:
+        print(f"#{args.channel}: answered {len(answered)} message(s)")
+        for message, outcome, job_id in answered:
+            print(f"  #{message['id']} by {outcome.steps} step(s): {outcome.output[:80]}")
+    return 0
+
+
 def main(argv: list[str] | None = None) -> int:
     load_dotenv()
     parser = argparse.ArgumentParser(prog="agent_factory", description="Generate and manage AI agent workforces.")
@@ -650,6 +755,34 @@ def main(argv: list[str] | None = None) -> int:
     st.add_argument("--org", required=True, help="Path to a generated org tree")
     st.add_argument("--limit", type=int, default=20)
     st.set_defaults(func=cmd_status)
+
+    ch = sub.add_parser("channel", help="Shared human<->agent channel (Loop Alley)")
+    ch_sub = ch.add_subparsers(dest="channel_command", required=True)
+
+    cpost = ch_sub.add_parser("post", help="Post a human message the workforce will answer")
+    cpost.add_argument("--org", required=True, help="Path to a generated org tree")
+    cpost.add_argument("--channel", default="general", help="Channel id (default: general)")
+    cpost.add_argument("--text", required=True, help="The message a human teammate is sending")
+    cpost.add_argument("--author", default=None, help="Display name of the author (default: org founder)")
+    cpost.add_argument("--role", default=None, help="Role id to address (default: the org lead)")
+    cpost.set_defaults(func=cmd_channel_post)
+
+    clist = ch_sub.add_parser("list", help="Show a shared channel conversation")
+    clist.add_argument("--org", required=True, help="Path to a generated org tree")
+    clist.add_argument("--channel", default="general")
+    clist.add_argument("--limit", type=int, default=50)
+    clist.set_defaults(func=cmd_channel_list)
+
+    cwork = ch_sub.add_parser("worker", help="Answer pending channel messages; agents reply in-channel")
+    cwork.add_argument("--org", required=True, help="Path to a generated org tree")
+    cwork.add_argument("--channel", default="general")
+    cwork.add_argument("--provider", default=None, help="openai | ollama | fake")
+    cwork.add_argument("--model", default=None, help="Override the resolved model; optional provider/model prefix")
+    cwork.add_argument("--approval", choices=["ask", "deny", "allow"], default="deny")
+    cwork.add_argument("--role", default=None, help="Force one role to answer (overrides addressed role)")
+    cwork.add_argument("--max-messages", type=int, default=5)
+    cwork.add_argument("--temperature", type=float, default=0.2)
+    cwork.set_defaults(func=cmd_channel_worker)
 
     args = parser.parse_args(argv)
     try:

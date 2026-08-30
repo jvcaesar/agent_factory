@@ -65,6 +65,8 @@ KNOWN_TOOLS: set[str] = {
     "cms",
     "payments",
     "analytics",
+    "memory",   # M6: company-memory read/search/write (durable context store)
+    "channel",  # M6: shared human<->agent channel read/post
 }
 
 WORKER_RESEARCH = Archetype(
@@ -73,7 +75,7 @@ WORKER_RESEARCH = Archetype(
     charter="Gather, filter, and synthesize information from granted sources into concise, sourced briefs.",
     proactivity=1,
     model_tier=ModelTier.FAST,
-    tool_scope=("web", "notion", "docs", "files", "sheets"),
+    tool_scope=("web", "notion", "docs", "files", "sheets", "memory", "channel"),
 )
 
 WORKER_WRITE = Archetype(
