@@ -2,6 +2,11 @@
 
 > Running record of architectural and scoping decisions. Newest first.
 
+## 2026-08-25 — M5: role packs as data
+**Decision:** Add a `packs` registry (`business_ops`, `engineering`, `research`) where each pack is pure data — an `InterviewAnswers`-style `spec` plus `archetype_overrides` applied with `dataclasses.replace`. New CLI: `bootstrap --pack <name>` (+ `--name/--founder/--north-star`) and `packs [--show <name>]`. `generate_org` gained an optional `directors/workers/addons` override seam with unchanged defaults.
+**Why:** "Generic now, specialized later" — specialized workforces should be configuration over the same deterministic engine, not new code paths. Packs also double as `--spec` templates (`examples/packs/*.yaml`).
+**Consequence:** `bootstrap --pack engineering` produces a 20-role org with vertical charters in one command; override keys accept both director domain keys and archetype ids (`engineering` or `director_engineering`). 113 tests pass.
+
 ## 2026-08-25 — M4: insights store + observer/brief + mission control
 **Decision:** Add an `insights` table (level/kind/title/detail/suggestion/status) to the SQLite store, a low-cost `observe` watchdog that scans jobs/events/context and persists findings, a `build_daily_brief` "what to do today" planner, and a `status` mission-control report. `Observation` prompts use plain `.format()` templates (not fragile triple-quoted f-strings).
 **Why:** The video's "insight → action, not dashboards" (22:20–23:31, 26:04) requires turning raw state into actionable findings; the observability needs a durable home co-located with jobs/context.

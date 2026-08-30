@@ -25,13 +25,19 @@ src/agent_factory/
 │   ├── ollama_client.py       #   OllamaLLM (local Gemma/Qwen)
 │   ├── factory.py             #   get_client(provider) <- AGENT_FACTORY_PROVIDER
 │   └── __init__.py            #   re-exports
-└── runtime/                   # M1+M2: execute an Org
-    ├── __init__.py            #   re-exports
-    ├── tools.py               #   Tool catalog (files/web + stubs), tools_for_role()
-    ├── state.py               #   SQLite Store: jobs/results/events + context table
-    ├── agent.py               #   run_agent() loop, build_system_prompt(), parse_action()
-    ├── orchestrator.py        #   run_job() — enqueue + run + record
-    └── ambition.py            #   M2: propose_actions(), run_ambition_loop(), Proposal
+├── runtime/                   # M1+M2: execute an Org
+│   ├── __init__.py            #   re-exports
+│   ├── tools.py               #   Tool catalog (files/web + stubs), tools_for_role()
+│   ├── state.py               #   SQLite Store: jobs/results/events + context/insights
+│   ├── agent.py               #   run_agent() loop, build_system_prompt(), parse_action()
+│   ├── orchestrator.py        #   run_job() — enqueue + run + record
+│   ├── ambition.py            #   M2: propose_actions(), run_ambition_loop(), Proposal
+│   └── insights.py            #   M4: observe() / build_daily_brief(), Observation
+├── packs/                     # M5: role packs (dataset workforces)
+│   └── __init__.py            #   RolePack registry + build_answers/overrides
+└── cli.py                     # argparse CLI: bootstrap, validate, run, jobs,
+                               #   ambition, context, probe, observe, brief, status,
+                               #   packs
 ```
 
 ## 2. Data flow
@@ -81,8 +87,9 @@ Returns a list of error strings (empty == valid). Checks:
 
 ## 5. Seams for future milestones
 
-- **M4 insights:** `observer` role currently just has a charter; attach scan + log behavior (writing to the `context`/`events` store) behind the same `Role` model and `run_agent`.
-- **M5 role packs:** add `src/agent_factory/packs/<name>/` with archetype overrides + `--spec` templates; `generator` stays untouched. State can move to Postgres behind `Store`'s interface.
+- **M4 insights:** done — `observer`/`brief` behavior lives in `runtime/insights.py`, writing to the `context`/`events`/`insights` store.
+- **M5 role packs:** done — `packs/` registry + `--spec` templates; `generator` has an optional override seam but defaults are unchanged. State can still move to Postgres behind `Store`'s interface (M6+).
+- **M6 multiplayer & tool surface:** add a human↔agent channel (e.g. shared Slack-style queue) and richer MCP/local tool adapters; `Store` and `tools.CATALOG` are the extension points.
 
 ## 6. Running the code
 
@@ -91,6 +98,10 @@ cd agent_factory
 set PYTHONPATH=src
 python -m agent_factory bootstrap --spec tests/fixtures/demo_spec.yaml --out orgs/MyOrg
 python -m agent_factory validate --root orgs/MyOrg
+
+# M5: one-command workforce from a role pack
+python -m agent_factory packs
+python -m agent_factory bootstrap --pack engineering --name "Acme Eng" --out orgs/Eng
 
 # M1: run a job (offline first, then real providers)
 python -m agent_factory run --org orgs/Acme --role worker_research_1 ^

@@ -11,7 +11,7 @@ from pathlib import Path
 import yaml
 
 from ..config import ApprovalPolicy, ModelTier, Org, Role, ToolAccess, ToolGrant
-from .archetypes import ADDONS, ALL_WORKERS, DIRECTORS, KNOWN_TOOLS
+from .archetypes import ADDONS, ALL_WORKERS, DIRECTORS, KNOWN_TOOLS, Archetype
 from .interview import InterviewAnswers
 from .prompts import render_goals, render_org_readme, render_sop
 
@@ -66,8 +66,22 @@ def _lead_role(tools: set[str], risk: ApprovalPolicy, budget: str) -> Role:
     )
 
 
-def generate_org(answers: InterviewAnswers) -> Org:
-    """Build an :class:`Org` from interview answers (no writes to disk)."""
+def generate_org(
+    answers: InterviewAnswers,
+    *,
+    directors: Optional[dict[str, Archetype]] = None,
+    workers: Optional[dict[str, Archetype]] = None,
+    addons: Optional[dict[str, Archetype]] = None,
+) -> Org:
+    """Build an :class:`Org` from interview answers (no writes to disk).
+
+    ``directors``/``workers``/``addons`` are optional overrides of the generic
+    role library (e.g. from a role pack); defaults are the built-in archetypes.
+    """
+    directors = directors if directors is not None else DIRECTORS
+    workers = workers if workers is not None else ALL_WORKERS
+    addons = addons if addons is not None else ADDONS
+
     errors = answers.validate()
     if errors:
         raise ValueError("invalid answers: " + "; ".join(errors))
@@ -100,7 +114,7 @@ def generate_org(answers: InterviewAnswers) -> Org:
         return f"{wid}_{idx}"
 
     for domain in answers.domains:
-        arch = DIRECTORS[domain]
+        arch = directors[domain]
         dir_id = arch.id
         dir_tier = arch.model_tier
         if budget == "small" and dir_tier == ModelTier.BIG:
@@ -119,7 +133,7 @@ def generate_org(answers: InterviewAnswers) -> Org:
             subagents=[],
         )
         for wid in arch.default_workers:
-            warch = ALL_WORKERS[wid]
+            warch = workers[wid]
             wname = worker_instance(wid)
             worker = Role(
                 id=wname,
@@ -143,7 +157,7 @@ def generate_org(answers: InterviewAnswers) -> Org:
     for name, enabled in addon_map.items():
         if not enabled:
             continue
-        a = ADDONS[name]
+        a = addons[name]
         roles.append(
             Role(
                 id=a.id,

@@ -1,0 +1,29 @@
+# Role pack: research
+# Copy/edit as a bootstrap --spec file, e.g.:
+#   agent_factory bootstrap --spec examples/packs/research.yaml --out orgs/MyResearch
+org_name: MyCo Research
+founder: Founder
+north_star: Produce defensible, decision-ready research that moves strategy forward.
+quarterly_goals:
+  - Publish the quarterly market landscape
+  - Deliver three deep-dive briefs on key questions
+  - Stand up an evidence library the company can query
+human_team_size: 2
+domains:
+  - research
+  - data
+  - product
+  - partnerships
+tools:
+  - web
+  - notion
+  - docs
+  - sheets
+  - files
+  - github
+  - analytics
+risk_tier: review_external
+budget_tier: medium
+add_amplifier: true
+add_observer: true
+use_lead: true

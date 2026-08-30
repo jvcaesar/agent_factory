@@ -29,10 +29,10 @@ See `IMPLEMENTED_MILESTONE3.md`.
 - **Watchdogs / insight → action:** "what should I do today" brief, not dashboards (video 26:04).
 - **Mission control:** `status` CLI report of queue, agent activity, open insights, approvals. See `IMPLEMENTED_MILESTONE4.md`. 95 tests.
 
-## M5 — Role packs (specialized orgs)
-- Package the same engine for business-ops, engineering, and research orgs.
-- Larger orgs: many directors + many workers, with repeatable `--spec` templates.
-- Consider `site-packages`-style naming (sphinx/video 2015-titles-then-evolve, 19:34).
+## M5 — Role packs ✅ (implemented)
+- Package the engine for business-ops, engineering, and research orgs via a `packs` registry (`bootstrap --pack <name>`), with per-pack archetype charter overrides.
+- Larger orgs & repeatable templates: `examples/packs/*.yaml` usable directly as `--spec`.
+- Naming: pack ids are plain function names (`business_ops`, `engineering`, `research`). See `IMPLEMENTED_MILESTONE5.md`. 113 tests.
 
 ## M6 — Multiplayer & tool surface (optional, later)
 - Human teammates talk to the workforce via a shared channel (video 23:56 Loop Alley pattern).
@@ -54,7 +54,7 @@ See `IMPLEMENTED_MILESTONE3.md`.
 - [x] M1 runtime: provider adapter, agent loop, SQLite, offline tests
 - [x] M2 ambition loop: proactive propose/execute, context store, guarded scope
 - [x] M4 mission control + observers/watchdogs (+8 tests — 95 total)
-- [ ] M5 role packs (business-ops / engineering / research)
+- [x] M5 role packs (business-ops / engineering / research) (+16 tests — 113 total)
 - [ ] M6 multiplayer + wider tool surface
 
 Each milestone should keep the test suite green (offline, no API keys).

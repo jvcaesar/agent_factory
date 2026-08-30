@@ -1,0 +1,34 @@
+# Role pack: business_ops
+# Copy/edit as a bootstrap --spec file, e.g.:
+#   agent_factory bootstrap --spec examples/packs/business_ops.yaml --out orgs/MyOps
+org_name: MyCo Operations
+founder: Founder
+north_star: Drive predictable growth and operational efficiency across revenue, service, and brand.
+quarterly_goals:
+  - Lift pipeline and closed revenue
+  - Reduce support resolution time
+  - Ship a monthly business-health report
+human_team_size: 2
+domains:
+  - marketing
+  - operations
+  - support
+  - finance
+  - data
+  - partnerships
+tools:
+  - notion
+  - gmail
+  - calendar
+  - slack
+  - crm
+  - docs
+  - sheets
+  - cms
+  - analytics
+  - files
+risk_tier: review_external
+budget_tier: medium
+add_amplifier: true
+add_observer: true
+use_lead: true

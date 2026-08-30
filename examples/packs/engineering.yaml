@@ -1,0 +1,30 @@
+# Role pack: engineering
+# Copy/edit as a bootstrap --spec file, e.g.:
+#   agent_factory bootstrap --spec examples/packs/engineering.yaml --out orgs/MyEng
+org_name: MyCo Engineering
+founder: Founder
+north_star: Ship reliable, high-quality software faster with a self-reviewing team.
+quarterly_goals:
+  - Cut cycle time from ticket to deploy
+  - Raise automated test coverage
+  - Ship and review the quarterly platform roadmap
+human_team_size: 5
+domains:
+  - product
+  - engineering
+  - research
+  - ai_ops
+  - data
+tools:
+  - files
+  - github
+  - notion
+  - docs
+  - web
+  - slack
+  - analytics
+risk_tier: review_external
+budget_tier: medium
+add_amplifier: true
+add_observer: true
+use_lead: true

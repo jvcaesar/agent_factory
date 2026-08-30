@@ -57,6 +57,28 @@ use_lead: true              # optional top coordinator (Chief of Staff)
 - `use_lead: true` makes everything report to `lead_exec`; `false` leaves the first director at top.
 - `amplifier` + `observer` are pure capability add-ons (generic "10x-er" and "watcher").
 
+## Role packs (M5)
+
+Instead of hand-writing a spec, you can bootstrap from a built-in pack:
+
+```
+agent_factory packs                      # list: business_ops, engineering, research
+agent_factory packs --show engineering   # print that pack's spec YAML
+agent_factory bootstrap --pack engineering --name "Acme Eng" ^
+    --north-star "Ship fast, keep quality high" --out orgs/Eng
+```
+
+Packs are pure data — an `InterviewAnswers`-style `spec` plus `archetype_overrides`
+(charter tweaks applied via `dataclasses.replace`). Their specs are also available
+as reusable `--spec` templates under `examples/packs/*.yaml`, so you can copy +
+edit a pack into a bespoke org:
+
+```
+agent_factory bootstrap --spec examples/packs/research.yaml --out orgs/Research
+```
+
+See `docs/IMPLEMENTED_MILESTONE5.md` for the pack list and override details.
+
 ## Validation
 
 Run `agent_factory validate --root orgs/<name>` after generation. It checks refs,

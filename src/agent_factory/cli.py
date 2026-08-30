@@ -139,7 +139,26 @@ def _load_spec(path: Path) -> InterviewAnswers:
 
 
 def cmd_bootstrap(args: argparse.Namespace) -> int:
-    if args.spec:
+    if args.pack and args.spec:
+        print("--pack and --spec are mutually exclusive.", file=sys.stderr)
+        return 2
+
+    pack = None
+    if args.pack:
+        from .packs import build_answers, get_pack, overridden_archetypes
+
+        try:
+            pack = get_pack(args.pack)
+        except KeyError as exc:
+            print(exc, file=sys.stderr)
+            return 2
+        answers = build_answers(
+            pack,
+            org_name=args.org_name,
+            founder=args.founder,
+            north_star=args.north_star,
+        )
+    elif args.spec:
         answers = _load_spec(Path(args.spec))
     else:
         answers = _interactive()
@@ -149,14 +168,36 @@ def cmd_bootstrap(args: argparse.Namespace) -> int:
         print("Invalid answers:", "; ".join(errs), file=sys.stderr)
         return 2
 
-    org = generate_org(answers)
+    if pack is not None:
+        directors, workers, addons = overridden_archetypes(pack)
+        org = generate_org(answers, directors=directors, workers=workers, addons=addons)
+    else:
+        org = generate_org(answers)
     write_org(org, args.out)
     print(f"\nGenerated org '{org.name}' at: {args.out}")
+    if pack is not None:
+        print(f"  pack: {pack.id}")
     print(f"  roles: {len(org.roles)}  "
           f"lead={answers.use_lead}  risk={org.risk_tier.value}  budget={org.budget_tier}")
     for r in org.roles:
         if r.reports_to is None:
             print(f"  top -> {r.id} ({r.title}, proactivity {r.proactivity_level})")
+    return 0
+
+
+def cmd_packs(args: argparse.Namespace) -> int:
+    from .packs import get_pack, list_packs
+
+    if args.show:
+        try:
+            pack = get_pack(args.show)
+        except KeyError as exc:
+            print(exc, file=sys.stderr)
+            return 2
+        print(yaml.safe_dump(pack.spec, sort_keys=False, allow_unicode=True))
+        return 0
+    for p in list_packs():
+        print(f"{p.id:<16}{p.name:<28}{p.description}")
     return 0
 
 
@@ -535,8 +576,16 @@ def main(argv: list[str] | None = None) -> int:
 
     bp = sub.add_parser("bootstrap", help="Interview -> generated org chart")
     bp.add_argument("--spec", help="Load answers from a YAML spec file (non-interactive)")
+    bp.add_argument("--pack", default=None, help="Generate from a built-in role pack (business_ops|engineering|research)")
+    bp.add_argument("--name", "--org-name", dest="org_name", default=None, help="Override pack org name")
+    bp.add_argument("--founder", default=None, help="Override pack founder name")
+    bp.add_argument("--north-star", dest="north_star", default=None, help="Override pack north star")
     bp.add_argument("--out", default="orgs/MyOrg", help="Output directory for the generated org")
     bp.set_defaults(func=cmd_bootstrap)
+
+    pk = sub.add_parser("packs", help="List built-in role packs")
+    pk.add_argument("--show", default=None, help="Print the spec YAML for a pack")
+    pk.set_defaults(func=cmd_packs)
 
     vp = sub.add_parser("validate", help="Validate a generated org tree")
     vp.add_argument("--root", default="orgs/MyOrg", help="Root directory of the org")
