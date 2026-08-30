@@ -39,7 +39,8 @@ The `docs/` folder is the project's source of truth:
 - [`docs/IMPLEMENTED_MILESTONE2.md`](docs/IMPLEMENTED_MILESTONE2.md) — everything implemented in the current step (M2 ambition loop)
 - [`docs/IMPLEMENTED_MILESTONE4.md`](docs/IMPLEMENTED_MILESTONE4.md) — everything implemented in the current step (M4 insights / observers / mission control)
 - [`docs/IMPLEMENTED_MILESTONE5.md`](docs/IMPLEMENTED_MILESTONE5.md) — everything implemented in the current step (M5 role packs)
-- [`docs/ROADMAP.md`](docs/ROADMAP.md) — upcoming steps (M1–M6)
+- [`docs/IMPLEMENTED_MILESTONE6.md`](docs/IMPLEMENTED_MILESTONE6.md) — everything implemented in the current step (M6 multiplayer / shared channel + wider tool surface)
+- [`docs/ROADMAP.md`](docs/ROADMAP.md) — the roadmap (M1–M6)
 - [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) — module map, data flow, contracts, seams for later milestones
 - [`docs/DESIGN_PRINCIPLES.md`](docs/DESIGN_PRINCIPLES.md) — the generic patterns and guiding rules
 - [`docs/DECISION_LOG.md`](docs/DECISION_LOG.md) — running record of design decisions
@@ -49,6 +50,8 @@ The `docs/` folder is the project's source of truth:
 
 ## Status
 
+- **Milestone 6 (Multiplayer & tool surface)** — implemented. See
+  [`docs/IMPLEMENTED_MILESTONE6.md`](docs/IMPLEMENTED_MILESTONE6.md).
 - **Milestone 5 (Role packs)** — implemented. See
   [`docs/IMPLEMENTED_MILESTONE5.md`](docs/IMPLEMENTED_MILESTONE5.md).
 - **Milestone 4 (Insights)** — implemented. See
@@ -59,7 +62,6 @@ The `docs/` folder is the project's source of truth:
   [`docs/IMPLEMENTED_MILESTONE2.md`](docs/IMPLEMENTED_MILESTONE2.md).
 - **Milestone 1 (Runtime engine)** — implemented. See
   [`docs/IMPLEMENTED_MILESTONE1.md`](docs/IMPLEMENTED_MILESTONE1.md).
-- Milestone 6 is queued in [`docs/ROADMAP.md`](docs/ROADMAP.md).
 
 ## Quick start
 
@@ -100,13 +102,19 @@ agent_factory packs                               # list packs
 agent_factory bootstrap --pack engineering ^
     --name "MyCo Eng" --north-star "Ship fast, keep quality high" --out orgs/Eng
 agent_factory bootstrap --spec examples/packs/research.yaml --out orgs/Research
+
+# 9. Talk to the workforce from a shared channel (M6, "Loop Alley")
+agent_factory channel post --org orgs/Acme ^
+    --text "Did the client respond to my email?" --role lead_exec
+agent_factory channel worker --org orgs/Acme --provider fake   # agents reply in-channel
+agent_factory channel list  --org orgs/Acme
 ```
 
 Requires Python 3.10+ and `pydantic` + `pyyaml`. Tests run on stdlib
 `unittest` with no extra installs:
 
 ```bash
-py -m unittest discover -s tests -v   # 113 tests, offline
+py -m unittest discover -s tests -v   # 143 tests, offline
 ```
 
 ## Providers (M1)
@@ -141,3 +149,7 @@ See [`docs/IMPLEMENTED_MILESTONE1.md`](docs/IMPLEMENTED_MILESTONE1.md) for detai
 - [x] **M4 Insights** — observers/watchdogs + mission-control view
 - [x] **M5 Role packs** — business-ops / engineering / research orgs from the
   same primitives
+- [x] **M6 Multiplayer & tool surface** — shared human↔agent channel
+  (`channel post|list|worker`), store-backed `memory`/`channel` tools,
+  MCP-style `ToolServer` registry, risk-aware `approval_needed()` rules
+  (+30 tests — 143 total)
