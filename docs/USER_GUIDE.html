@@ -217,14 +217,14 @@ footer{border-top:1px solid #33373C;color:#9BA3AE}
 <div class="hero">
   <h1>🤖 Agent Factory — User Guide</h1>
   <p>A practical, step-by-step guide to the <code style="background:rgba(255,255,255,.2);color:#fff">agent_factory</code> CLI.
-  Every example was captured from a real run against a generated org
-  (<strong>Demo Co</strong>, business-ops pack) using the offline <strong>fake</strong> provider —
-  so you can reproduce every command <strong>without an API key</strong>.</p>
+  The offline examples use the deterministic <strong>fake</strong> provider, so
+  you can reproduce every command <strong>without an API key</strong>. Real model
+  output requires OpenAI or a local Ollama server.</p>
   <div class="badges">
     <span class="badge">✅ All examples verified</span>
     <span class="badge">🔌 Works offline (fake provider)</span>
     <span class="badge">🐍 Python 3.10+</span>
-    <span class="badge">🧪 143 tests green</span>
+    <span class="badge">🧪 146 tests green</span>
   </div>
 </div>
 
@@ -248,20 +248,24 @@ footer{border-top:1px solid #33373C;color:#9BA3AE}
 
 <!-- ======================= 1. INSTALL ======================= -->
 <section id="s1">
-  <h2><span class="num">1</span>Installation &amp; setup</h2>
+  <h2><span class="num">1</span>Installation and setup</h2>
   <div class="purpose">📋 <div><b>Purpose:</b> get the CLI installed and pick an LLM provider.</div></div>
 
   <div class="term"><div class="term-head"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span>install from the repo root<button class="copy" onclick="cp(this)">Copy</button></div>
-<pre><code>pip install -e .                <span class="cmt"># core (needs Python 3.10+, pydantic, pyyaml)</span>
-pip install -e ".[openai]"      <span class="cmt"># + OpenAI support</span>
-pip install -e ".[ollama]"      <span class="cmt"># + Ollama (local models)</span></code></pre></div>
+<pre><code>py --version                     <span class="cmt"># requires Python 3.10+</span>
+py -m pip install -e .           <span class="cmt"># core: pydantic and pyyaml</span>
+py -m pip install -e ".[openai]" <span class="cmt"># OpenAI support, when needed</span>
+<span class="cmt"># or: py -m pip install -e ".[ollama]"  # local Ollama support</span></code></pre></div>
 
-  <p>Copy <code>.env.example</code> to <code>.env</code> and set a provider:</p>
+  <p>Select a provider in the current PowerShell session. <code>fake</code> is the
+  best first run:</p>
 
-  <div class="term"><div class="term-head">📁 .env — pick ONE provider<button class="copy" onclick="cp(this)">Copy</button></div>
-<pre><code>AGENT_FACTORY_PROVIDER=fake        <span class="cmt"># offline, deterministic, no key needed</span>
-<span class="cmt"># AGENT_FACTORY_PROVIDER=openai    # needs OPENAI_API_KEY=sk-...</span>
-<span class="cmt"># AGENT_FACTORY_PROVIDER=ollama    # local Ollama at http://localhost:11434/v1</span></code></pre></div>
+  <div class="term"><div class="term-head">PowerShell — pick ONE provider<button class="copy" onclick="cp(this)">Copy</button></div>
+<pre><code>$env:AGENT_FACTORY_PROVIDER = "fake"       <span class="cmt"># offline, deterministic</span>
+<span class="cmt"># $env:AGENT_FACTORY_PROVIDER = "openai"   # also set OPENAI_API_KEY</span>
+<span class="cmt"># $env:AGENT_FACTORY_PROVIDER = "ollama"   # Ollama at localhost:11434</span></code></pre></div>
+  <p class="lead">The environment variable lasts for the current terminal session.
+  The CLI also accepts <code>--provider</code> for a single command.</p>
 
   <h3>Check that your providers are reachable — <code>probe</code></h3>
   <div class="term"><div class="term-head"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span>terminal<button class="copy" onclick="cp(this)">Copy</button></div>
@@ -284,7 +288,7 @@ pip install -e ".[ollama]"      <span class="cmt"># + Ollama (local models)</spa
   <code>--only ollama</code>.</p></div>
 
   <div class="callout tip"><div class="ico">🧪</div><div><b>Running the tests?</b> They are fully offline:
-  <code>py -m unittest discover -s tests</code> (143 tests, no API keys).</div></div>
+  <code>py -m unittest discover -s tests</code> (146 tests, no API keys).</div></div>
 </section>
 
 <!-- ======================= 2. QUICK START ======================= -->
@@ -296,7 +300,7 @@ pip install -e ".[ollama]"      <span class="cmt"># + Ollama (local models)</spa
     <h4>Create a workforce from a pack</h4>
     <div class="what">Generates a validated 23-role org chart on disk.</div>
     <div class="term"><div class="term-head"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span>terminal<button class="copy" onclick="cp(this)">Copy</button></div>
-<pre><code>set AGENT_FACTORY_PROVIDER=fake                       <span class="cmt"># Windows (use export on bash)</span>
+<pre><code>$env:AGENT_FACTORY_PROVIDER = "fake"                <span class="cmt"># PowerShell</span>
 
 agent_factory bootstrap --pack business_ops --name "Demo Co" ^
     --north-star "Become the trusted advisor for our clients" --out orgs/Demo</code></pre></div>
@@ -690,6 +694,19 @@ Did th...
     <tr><td><span class="m m1">openai</span></td><td><code>OPENAI_API_KEY</code> (+ optional <code>OPENAI_BASE_URL</code>), <code>pip install -e ".[openai]"</code></td><td>production-quality work</td></tr>
     <tr><td><span class="m m2">ollama</span></td><td>local Ollama at <code>http://localhost:11434/v1</code> (override <code>OLLAMA_BASE_URL</code>/<code>OLLAMA_MODEL</code>), <code>pip install -e ".[ollama]"</code></td><td>private/local models (Gemma, Qwen, …)</td></tr>
   </table>
+
+  <div class="callout warn"><div class="ico">⚠️</div><div><b>Anthropic is not wired yet.</b>
+  Installing the optional Anthropic package does not enable an Anthropic provider.</div></div>
+
+  <h3>Live and stubbed tools</h3>
+  <div class="card"><p style="font-size:15px">The currently live tools are
+  <code>files</code>, <code>web</code>, <code>memory</code>, and <code>channel</code>.
+  Third-party tool ids such as <code>notion</code>, <code>gmail</code>,
+  <code>calendar</code>, <code>slack</code>, <code>stripe</code>, <code>supabase</code>,
+  <code>github</code>, <code>sheets</code>, <code>docs</code>, <code>crm</code>,
+  <code>cms</code>, <code>payments</code>, and <code>analytics</code> are declared
+  integration stubs. Calling one returns a <code>STUB</code> message and does not
+  modify the external service.</p></div>
 </section>
 
 <!-- ======================= 9. CHEAT SHEET ======================= -->
@@ -754,8 +771,14 @@ Did th...
   Switch to <code>openai</code>/<code>ollama</code> for real content.</div>
 
   <div class="qa"><b>🔧 <code>probe</code> reports <code>[FAIL] ...</code></b><br>
-  Check the API key / base URL in <code>.env</code> (OpenAI) or that Ollama is running
+  Check <code>OPENAI_API_KEY</code> / base URL (OpenAI) or that Ollama is running
   (<code>ollama serve</code>) and the model is pulled (<code>ollama pull qwen2.5:7b</code>).</div>
+
+  <div class="qa"><b>🔧 A third-party tool returns <code>STUB</code>.</b><br>
+  This is expected for the integrations listed in the live/stubbed tools section.
+  Use <code>files</code>, <code>web</code>, <code>memory</code>, or <code>channel</code>
+  for the implemented tool surface, or register a local MCP-style server through
+  the runtime API.</div>
 
   <div class="qa"><b>❓ Two channel workers at once?</b><br>
   Safe. Message claims are atomic (<code>pending → running</code>), so each question is

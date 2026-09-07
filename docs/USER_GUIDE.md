@@ -1,9 +1,9 @@
 # Agent Factory — User Guide
 
-A practical, step-by-step guide to using the `agent_factory` CLI. Every
-example below was captured from a real run against a generated org
-(`Demo Co`, business-ops pack) using the offline `fake` provider, so you can
-reproduce every command without an API key.
+A practical, step-by-step guide to using the `agent_factory` CLI. The offline
+examples use the deterministic `fake` provider, so they can be reproduced
+without an API key. Real model output requires either OpenAI or a local Ollama
+server.
 
 > **How to read this guide**
 > Each command section shows: **Purpose** → **Command** → **Expected output**
@@ -36,25 +36,30 @@ tool call, and the human talks to agents through a shared channel.
 
 ---
 
-## 1. Installation & setup
+## 1. Installation and setup
 
 **Purpose:** get the CLI installed and pick an LLM provider.
 
-```bash
-# from the repo root
-pip install -e .                # core (needs Python 3.10+, pydantic, pyyaml)
-pip install -e ".[openai]"      # + OpenAI support
-pip install -e ".[ollama]"      # + Ollama (local models)
+From PowerShell, run these commands in the repository root:
+
+```powershell
+py --version                     # requires Python 3.10+
+py -m pip install -e .           # core: pydantic and pyyaml
+py -m pip install -e ".[openai]" # OpenAI support, when needed
+# or: py -m pip install -e ".[ollama]"  # local Ollama support
 ```
 
-Copy `.env.example` to `.env` and set a provider:
+Select a provider in the current PowerShell session. `fake` is the best first
+run:
 
-```bash
-# .env — pick ONE provider
-AGENT_FACTORY_PROVIDER=fake        # offline, deterministic, no key needed
-# AGENT_FACTORY_PROVIDER=openai    # needs OPENAI_API_KEY=sk-...
-# AGENT_FACTORY_PROVIDER=ollama    # local Ollama at http://localhost:11434/v1
+```powershell
+$env:AGENT_FACTORY_PROVIDER = "fake"       # offline, deterministic
+# $env:AGENT_FACTORY_PROVIDER = "openai"   # also set OPENAI_API_KEY
+# $env:AGENT_FACTORY_PROVIDER = "ollama"   # Ollama at localhost:11434
 ```
+
+The environment variable lasts for the current terminal session. The CLI also
+accepts `--provider` for a single command.
 
 **Check that your configured providers are reachable** with `probe`:
 
@@ -80,7 +85,7 @@ line per pair. Exit code is `0` only if all pairs answer. Limit it with
 `--only openai` or `--only ollama`.
 
 > Running the tests? They are fully offline: `py -m unittest discover -s tests`
-> (143 tests, no API keys).
+> (146 tests at the time of writing, no API keys).
 
 ---
 
@@ -89,7 +94,7 @@ line per pair. Exit code is `0` only if all pairs answer. Limit it with
 Copy-paste this to see the whole system work in under a minute — no API key:
 
 ```bash
-set AGENT_FACTORY_PROVIDER=fake                       # Windows (use export on bash)
+$env:AGENT_FACTORY_PROVIDER = "fake"                # PowerShell
 
 agent_factory bootstrap --pack business_ops --name "Demo Co" ^
     --north-star "Become the trusted advisor for our clients" --out orgs/Demo
@@ -100,9 +105,9 @@ agent_factory status --org orgs/Demo
 agent_factory channel post --org orgs/Demo --text "Did the client respond?" --role lead_exec
 ```
 
-If all five succeed you have a valid org, one completed job, a mission-control
-report, and a message queued in the shared channel. The rest of this guide
-explains each step in depth.
+If these commands succeed you have a valid org, one completed job, a
+mission-control report, and a message queued in the shared channel. The
+channel message is answered only after you run `channel worker`.
 
 ---
 
@@ -173,7 +178,7 @@ quarterly_goals:
   - Ship a monthly business-health report
 human_team_size: 2
 domains: [marketing, operations, support, finance, data, partnerships]
-tools: [notion, gmail, calendar, slack, crm, docs, sheets, cms, analytics, files]
+tools: [files, web, memory, channel]
 risk_tier: review_external
 budget_tier: medium
 add_amplifier: true
@@ -530,6 +535,18 @@ Providers:
 | `openai` | `OPENAI_API_KEY` (+ optional `OPENAI_BASE_URL`), `pip install -e ".[openai]"` | production-quality work |
 | `ollama` | local Ollama at `http://localhost:11434/v1` (override `OLLAMA_BASE_URL`/`OLLAMA_MODEL`), `pip install -e ".[ollama]"` | private/local models (Gemma, Qwen, …) |
 
+There is no Anthropic adapter yet. Installing the optional Anthropic package
+does not enable an Anthropic provider.
+
+### Live and stubbed tools
+
+The following tools execute locally: `files`, `web`, `memory`, and `channel`.
+Third-party tool ids such as `notion`, `gmail`, `calendar`, `slack`, `stripe`,
+`supabase`, `github`, `sheets`, `docs`, `crm`, `cms`, `payments`, and
+`analytics` are currently declared integration stubs. A role may be granted
+one of these tools, but calling it returns a `STUB` message and does not modify
+the external service.
+
 ---
 
 ## 9. Command reference (cheat sheet)
@@ -592,9 +609,14 @@ link, unknown tool, missing goal). If hand-editing `org.yaml`, re-run
 provider — it echoes prompts for deterministic offline runs. Switch to
 `openai`/`ollama` for real content.
 
-**`probe` reports `[FAIL] ...`.** Check the API key / base URL in `.env`
-(OpenAI) or that Ollama is running (`ollama serve`) and the model is pulled
+**`probe` reports `[FAIL] ...`.** Check `OPENAI_API_KEY` / base URL (OpenAI),
+or that Ollama is running (`ollama serve`) and the model is pulled
 (`ollama pull qwen2.5:7b`).
+
+**A third-party tool returns `STUB`.** This is expected for the integrations
+listed in the “Live and stubbed tools” section. Use `files`, `web`, `memory`,
+or `channel` for the currently implemented tool surface, or register a local
+MCP-style server through the runtime API.
 
 **Two channel workers at once?** Safe. Message claims are atomic
 (`pending → running`), so each question is answered exactly once.
