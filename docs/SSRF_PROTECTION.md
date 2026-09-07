@@ -49,6 +49,11 @@ $env:WEB_FETCH_ALLOWED_HOSTS = "example.com,docs.example.com"
 
 When the allowlist is configured, hosts not on the list are rejected regardless of whether they are public and reachable.
 
+Set the value to `*` to allow every public host (this only disables the
+domain check — scheme, port, private-IP, and cloud-metadata protections still
+apply). This widens the SSRF attack surface and should only be used for
+trusted, low-risk research roles.
+
 ## URL Policy
 
 The following are rejected:

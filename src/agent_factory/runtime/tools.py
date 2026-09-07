@@ -175,6 +175,10 @@ def _is_host_allowed(host: str, allowed_hosts: set[str]) -> bool:
         allowed = allowed.rstrip(".").lower()
         if not allowed:
             continue
+        # "*" is an explicit opt-in to disable the domain allowlist; the
+        # scheme/port/private-IP/metadata checks in _validate_web_url still apply.
+        if allowed == "*":
+            return True
         if host == allowed or host.endswith(f".{allowed}"):
             return True
     return False
