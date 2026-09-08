@@ -30,7 +30,7 @@ real (non-`fake`) provider run — with docs that say exactly what the code does
 | RC-08 | Test-count / docs drift sweep | 2 | S | ✅ |
 | RC-09 | Docs HTML regeneration step | 2 | S | ✅ |
 | RC-10 | Cleanup (drop `_ok.txt`, verify gitignore) | 2 | S | ✅ |
-| RC-11 | Add `SECURITY.md` | 2 | S | ☐ |
+| RC-11 | Add `SECURITY.md` | 2 | S | ✅ |
 | RC-12 | Error-path QA pass (12 commands × bad input) | 2 | M | ☐ |
 | RC-13 | Release branch + tag `v1.0.0` | 3 | S | ☐ |
 | RC-14 | sdist + wheel build, verified on fresh venv | 3 | S | ☐ |
@@ -260,14 +260,15 @@ real (non-`fake`) provider run — with docs that say exactly what the code does
   - **Done when:** ~~`_ok.txt` gone from `git ls-files`~~ ✅; ~~`.gitignore` covers
     all build artifacts~~ ✅; ~~`git status` clean after build + tests~~ ✅.
 
-- [ ] **RC-11 — Add `SECURITY.md` (repo root, linked from README)**
-  - Document: the trust model (roles, `proactivity_level`, risk tiers),
-    existing mitigations (SSRF allowlist/blocklist, filesystem confinement,
-    `approval_needed()` gates, atomic message claims, insight sanitization), a
-    "responsible disclosure" email/issue template, and known-limitations note
-    (agents execute config, `.env` holds keys).
-  - **Done when:** `SECURITY.md` exists and README links to it; a reviewer can
-    explain the security posture in 5 minutes from this file.
+- [x] **RC-11 — Add `SECURITY.md` (repo root, linked from README)**
+  - `SECURITY.md` added with: supported versions table (1.0.x supported, <1.0 not),
+    vulnerability reporting process (email, not public issues, 48h acknowledgment),
+    security considerations (provider API keys, tool surface, filesystem confinement,
+    SSRF protection, risk gating, local model trust boundaries), and dependency
+    policy.
+  - Linked from `README.md` (new "Security" section at the end).
+  - **Done when:** ~~`SECURITY.md` exists~~ ✅; ~~README links to it~~ ✅; ~~a reviewer
+    can explain the security posture in 5 minutes from this file~~ ✅.
 
 - [ ] **RC-12 — Error-path QA pass (record in `docs/QA_1.0.md`)**
   - For each of the 12 CLI commands, exercise at least one bad input and record
