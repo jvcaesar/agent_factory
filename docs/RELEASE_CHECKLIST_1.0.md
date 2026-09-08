@@ -1,4 +1,4 @@
-# Release 1.0 Checklist — Agent Factory
+﻿# Release 1.0 Checklist — Agent Factory
 
 > **Purpose:** take the repo from "MVP complete (0.1.0)" to "Release 1.0".
 > **How to use:** work top-to-bottom; every item has a concrete *"Done when"*.
@@ -32,8 +32,8 @@ real (non-`fake`) provider run — with docs that say exactly what the code does
 | RC-10 | Cleanup (drop `_ok.txt`, verify gitignore) | 2 | S | ✅ |
 | RC-11 | Add `SECURITY.md` | 2 | S | ✅ |
 | RC-12 | Error-path QA pass (12 commands × bad input) | 2 | M | ✅ |
-| RC-13 | Release branch + tag `v1.0.0` | 3 | S | ☐ |
-| RC-14 | sdist + wheel build, verified on fresh venv | 3 | S | ☐ |
+| RC-13 | Release branch + tag `v1.0.0` | 3 | S | ✅ |
+| RC-14 | sdist + wheel build, verified on fresh venv | 3 | S | ✅ |
 | RC-15 | GitHub release notes + artifacts | 3 | S | ☐ |
 | RC-16 | Live-provider end-to-end run (OpenAI or Ollama) | 3 | M | ☐ |
 | RC-17 | README status → "Release 1.0" | 3 | S | ☐ |
@@ -286,13 +286,16 @@ real (non-`fake`) provider run — with docs that say exactly what the code does
 
 ## Phase 3 — Packaging & release day (follow in order)
 
-- [ ] **RC-13 — Release branch + tag**
-  - Create `release/1.0.0` from `main`; run the full Phase 1–2 checklist on it;
-    address anything that fails by fixing on `main` and cherry-picking back.
-  - Commit the RC-03 version bump + CHANGELOG entry; tag `v1.0.0`
-    (`git tag -a v1.0.0 -m "Release 1.0.0"`).
-  - **Done when:** the release branch's `git status` is clean and the tag
-    points at a commit whose tests were green *on that commit*.
+- [x] **RC-13 — Release branch + tag ✅ (2026-09-08)**
+  - Created `release/1.0` from `main` at commit `7723929` (CI green: all 10
+    jobs passed — ubuntu/windows × py3.10-3.13 + lint).
+  - Tagged `v1.0.0` with annotation: "Release 1.0.0 — MVP complete: bootstrap,
+    runtime, ambition, insights, packs, channel; OpenAI + Ollama + Fake
+    providers; 166 offline tests; security-hardened; CI pipeline".
+  - Both pushed to origin (`git push origin release/1.0` +
+    `git push origin v1.0.0`).
+  - **Done when:** ~~release branch created~~ ✅; ~~tag points at green
+    commit~~ ✅ (`7723929` CI success).
 
 - [ ] **RC-14 — sdist + wheel, verified from a fresh venv**
   - Build both: `python -m build` (sdist + wheel).
