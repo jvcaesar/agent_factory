@@ -9,6 +9,7 @@ Commands:
 from __future__ import annotations
 
 import argparse
+import contextlib
 import sys
 from collections.abc import Callable
 from pathlib import Path
@@ -700,7 +701,26 @@ def cmd_channel_worker(args: argparse.Namespace) -> int:
     return 0
 
 
+def _force_utf8_stdio() -> None:
+    """Best-effort UTF-8 stdio on legacy Windows consoles.
+
+    Windows consoles default to a legacy codepage (cp1252 etc.) where
+    em-dashes and arrows (``—``, ``→``) used across the CLI render as
+    mojibake (``ù``, ``â€”``). Reconfiguring stdout/stderr to UTF-8 makes
+    output ASCII-faithful without requiring ``PYTHONUTF8=1``. No-op on
+    streams that don't support ``reconfigure`` (e.g. StringIO in tests)
+    and never raises.
+    """
+    for stream in (sys.stdout, sys.stderr):
+        reconfigure = getattr(stream, "reconfigure", None)
+        if reconfigure is None:
+            continue
+        with contextlib.suppress(Exception):
+            reconfigure(encoding="utf-8")
+
+
 def main(argv: list[str] | None = None) -> int:
+    _force_utf8_stdio()
     load_dotenv()
     parser = argparse.ArgumentParser(prog="agent_factory", description="Generate and manage AI agent workforces.")
     parser.add_argument(

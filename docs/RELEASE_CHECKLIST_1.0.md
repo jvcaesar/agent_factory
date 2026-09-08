@@ -26,7 +26,7 @@ real (non-`fake`) provider run — with docs that say exactly what the code does
 | RC-04 | Live-provider smoke tests | 1 | M | ✅ |
 | RC-05 | Tool-list command + "real vs stub" docs | 1 | S | ✅ |
 | RC-06 | Anthropic: implement, or cut the claim | 1 | M | ✅ |
-| RC-07 | Windows console encoding fix | 2 | S | ☐ |
+| RC-07 | Windows console encoding fix | 2 | S | ✅ |
 | RC-08 | Test-count / docs drift sweep | 2 | S | ☐ |
 | RC-09 | Docs HTML regeneration step | 2 | S | ☐ |
 | RC-10 | Cleanup (drop `_ok.txt`, verify gitignore) | 2 | S | ☐ |
@@ -195,16 +195,20 @@ real (non-`fake`) provider run — with docs that say exactly what the code does
 
 ## Phase 2 — Release quality (should be done before tagging)
 
-- [ ] **RC-07 — Windows console encoding fix**
+- [x] **RC-07 — Windows console encoding fix**
   - *Why:* on Windows (`cp1252` console) CLI output shows mojibake — confirmed,
     e.g. `Mission control ù SmokeTest` instead of `—`.
-  - At the top of `cli.main()` add a best-effort
-    `sys.stdout.reconfigure(encoding="utf-8")` /
-    `sys.stderr.reconfigure(encoding="utf-8")` guarded by
-    `hasattr(sys.stdout, "reconfigure")` (Python 3.7+, fine for 3.10+).
-  - **Done when:** `agent_factory status` and `agent_factory channel list` show
-    ASCII-faithful output (em-dashes/`→`) on `cmd.exe` and PowerShell without
-    `PYTHONUTF8=1`; existing tests still pass.
+  - **Done 2026-09-08:** `_force_utf8_stdio()` added to `cli.py`; called at the
+    top of `main()` before any output. Best-effort
+    `reconfigure(encoding="utf-8")` on stdout/stderr — no-op for streams
+    without `reconfigure` (e.g. StringIO in tests), never raises.
+  - Regression tests: `tests/test_cli_utf8.py` (reconfigures when available;
+    no-op for test doubles; reconfigure failure swallowed).
+  - **Done when:** ~~`status`/`channel list` ASCII-faithful without
+    `PYTHONUTF8=1`~~ ✅ verified live via `cmd /c` redirection on this cp1252
+    machine: output decoded as UTF-8 shows `Mission control — Acme Labs`,
+    mojibake-char scan CLEAN; ~~existing tests pass~~ ✅ (163 OK, 3 skipped;
+    ruff clean).
 
 - [ ] **RC-08 — Test-count / docs drift sweep**
   - *Why:* docs still claim "143 tests" (README, ROADMAP, milestone docs,
