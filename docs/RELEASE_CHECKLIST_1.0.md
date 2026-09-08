@@ -297,7 +297,7 @@ real (non-`fake`) provider run — with docs that say exactly what the code does
   - **Done when:** ~~release branch created~~ ✅; ~~tag points at green
     commit~~ ✅ (`7723929` CI success).
 
-- [ ] **RC-14 — sdist + wheel, verified from a fresh venv**
+- [x] **RC-14 — sdist + wheel, verified from a fresh venv**
   - Build both: `python -m build` (sdist + wheel).
   - Inspect the wheel (`unzip -l`) — must contain `agent_factory/__init__.py`,
     all subpackages, and the `entry_points.txt` with the `agent_factory` console
@@ -305,8 +305,10 @@ real (non-`fake`) provider run — with docs that say exactly what the code does
   - Smoke-install into a *fresh* venv (no `src` on `PYTHONPATH`):
     `pip install dist/agent_factory-1.0.0-py3-none-any.whl` then
     `agent_factory --version` and a `--pack engineering` bootstrap.
-  - **Done when:** the fresh-venv smoke test passes and the sdist is non-empty.
-    (Baseline 2026-09-08: wheel builds with 34 entries — will grow with
+  - **Done when:** ~~the fresh-venv smoke test passes~~ ✅ (wheel installs as
+    `agent_factory 1.0.0`, `--version` works, **163 tests OK (3 skipped)** on
+    `.venv_verify`); ~~sdist is non-empty~~ ✅ (77,478 bytes).
+    (Baseline 2026-09-08: wheel builds with 34 entries — grew with
     RC-03's `__init__.py`.)
 
 - [ ] **RC-15 — GitHub release + notes**
