@@ -4,7 +4,7 @@ All notable changes to **Agent Factory** are recorded here. Format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/): `Added` /
 `Changed` / `Fixed` / `Removed`. Releases are tagged `v<version>` on GitHub.
 
-## [1.0.0] - Unreleased
+## [1.0.0] - 2026-09-08
 
 ### Added
 - **CI pipeline** (`.github/workflows/ci.yml`: test matrix — 2 OS × 4
