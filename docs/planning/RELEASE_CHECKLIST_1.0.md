@@ -340,16 +340,18 @@ real (non-`fake`) provider run — with docs that say exactly what the code does
 
 ## Phase 4 — Post-1.0 backlog (explicitly *not* required for 1.0)
 
-- [ ] **RC-18 — Document the post-1.0 roadmap**
-  - Move these into `docs/ROADMAP.md` "after 1.0" (keep the 1.0 scope honest):
+- [x] **RC-18 — Document the post-1.0 roadmap**
+  - Move these into `docs/planning/ROADMAP.md` "after 1.0" (keep the 1.0 scope honest):
     - PostgreSQL store behind the `Store` interface (multi-process/hosted).
     - Parallel / multi-worker channel + job execution (currently single-threaded).
     - Real adapters for the 11 stubbed tools (or a documented plugin pattern).
     - Anthropic adapter, if RC-06 chose Option B.
     - Live-provider integration suite wired into CI (needs secrets) once keys exist.
     - Structured `--json` output mode; telemetry/observability metrics export.
-  - **Done when:** `ROADMAP.md` has a dated "after 1.0" section and nothing in
-    Phase 1–3 silently depends on these.
+  - **Done when:** ~~`ROADMAP.md` has a dated "after 1.0" section and nothing
+    in Phase 1–3 silently depends on these~~ ✅ (2026-09-09) — the dated
+    "After 1.0" section is in `docs/planning/ROADMAP.md`; the release checklist
+    remains explicit that these are outside the 1.0 contract.
 
 ---
 

@@ -44,6 +44,51 @@ See `IMPLEMENTED_MILESTONE3.md`.
   for local MCP-style servers, and risk-aware `approval_needed()` rules.
 - See `IMPLEMENTED_MILESTONE6.md`.
 
+## After 1.0 — Hosted scale, integrations, and operations (2026-09-09)
+
+These items are intentionally outside the 1.0 release contract. They extend
+the local, single-process factory into a hosted and more deeply integrated
+platform without changing the core role, grant, and approval model.
+
+### 1. Multi-process state and execution
+
+- Add a PostgreSQL-backed implementation of the `Store` interface for shared,
+   multi-process and hosted deployments while retaining SQLite for local use.
+- Add parallel job and channel-worker execution with atomic claims, bounded
+   concurrency, retries, cancellation, and idempotent result recording.
+- Define the deployment/runtime contract for worker processes, migrations,
+   connection pooling, and recovery after a worker or host failure.
+
+### 2. Real integrations and extensibility
+
+- Replace the current stubbed tool adapters incrementally, starting with the
+   integrations that unlock useful engineering and operations workflows:
+   GitHub, docs, Notion, Slack, calendar, CRM, analytics, and payments.
+- Document and stabilize the plugin/tool-server pattern so integrations can be
+   installed without changing the core runtime, while retaining grant, risk,
+   approval, and filesystem/network confinement rules.
+- Add an Anthropic adapter only when its configuration, model resolution,
+   error handling, and opt-in live tests meet the same provider contract as
+   OpenAI and Ollama.
+
+### 3. Testability and operator experience
+
+- Wire the live-provider integration suite into CI using protected repository
+   secrets, provider-specific jobs, spend/time limits, and explicit opt-in
+   failure policy.
+- Add structured `--json` output for commands that currently print human
+   reports, while preserving the existing text output as the default.
+- Export structured telemetry and operational metrics: job latency, token and
+   provider errors, tool calls, approvals, retries, queue depth, and outcomes.
+- Add dashboards or a documented metrics sink without making telemetry a
+   runtime requirement for offline or local deployments.
+
+**Delivery order:** stabilize the plugin contract and structured output first;
+then add provider/integration coverage; then introduce PostgreSQL and parallel
+workers behind the existing state interfaces; finally add hosted telemetry and
+operator dashboards. Each increment must preserve the offline FakeLLM suite,
+filesystem/SSRF protections, and approval semantics.
+
 ## Suggested order & reasoning
 
 1. **M1** first — nothing can *run* until roles can actually execute; it also
