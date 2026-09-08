@@ -29,7 +29,7 @@ real (non-`fake`) provider run — with docs that say exactly what the code does
 | RC-07 | Windows console encoding fix | 2 | S | ✅ |
 | RC-08 | Test-count / docs drift sweep | 2 | S | ✅ |
 | RC-09 | Docs HTML regeneration step | 2 | S | ✅ |
-| RC-10 | Cleanup (drop `_ok.txt`, verify gitignore) | 2 | S | ☐ |
+| RC-10 | Cleanup (drop `_ok.txt`, verify gitignore) | 2 | S | ✅ |
 | RC-11 | Add `SECURITY.md` | 2 | S | ☐ |
 | RC-12 | Error-path QA pass (12 commands × bad input) | 2 | M | ☐ |
 | RC-13 | Release branch + tag `v1.0.0` | 3 | S | ☐ |
@@ -252,12 +252,13 @@ real (non-`fake`) provider run — with docs that say exactly what the code does
     (`--check` reports "All docs up to date"); ~~CI job added~~ ✅; ~~README
     documents it~~ ✅.
 
-- [ ] **RC-10 — Cleanup / gitignore audit**
-  - Delete the committed `_ok.txt` ("compile OK") leftover; ensure `.gitignore`
-    still covers `.env`, `orgs/`, `tmp/`, `*/__pycache__`, `*.egg-info`,
-    `dist/`, `build/`.
-  - **Done when:** `git status` clean after a full `python -m build &&
-    python -m unittest discover -s tests`; `_ok.txt` gone from `git ls-files`.
+- [x] **RC-10 — Cleanup / gitignore audit**
+  - `_ok.txt` ("compile OK" leftover) deleted from the repo (`git rm`).
+  - `.gitignore` verified to cover: `.env`, `.env.*` (keep `.env.example`), `orgs/`,
+    `tmp/`, `__pycache__/`, `*.py[cod]`, `*.egg-info/`, `.venv/`, `venv/`,
+    `build/`, `dist/`, `.DS_Store`, `Thumbs.db`, `.idea/`, `.vscode/`.
+  - **Done when:** ~~`_ok.txt` gone from `git ls-files`~~ ✅; ~~`.gitignore` covers
+    all build artifacts~~ ✅; ~~`git status` clean after build + tests~~ ✅.
 
 - [ ] **RC-11 — Add `SECURITY.md` (repo root, linked from README)**
   - Document: the trust model (roles, `proactivity_level`, risk tiers),
