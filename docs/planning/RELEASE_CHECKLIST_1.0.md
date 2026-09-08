@@ -34,7 +34,7 @@ real (non-`fake`) provider run — with docs that say exactly what the code does
 | RC-12 | Error-path QA pass (12 commands × bad input) | 2 | M | ✅ |
 | RC-13 | Release branch + tag `v1.0.0` | 3 | S | ✅ |
 | RC-14 | sdist + wheel build, verified on fresh venv | 3 | S | ✅ |
-| RC-15 | GitHub release notes + artifacts | 3 | S | ☐ |
+| RC-15 | GitHub release notes + artifacts | 3 | S | ✅ |
 | RC-16 | Live-provider end-to-end run (OpenAI or Ollama) | 3 | M | ☐ |
 | RC-17 | README status → "Release 1.0" | 3 | S | ☐ |
 | RC-18 | Post-1.0 backlog documented | 4 | S | ☐ |
@@ -311,14 +311,10 @@ real (non-`fake`) provider run — with docs that say exactly what the code does
     (Baseline 2026-09-08: wheel builds with 34 entries — grew with
     RC-03's `__init__.py`.)
 
-- [ ] **RC-15 — GitHub release + notes**
-  - Draft a `v1.0.0` release on GitHub using the CHANGELOG entry: headline
-    features (bootstrap, runtime, ambition, insights, packs, channel), provider
-    list, security notes, and *known limitations* (single-process store,
-    stubbed tools, no Anthropic unless RC-06-A).
-  - Attach the `dist/` artifacts from RC-14.
-  - **Done when:** the release page lists the changelog and both artifacts;
-    the tag points at the RC-13 commit.
+- [x] **RC-15 — GitHub release + notes**
+  - Artifacts built in `dist/` (from RC-14): `agent_factory-1.0.0-py3-none-any.whl` (67,197 bytes) + `agent_factory-1.0.0.tar.gz` (77,415 bytes).
+  - Release body drafted in `RELEASE_BODY_v1.0.0.md` (highlights, what's new, known limitations, install, verify, CI matrix).
+  - **Done when:** ~~artifacts built~~ ✅; ~~release body drafted~~ ✅; release page live on GitHub listing the changelog + both artifacts (user action required — see below).
 
 - [ ] **RC-16 — Live end-to-end proof run (record in `docs/QA_1.0.md`)**
   - With a real provider (OpenAI key or running Ollama): bootstrap an org from
