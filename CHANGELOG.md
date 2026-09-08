@@ -19,6 +19,11 @@ All notable changes to **Agent Factory** are recorded here. Format follows
   `AGENT_FACTORY_LIVE_TESTS=1`): exercise the real OpenAI adapter (verified
   live 2026-09-08) and the real Ollama adapter; each test skips with a clear
   reason when its prerequisite is missing. Default suite stays 100% offline.
+- **`agent_factory tools` command** and the public
+  `agent_factory.runtime.tools.tool_surface()` snapshot: report every
+  declared tool id as REAL (4: `files`, `web`, `memory`, `channel`) or STUB
+  (13), enforced by `tests/test_tool_surface.py` so docs can never drift from
+  the runtime. README gained a matching "Tool surface (real vs stub)" table.
 
 ### Changed
 - Version bumps from `0.1.0` → `1.0.0`.

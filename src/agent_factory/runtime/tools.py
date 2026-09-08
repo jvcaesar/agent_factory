@@ -460,6 +460,37 @@ _STUBBED = {
 }
 
 
+def tool_surface() -> dict[str, dict[str, object]]:
+    """Public snapshot of the declared tool surface, keyed by tool id.
+
+    Returns ``{tool_id: {"real": bool, "actions": [tool names]}}`` where
+    ``real=True`` entries have a live adapter in this runtime and ``real=False``
+    entries are stubs: declared in role grants but returning a placeholder
+    when invoked. Used by the ``agent_factory tools`` command and kept in sync
+    with the README tool-surface table so docs never overclaim.
+    """
+    surface: dict[str, dict[str, object]] = {}
+    for tid, entry in CATALOG.items():
+        if tid in _STUBBED:
+            continue
+        actions: list[str] = []
+        for kind in ("read", "write"):
+            spec = entry.get(kind)
+            if spec is None:
+                continue
+            for tool in (spec if isinstance(spec, list) else [spec]):
+                actions.append(tool.name)
+        surface[tid] = {"real": True, "actions": actions}
+    # ``files`` is real but built per-resolution (workspace-bound), so it is
+    # special-cased in ``tools_for_role`` and absent from the static CATALOG.
+    # Derive its action names from the same definitions the runtime uses.
+    file_specs = _file_tools(None)
+    surface["files"] = {"real": True, "actions": [file_specs["read"].name, file_specs["write"].name]}
+    for tid in sorted(_STUBBED):
+        surface.setdefault(tid, {"real": False, "actions": [f"{tid}_stub"]})
+    return surface
+
+
 def _stub_tool(tool_id: str) -> Tool:
     return Tool(
         name=f"{tool_id}_stub",

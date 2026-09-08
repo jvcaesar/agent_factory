@@ -203,6 +203,28 @@ def cmd_packs(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_tools(args: argparse.Namespace) -> int:
+    """List every declared tool id, tagged REAL (live adapter) or STUB."""
+    from .runtime.tools import tool_surface
+
+    surface = tool_surface()
+    real = sorted(tid for tid, info in surface.items() if info["real"])
+    stub = sorted(tid for tid, info in surface.items() if not info["real"])
+    width = max((len(t) for t in surface), default=0)
+    print(
+        f"{len(real)} real, {len(stub)} stub "
+        f"({len(surface)} declared in role grants)"
+    )
+    print("\nREAL (live adapter in the runtime):")
+    for tid in real:
+        actions = ", ".join(surface[tid]["actions"])  # type: ignore[arg-type]
+        print(f"  {tid:<{width}}  {actions}")
+    print("\nSTUB (declared in grants, returns a placeholder when invoked):")
+    for tid in stub:
+        print(f"  {tid:<{width}}  (not wired yet)")
+    return 0
+
+
 def cmd_validate(args: argparse.Namespace) -> int:
     root = Path(args.root)
     org_yaml = root / "org.yaml"
@@ -701,6 +723,12 @@ def main(argv: list[str] | None = None) -> int:
     pk = sub.add_parser("packs", help="List built-in role packs")
     pk.add_argument("--show", default=None, help="Print the spec YAML for a pack")
     pk.set_defaults(func=cmd_packs)
+
+    tp = sub.add_parser(
+        "tools",
+        help="List declared tools, tagged REAL (live) or STUB (placeholder)",
+    )
+    tp.set_defaults(func=cmd_tools)
 
     vp = sub.add_parser("validate", help="Validate a generated org tree")
     vp.add_argument("--root", default="orgs/MyOrg", help="Root directory of the org")

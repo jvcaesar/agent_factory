@@ -138,6 +138,22 @@ AGENT_FACTORY_LIVE_TESTS=1 py -m unittest discover -s tests/integration -v
 
 Each test skips with a clear reason when its prerequisite is missing.
 
+## Tool surface (real vs stub)
+
+Role grants declare 17 tool ids, but only 4 have live adapters in the runtime
+today. Run `agent_factory tools` for the authoritative, live list:
+
+| Tool id | Status | Actions | Notes |
+|---|---|---|---|
+| `files` | **REAL** | `files_read`, `files_write` | Workspace-confined; writes need approval (high risk) |
+| `web` | **REAL** | `web_fetch` | SSRF-allowlisted fetch |
+| `memory` | **REAL** | `memory_read`, `memory_search`, `memory_write` | Durable org context store |
+| `channel` | **REAL** | `channel_list`, `channel_post` | Shared human<->agent channel |
+| `analytics`, `calendar`, `cms`, `crm`, `docs`, `github`, `gmail`, `notion`, `payments`, `sheets`, `slack`, `stripe`, `supabase` | STUB | `<id>_stub` | Declared in grants; invoking returns a "not wired yet" placeholder |
+
+Granting a stub tool never fails — the agent simply receives the placeholder
+text — so org charts bootstrap cleanly before an integration exists.
+
 ## Providers (M1)
 
 Selected via `AGENT_FACTORY_PROVIDER` (default `openai`) or `--provider`:

@@ -24,7 +24,7 @@ real (non-`fake`) provider run — with docs that say exactly what the code does
 | RC-02 | Lint gate (ruff) | 1 | S | ✅ |
 | RC-03 | Version 1.0.0 + `--version` + `__init__.py` + CHANGELOG | 1 | S | ✅ |
 | RC-04 | Live-provider smoke tests | 1 | M | ✅ |
-| RC-05 | Tool-list command + "real vs stub" docs | 1 | S | ☐ |
+| RC-05 | Tool-list command + "real vs stub" docs | 1 | S | ✅ |
 | RC-06 | Anthropic: implement, or cut the claim | 1 | M | ☐ |
 | RC-07 | Windows console encoding fix | 2 | S | ☐ |
 | RC-08 | Test-count / docs drift sweep | 2 | S | ☐ |
@@ -152,16 +152,27 @@ real (non-`fake`) provider run — with docs that say exactly what the code does
     ~~live mode skips with clear reasons~~ ✅; ~~OpenAI live run passes~~ ✅;
     Ollama success path: recorded clear reason above, pending manual run.
 
-- [ ] **RC-05 — Tool-list command + "real vs stub" docs**
-  - *Why:* 4 of the 15 known tool ids are real; the other 11 resolve to stubs.
-    Users deserve to know up-front.
-  - Add `agent_factory tools [--list]` printing the known tools with
-    `REAL`/`STUB` tags (they can inspect `tools.CATALOG` + `toolservers`).
-  - Add a "Tool surface" table to `README.md`:
-    real: `files`, `web`, `memory`, `channel`; stub: the rest, with a one-line
-    "how to replace with `register_tool_server()`".
-  - **Done when:** the command's output and the README table agree with code;
-    the word "stub" appears everywhere a stub tool is offered.
+- [x] **RC-05 — Tool-list command + "real vs stub" docs**
+  - New public snapshot `agent_factory.runtime.tools.tool_surface()` —
+    `{tool_id: {"real": bool, "actions": [...]}}` built from `CATALOG`,
+    `_STUBBED`, and the per-resolution `files` adapter (so it can never drift
+    from what the runtime actually resolves). `files` turned out to be
+    special-cased in `tools_for_role` and absent from the static `CATALOG` —
+    the surface now derives its action names from the same definitions.
+  - New CLI command `agent_factory tools` (13th command): prints
+    `4 real, 13 stub (17 declared in role grants)` plus each id tagged
+    REAL (with its live action names) or STUB. ASCII-only output so it
+    renders cleanly on Windows consoles.
+  - README gained a "Tool surface (real vs stub)" table matching the command
+    exactly, plus a note that granting a stub tool never fails (placeholder
+    text keeps bootstrap clean).
+  - Guarded by `tests/test_tool_surface.py` (4 tests): real/stub sets match
+    expectations, no CATALOG drift, and `cmd_tools` output contains every id
+    and the counts.
+  - **Done when:** ~~command output and README table agree with code~~ ✅
+    (enforced by tests); ~~"stub" is explicit wherever a stub is offered~~ ✅.
+  - Note: the earlier "15 tool ids / 11 stubs" estimate was off — the real
+    numbers are 17 declared, 4 real, 13 stub.
 
 - [ ] **RC-06 — Anthropic: implement, or cut the claim**
   - *Why:* `pyproject.toml` lists an `anthropic` extra and `.env.example`
