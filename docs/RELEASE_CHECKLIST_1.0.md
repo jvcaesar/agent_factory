@@ -31,7 +31,7 @@ real (non-`fake`) provider run — with docs that say exactly what the code does
 | RC-09 | Docs HTML regeneration step | 2 | S | ✅ |
 | RC-10 | Cleanup (drop `_ok.txt`, verify gitignore) | 2 | S | ✅ |
 | RC-11 | Add `SECURITY.md` | 2 | S | ✅ |
-| RC-12 | Error-path QA pass (12 commands × bad input) | 2 | M | ☐ |
+| RC-12 | Error-path QA pass (12 commands × bad input) | 2 | M | ✅ |
 | RC-13 | Release branch + tag `v1.0.0` | 3 | S | ☐ |
 | RC-14 | sdist + wheel build, verified on fresh venv | 3 | S | ☐ |
 | RC-15 | GitHub release notes + artifacts | 3 | S | ☐ |
@@ -270,20 +270,17 @@ real (non-`fake`) provider run — with docs that say exactly what the code does
   - **Done when:** ~~`SECURITY.md` exists~~ ✅; ~~README links to it~~ ✅; ~~a reviewer
     can explain the security posture in 5 minutes from this file~~ ✅.
 
-- [ ] **RC-12 — Error-path QA pass (record in `docs/QA_1.0.md`)**
-  - For each of the 12 CLI commands, exercise at least one bad input and record
-    the result in `docs/QA_1.0.md` (expected: friendly exit code + stderr, no
-    traceback for *handled* paths). Suggested cases:
-    - `bootstrap --spec tests/fixtures/missing.yaml`
-    - `validate --root /nonexistent` and a circular-`reports_to` YAML
-    - `run --org orgs/DoesNotExist`
-    - `run --org <valid> --role nope` (unknown role)
-    - `ambition`/`brief`/`observe` with no history/store
-    - `channel post --text ""` and `channel worker` with zero pending
-    - `--approval ask` in a non-TTY (should degrade to deny, not crash)
-  - Fix exceptions thrown on *expected* bad input.
-  - **Done when:** QA log lists 12 commands × bad input with exit code recorded;
-    the only acceptable tracebacks are genuinely unexpected bugs.
+- [x] **RC-12 — Error-path QA pass (recorded in `docs/QA_1.0.md`) ✅ (2026-09-08)**
+  - All 12 CLI commands × bad input exercised (19 test cases total, including
+    subcommands). Every case exits cleanly with a friendly stderr message and
+    a non-zero exit code — no tracebacks on handled paths.
+  - **Real bug found and fixed:** `bootstrap` with no `--pack`/`--spec` on empty
+    stdin (pipes, CI, redirection) crashed with a raw `EOFError` traceback.
+    Now caught in `main()` and surfaces a helpful hint pointing to
+    `--pack <id>` / `--spec <file>` for non-interactive use.
+  - QA log: `docs/QA_1.0.md`.
+  - **Done when:** ~~QA log lists 12 commands × bad input~~ ✅ (19 cases);
+    ~~only acceptable tracebacks are genuinely unexpected bugs~~ ✅.
 
 ---
 

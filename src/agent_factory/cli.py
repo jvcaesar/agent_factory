@@ -848,6 +848,16 @@ def main(argv: list[str] | None = None) -> int:
     except ConfigError as exc:
         print(f"Configuration error: {exc}", file=sys.stderr)
         return 2
+    except EOFError:
+        # bootstrap with no --pack/--spec uses interactive input(); on empty
+        # stdin (pipes, CI, redirection) surface a helpful hint, not a traceback.
+        print(
+            "Error: interactive input is required but stdin is closed.\n"
+            "Use 'bootstrap --pack <id>' for non-interactive generation,\n"
+            "or 'bootstrap --spec <file>' to load answers from a YAML file.",
+            file=sys.stderr,
+        )
+        return 2
 
 
 if __name__ == "__main__":

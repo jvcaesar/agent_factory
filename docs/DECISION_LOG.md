@@ -20,13 +20,13 @@
 ## 2026-08-25 — `OPENAI_VERIFY_SSL=0` made functional on legacy SDK via raw HTTP
 **Decision:** When SSL verification is disabled and the installed `openai` package is legacy (<1.0, which ignores `verify_ssl_certs`), `OpenAILLM` bypasses the SDK and POSTs directly to `{base_url}/chat/completions` with `requests(verify=False)`.
 **Why:** Corporate TLS-intercepting proxies present self-signed certs; the legacy SDK offers no working disable switch (`verify_ssl_certs is ignored` warning).
-**Consequence:** OpenAI works behind such proxies with `OPENAI_VERIFY_SSL=0`; secure alternative remains `REQUESTS_CA_BUNDLE=<corp CA .pem>`. Verified live: `gpt-4o-mini` → `'OK.'` in 3.5s. All 4 configured models now reachable (3 local Ollama + 1 OpenAI). 87/87 tests pass.
+**Consequence:** OpenAI works behind such proxies with `OPENAI_VERIFY_SSL=0`; secure alternative remains `REQUESTS_CA_BUNDLE=<corp CA .pem>`. Verified live: `gpt-4o-mini` → `'OK.'` in 3.5s. All 4 configured models now reachable (3 local Ollama + 1 OpenAI). 87/87 tests passed at the time.
 
 
 ## 2026-08-25 — Per-role `MODEL_<role_id>` overrides + provider-qualified models
 **Decision:** `resolve_role` now checks a per-role env var (`MODEL_<role_id>`) before the tier chain, and any model value may carry a provider prefix (`openai/gpt-4o`, `ollama/gemma4:12b`) that forces that provider for the role. Precedence — provider: CLI flag > env prefix > YAML prefix > `Role.provider` > `AGENT_FACTORY_PROVIDER`; model: `MODEL_<role_id>` > `Role.model` > tier chain > `MODEL_default` > built-in.
 **Why:** Provider and model were resolved independently, so a bare `MODEL_lead_exec=gpt-4o` would have been sent to Ollama; users also had no way to mix providers per role from `.env` alone.
-**Consequence:** One `.env` can run a mixed fleet (local default + cloud lead). New `probe` CLI command pings every configured pair; verified live (`ollama/gemma4:12b` → OK in 19.4s). 87/87 tests pass.
+**Consequence:** One `.env` can run a mixed fleet (local default + cloud lead). New `probe` CLI command pings every configured pair; verified live (`ollama/gemma4:12b` → OK in 19.4s). 87/87 tests passed at the time.
 
 
 ## 2026-08-25 — Env config: generic `MODEL_*` vars + provider selection
