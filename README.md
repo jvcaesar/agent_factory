@@ -202,3 +202,10 @@ python tools/build_docs.py --check   # CI mode: fail if committed HTML is stale
 ```
 
 The `docs` job in `.github/workflows/ci.yml` runs `--check` on every push/PR, so the committed HTML can never silently drift from the Markdown.
+
+## Security
+
+See [SECURITY.md](SECURITY.md) for the full security policy, including:
+- Supported versions
+- How to report a vulnerability
+- Security considerations for the tool surface, provider API keys, and local models
