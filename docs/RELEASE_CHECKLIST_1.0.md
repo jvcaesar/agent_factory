@@ -76,8 +76,14 @@ real (non-`fake`) provider run — with docs that say exactly what the code does
     - **Lint job (after RC-02):** `ruff check src tests`.
     - **Build job:** `python -m build` and assert the wheel contains the
       `agent_factory` package + entry point (ref RC-14).
-  - *Tip:* CI must be offline-green by default; the live-provider suite falls
-    under RC-04 and stays opt-in via an env flag.
+  - *Note:* the first CI run (2026-09-08, on `e09ced3`) caught a real
+    dependency bug: all 8 test-matrix cells failed at import/collection time
+    because `requests` was only an *optional* `ollama` extra, but the core
+    `web_fetch` tool (and its tests mimic with `@mock.patch("requests.Session")`)
+    need it. Fixed by promoting `requests>=2.0` to core deps in
+    `pyproject.toml` (commit `f3b…` / see git log). Local repro: uninstalling
+    `requests` reproduces the CI failure exactly (3 errors, `ModuleNotFoundError:
+    No module named 'requests'`).
   - **Done when:** a fresh clone + push gets a green check on all three jobs;
     the README badge points at this workflow.
 

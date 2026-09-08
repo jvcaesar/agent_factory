@@ -10,6 +10,9 @@ requires-python = ">=3.10"
 dependencies = [
     "pydantic>=2.0",
     "pyyaml>=6.0",
+    # Core: the `web_fetch` tool ships in default tool grants and needs `requests`
+    # at runtime; the Ollama adapter uses it too (see the `ollama` extra).
+    "requests>=2.0",
 ]
 
 [project.scripts]
