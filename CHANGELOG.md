@@ -15,6 +15,10 @@ All notable changes to **Agent Factory** are recorded here. Format follows
   `agent_factory.__version__`.
 - **`CHANGELOG.md`** (this file).
 - **`docs/RELEASE_CHECKLIST_1.0.md`** — tracked checklist for the MVP → 1.0 hardening phase.
+- **Opt-in live-provider smoke tests** (`tests/integration/`, gated by
+  `AGENT_FACTORY_LIVE_TESTS=1`): exercise the real OpenAI adapter (verified
+  live 2026-09-08) and the real Ollama adapter; each test skips with a clear
+  reason when its prerequisite is missing. Default suite stays 100% offline.
 
 ### Changed
 - Version bumps from `0.1.0` → `1.0.0`.
@@ -28,6 +32,12 @@ All notable changes to **Agent Factory** are recorded here. Format follows
   caught by the new ruff gate (F821).
 - First CI run (2026-09-08) caught the `requests` core-dependency
   gap; see **Changed** above.
+- **Ollama bare model names rejected by real servers**: Ollama returns
+  `404 Not Found` for a bare name (e.g. `gemma4`); only tagged ids
+  (`gemma4:12b`) work. `OllamaLLM` now auto-resolves bare names to their
+  tagged id via `GET /v1/models` (cached per client; tagged names pass
+  through; listing failure falls back to the configured name). Found by the
+  new live smoke tests; covered by 7 offline unit tests.
 
 ## [0.1.0] - 2026-09-08  (MVP)
 
