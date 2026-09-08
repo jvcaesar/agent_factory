@@ -44,6 +44,14 @@ All notable changes to **Agent Factory** are recorded here. Format follows
   through; listing failure falls back to the configured name). Found by the
   new live smoke tests; covered by 7 offline unit tests.
 
+### Removed
+- **Advertised-but-unimplemented providers cut**: the `anthropic` extra in
+  `pyproject.toml` and the `ANTHROPIC_API_KEY` / `GOOGLE_API_KEY` entries in
+  `.env.example` claimed support that does not exist (no adapter, no
+  `KNOWN_PROVIDERS` entry). Anthropic remains a documented *future* adapter
+  on the `LLMClient` interface (see `docs/PROJECT_PLAN.md`); nothing is
+  advertised as shipped that isn't.
+
 ## [0.1.0] - 2026-09-08  (MVP)
 
 ### Added

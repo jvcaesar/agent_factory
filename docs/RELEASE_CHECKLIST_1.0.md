@@ -25,7 +25,7 @@ real (non-`fake`) provider run — with docs that say exactly what the code does
 | RC-03 | Version 1.0.0 + `--version` + `__init__.py` + CHANGELOG | 1 | S | ✅ |
 | RC-04 | Live-provider smoke tests | 1 | M | ✅ |
 | RC-05 | Tool-list command + "real vs stub" docs | 1 | S | ✅ |
-| RC-06 | Anthropic: implement, or cut the claim | 1 | M | ☐ |
+| RC-06 | Anthropic: implement, or cut the claim | 1 | M | ✅ |
 | RC-07 | Windows console encoding fix | 2 | S | ☐ |
 | RC-08 | Test-count / docs drift sweep | 2 | S | ☐ |
 | RC-09 | Docs HTML regeneration step | 2 | S | ☐ |
@@ -174,19 +174,22 @@ real (non-`fake`) provider run — with docs that say exactly what the code does
   - Note: the earlier "15 tool ids / 11 stubs" estimate was off — the real
     numbers are 17 declared, 4 real, 13 stub.
 
-- [ ] **RC-06 — Anthropic: implement, or cut the claim**
-  - *Why:* `pyproject.toml` lists an `anthropic` extra and `.env.example`
-    declares `ANTHROPIC_API_KEY`, but no adapter exists — an advertised-but-
+- [x] **RC-06 — Anthropic: implement, or cut the claim**
+  - *Why:* `pyproject.toml` listed an `anthropic` extra and `.env.example`
+    declared `ANTHROPIC_API_KEY`, but no adapter exists — an advertised-but-
     missing feature.
-  - **Option A (implement):** add `llm/anthropic_client.py` behind `LLMClient`,
-    wire it in `llm/factory.get_client` + `KNOWN_PROVIDERS`, market as the
-    third-supported provider.
-  - **Option B (cut, recommended for 1.0 scope):** remove the `anthropic`
-    extra from `pyproject.toml`, drop `ANTHROPIC_API_KEY` from `.env.example`
-    (and the "future adapter slot" comment), and note "Anthropic: not yet"
-    under Post-1.0 (RC-18).
-  - **Done when:** outcome of a choice — either a working `anthropic` provider
-    with a test, or zero references to an Anthropic provider in code/docs.
+  - **Outcome: Option B (cut) — done 2026-09-08.**
+    - `pyproject.toml`: `anthropic = [...]` extra removed.
+    - `.env.example`: `ANTHROPIC_API_KEY` **and** `GOOGLE_API_KEY` entries
+      removed (same class of overclaim — no Gemini adapter either).
+    - `CHANGELOG.md` 1.0.0 gained a **Removed** section recording the cut.
+    - Docs that describe Anthropic as a *deferred/future* adapter
+      (`docs/PROJECT_PLAN.md`, `docs/DECISION_LOG.md`) intentionally kept —
+      they document the roadmap, not shipped features.
+  - **Done when:** ~~zero references to an Anthropic provider in
+    code/docs-as-shipped~~ ✅ (verified repo-wide; remaining mentions are
+    explicitly "future adapter" roadmap notes; `src/*.egg-info` is untracked
+    build output and regenerates from the fixed `pyproject.toml`).
 
 ---
 

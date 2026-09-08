@@ -23,7 +23,6 @@ agent_factory = "agent_factory.cli:main"
 # local Gemma/Qwen; 'fake' is built-in and needs nothing.
 openai = ["openai>=1.0"]
 ollama = ["requests>=2.0"]
-anthropic = ["anthropic>=0.30"]  # future adapter slot
 # Local development / CI tools
 dev = ["ruff>=0.8,<0.9"]
 
