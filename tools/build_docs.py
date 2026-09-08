@@ -1,9 +1,10 @@
 #!/usr/bin/env python
 """Regenerate the HTML docs from their Markdown sources.
 
-Rebuilds docs/PRODUCT.html and docs/USER_GUIDE.html (and any future
-``*.md`` paired with a ``*.html``) from the matching Markdown source, so
-the rendered HTML can never silently drift from the canonical Markdown.
+Rebuilds docs/product/PRODUCT.html and docs/product/USER_GUIDE.html (and any
+future ``*.md`` paired with a ``*.html``, anywhere under docs/) from the
+matching Markdown source, so the rendered HTML can never silently drift from
+the canonical Markdown.
 
 Run with:
 
@@ -17,11 +18,21 @@ from __future__ import annotations
 
 import argparse
 import difflib
+import os
 import re
 import sys
 from pathlib import Path
 
 DOCS = Path(__file__).resolve().parent.parent / "docs"
+
+# Footer links, resolved relative to each generated file's own directory
+# (docs have moved into topic subfolders — the shared shell can't hardcode
+# same-directory hrefs anymore).
+_FOOTER_TARGETS = {
+    "user_guide": DOCS / "product" / "USER_GUIDE.html",
+    "architecture": DOCS / "architecture" / "ARCHITECTURE.md",
+    "roadmap": DOCS / "planning" / "ROADMAP.md",
+}
 
 # The CSS + shell shared by every generated page. Kept deliberately
 # self-contained (no external CDN links) so the docs render offline.
@@ -33,7 +44,7 @@ _SHELL = """<!DOCTYPE html>
 <title>{title}</title>
 <style>
 :root{{
-  /* The Forge Palette (docs/forge_palette.md) — dark industrial theme */
+  /* The Forge Palette (docs/product/forge_palette.md) — dark industrial theme */
   --bg:#1E2022; --bg2:#17191B; --card:#26292C; --card2:#2B2F33; --ink:#F4F5F6;
   --muted:#9BA3AE; --accent:#EAA115; --accent2:#F0C244; --cyan:#F0C244;
   --line:#33373C; --ok:#6FCF97; --warn:#EAA115; --err:#E5484D;
@@ -77,8 +88,8 @@ footer{{margin-top:80px;padding:28px;border-top:1px solid var(--line);
 <main>
 {content}
 </main>
-<footer>Agent Factory — open source — docs: <a href="USER_GUIDE.html">User Guide</a> |
-<a href="ARCHITECTURE.md">Architecture</a> | <a href="ROADMAP.md">Roadmap</a> |
+<footer>Agent Factory — open source — docs: <a href="{user_guide_href}">User Guide</a> |
+<a href="{architecture_href}">Architecture</a> | <a href="{roadmap_href}">Roadmap</a> |
 <a href="{md_name}">this page (markdown)</a></footer>
 </body>
 </html>
@@ -100,13 +111,23 @@ def build_one(md_path: Path, html_path: Path) -> str:
         md_text,
         extensions=["fenced_code", "tables", "toc", "smarty", "attr_list"],
     )
-    html = _SHELL.format(title=_title_from_md(md_text), content=body, md_name=md_path.name)
+    out_dir = html_path.resolve().parent
+    footer_hrefs = {
+        f"{name}_href": os.path.relpath(target, out_dir).replace(os.sep, "/")
+        for name, target in _FOOTER_TARGETS.items()
+    }
+    html = _SHELL.format(
+        title=_title_from_md(md_text),
+        content=body,
+        md_name=md_path.name,
+        **footer_hrefs,
+    )
     return html
 
 
 def targets():
     """Yield (md, html) pairs for every Markdown that has a matching HTML."""
-    for md in sorted(DOCS.glob("*.md")):
+    for md in sorted(DOCS.rglob("*.md")):
         html = md.with_suffix(".html")
         if html.exists():
             yield md, html

@@ -186,7 +186,7 @@ add_observer: true
 use_lead: true
 ```
 
-See [`docs/SPEC_AUTHORING.md`](SPEC_AUTHORING.md) for every field.
+See [`docs/product/SPEC_AUTHORING.md`](SPEC_AUTHORING.md) for every field.
 
 > `--pack` and `--spec` are mutually exclusive — pick one.
 
@@ -621,7 +621,7 @@ MCP-style server through the runtime API.
 **Two channel workers at once?** Safe. Message claims are atomic
 (`pending → running`), so each question is answered exactly once.
 
-**Can I extend the tools?** Yes — see `docs/ARCHITECTURE.md`: the `Tool`
+**Can I extend the tools?** Yes — see `docs/architecture/ARCHITECTURE.md`: the `Tool`
 catalog (`runtime/tools.py`) and `register_tool_server()` for MCP-style
 local servers (`runtime/toolservers.py`) are the extension points; new tools
 inherit the same grant + risk + approval gating.

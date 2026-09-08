@@ -6,7 +6,7 @@
 <title>Agent Factory — User Guide</title>
 <style>
 :root{
-  /* The Forge Palette (docs/forge_palette.md) — dark industrial theme */
+  /* The Forge Palette (docs/product/forge_palette.md) — dark industrial theme */
   --bg:#1E2022; --bg2:#17191B; --card:#26292C; --card2:#2B2F33; --ink:#F4F5F6;
   --muted:#9BA3AE; --accent:#EAA115; --accent2:#F0C244; --cyan:#F0C244;
   --line:#33373C; --ok:#6FCF97; --warn:#EAA115; --err:#E5484D;
@@ -187,7 +187,7 @@ add_amplifier: true
 add_observer: true
 use_lead: true
 </code></pre>
-<p>See <a href="SPEC_AUTHORING.md"><code>docs/SPEC_AUTHORING.md</code></a> for every field.</p>
+<p>See <a href="SPEC_AUTHORING.md"><code>docs/product/SPEC_AUTHORING.md</code></a> for every field.</p>
 <blockquote>
 <p><code>--pack</code> and <code>--spec</code> are mutually exclusive — pick one.</p>
 </blockquote>
@@ -630,13 +630,13 @@ or <code>channel</code> for the currently implemented tool surface, or register 
 MCP-style server through the runtime API.</p>
 <p><strong>Two channel workers at once?</strong> Safe. Message claims are atomic
 (<code>pending → running</code>), so each question is answered exactly once.</p>
-<p><strong>Can I extend the tools?</strong> Yes — see <code>docs/ARCHITECTURE.md</code>: the <code>Tool</code>
+<p><strong>Can I extend the tools?</strong> Yes — see <code>docs/architecture/ARCHITECTURE.md</code>: the <code>Tool</code>
 catalog (<code>runtime/tools.py</code>) and <code>register_tool_server()</code> for MCP-style
 local servers (<code>runtime/toolservers.py</code>) are the extension points; new tools
 inherit the same grant + risk + approval gating.</p>
 </main>
 <footer>Agent Factory — open source — docs: <a href="USER_GUIDE.html">User Guide</a> |
-<a href="ARCHITECTURE.md">Architecture</a> | <a href="ROADMAP.md">Roadmap</a> |
+<a href="../architecture/ARCHITECTURE.md">Architecture</a> | <a href="../planning/ROADMAP.md">Roadmap</a> |
 <a href="USER_GUIDE.md">this page (markdown)</a></footer>
 </body>
 </html>

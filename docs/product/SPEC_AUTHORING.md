@@ -77,7 +77,7 @@ edit a pack into a bespoke org:
 agent_factory bootstrap --spec examples/packs/research.yaml --out orgs/Research
 ```
 
-See `docs/IMPLEMENTED_MILESTONE5.md` for the pack list and override details.
+See `docs/milestones/IMPLEMENTED_MILESTONE5.md` for the pack list and override details.
 
 ## Validation
 

@@ -292,4 +292,4 @@ Swap the provider to `openai` or `ollama` when you are ready for real intelligen
 every command stays the same.
 
 **Full documentation:** [`USER_GUIDE.md`](USER_GUIDE.md) ·
-[`ARCHITECTURE.md`](ARCHITECTURE.md) · [`ROADMAP.md`](ROADMAP.md)
+[`ARCHITECTURE.md`](../architecture/ARCHITECTURE.md) · [`ROADMAP.md`](../planning/ROADMAP.md)

@@ -1,12 +1,8 @@
 # Agent Factory
-# Uses the ideas and principles from a youtube video whose title and transcript are also in this folder.
-# Implemented in VS code with extension Cline and it's free model deepseek/deepseek-v4-flash
 
 [![CI](https://github.com/jvcaesar/agent_factory/actions/workflows/ci.yml/badge.svg)](https://github.com/jvcaesar/agent_factory/actions/workflows/ci.yml)
 
-A generic, config-driven toolkit for designing and eventually running a
-**workforce of AI agents** — generated from a short interview instead of
-hand-written orchestration code.
+**Release 1.0** (2026-09-08) — a generic, config-driven toolkit for designing and running a **workforce of AI agents**, generated from a short interview instead of hand-written orchestration code.
 
 The design generalizes recurring patterns for agentic workforces into
 reusable primitives:
@@ -35,39 +31,39 @@ reusable primitives:
 
 The `docs/` folder is the project's source of truth:
 
-- [`docs/USER_GUIDE.md`](docs/USER_GUIDE.md) — step-by-step user guide with real command examples and expected output ([styled HTML version](docs/USER_GUIDE.html))
-- [`docs/PRODUCT.md`](docs/PRODUCT.md) — product overview & marketing one-pager: features, benefits, personas, user stories, comparison ([dark-themed HTML version](docs/PRODUCT.html))
-- [`docs/PROJECT_PLAN.md`](docs/PROJECT_PLAN.md) — the detailed plan being used for implementation
-- [`docs/IMPLEMENTED_MILESTONE3.md`](docs/IMPLEMENTED_MILESTONE3.md) — everything implemented in the current step (M3 bootstrap)
-- [`docs/IMPLEMENTED_MILESTONE1.md`](docs/IMPLEMENTED_MILESTONE1.md) — everything implemented in the current step (M1 runtime engine)
-- [`docs/IMPLEMENTED_MILESTONE2.md`](docs/IMPLEMENTED_MILESTONE2.md) — everything implemented in the current step (M2 ambition loop)
-- [`docs/IMPLEMENTED_MILESTONE4.md`](docs/IMPLEMENTED_MILESTONE4.md) — everything implemented in the current step (M4 insights / observers / mission control)
-- [`docs/IMPLEMENTED_MILESTONE5.md`](docs/IMPLEMENTED_MILESTONE5.md) — everything implemented in the current step (M5 role packs)
-- [`docs/IMPLEMENTED_MILESTONE6.md`](docs/IMPLEMENTED_MILESTONE6.md) — everything implemented in the current step (M6 multiplayer / shared channel + wider tool surface)
-- [`docs/ROADMAP.md`](docs/ROADMAP.md) — the roadmap (M1–M6)
-- [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) — module map, data flow, contracts, seams for later milestones
-- [`docs/DESIGN_PRINCIPLES.md`](docs/DESIGN_PRINCIPLES.md) — the generic patterns and guiding rules
-- [`docs/DECISION_LOG.md`](docs/DECISION_LOG.md) — running record of design decisions
+- [`docs/product/USER_GUIDE.md`](docs/product/USER_GUIDE.md) — step-by-step user guide with real command examples and expected output ([styled HTML version](docs/product/USER_GUIDE.html))
+- [`docs/product/PRODUCT.md`](docs/product/PRODUCT.md) — product overview & marketing one-pager: features, benefits, personas, user stories, comparison ([dark-themed HTML version](docs/product/PRODUCT.html))
+- [`docs/planning/PROJECT_PLAN.md`](docs/planning/PROJECT_PLAN.md) — the detailed plan being used for implementation
+- [`docs/milestones/IMPLEMENTED_MILESTONE3.md`](docs/milestones/IMPLEMENTED_MILESTONE3.md) — everything implemented in the current step (M3 bootstrap)
+- [`docs/milestones/IMPLEMENTED_MILESTONE1.md`](docs/milestones/IMPLEMENTED_MILESTONE1.md) — everything implemented in the current step (M1 runtime engine)
+- [`docs/milestones/IMPLEMENTED_MILESTONE2.md`](docs/milestones/IMPLEMENTED_MILESTONE2.md) — everything implemented in the current step (M2 ambition loop)
+- [`docs/milestones/IMPLEMENTED_MILESTONE4.md`](docs/milestones/IMPLEMENTED_MILESTONE4.md) — everything implemented in the current step (M4 insights / observers / mission control)
+- [`docs/milestones/IMPLEMENTED_MILESTONE5.md`](docs/milestones/IMPLEMENTED_MILESTONE5.md) — everything implemented in the current step (M5 role packs)
+- [`docs/milestones/IMPLEMENTED_MILESTONE6.md`](docs/milestones/IMPLEMENTED_MILESTONE6.md) — everything implemented in the current step (M6 multiplayer / shared channel + wider tool surface)
+- [`docs/planning/ROADMAP.md`](docs/planning/ROADMAP.md) — the roadmap (M1–M6)
+- [`docs/architecture/ARCHITECTURE.md`](docs/architecture/ARCHITECTURE.md) — module map, data flow, contracts, seams for later milestones
+- [`docs/architecture/DESIGN_PRINCIPLES.md`](docs/architecture/DESIGN_PRINCIPLES.md) — the generic patterns and guiding rules
+- [`docs/architecture/DECISION_LOG.md`](docs/architecture/DECISION_LOG.md) — running record of design decisions
 - [`CHANGELOG.md`](CHANGELOG.md) — version history (0.1.0 MVP → 1.0.0)
-- [`docs/RELEASE_CHECKLIST_1.0.md`](docs/RELEASE_CHECKLIST_1.0.md) — the concrete, trackable checklist for shipping MVP → Release 1.0
-- [`docs/TRANSCRIPT_NOTES.md`](docs/TRANSCRIPT_NOTES.md) — distilled ideas from the source video (with timestamps)
-- [`docs/SPEC_AUTHORING.md`](docs/SPEC_AUTHORING.md) — how to write `--spec` YAML by hand
-- [`docs/HOWTO_BOOTSTRAP.md`](docs/HOWTO_BOOTSTRAP.md) — what each bootstrap command does, and which ones to actually run
+- [`docs/planning/RELEASE_CHECKLIST_1.0.md`](docs/planning/RELEASE_CHECKLIST_1.0.md) — the concrete, trackable checklist for shipping MVP → Release 1.0
+- [`docs/notes/TRANSCRIPT_NOTES.md`](docs/notes/TRANSCRIPT_NOTES.md) — distilled ideas from the source video (with timestamps)
+- [`docs/product/SPEC_AUTHORING.md`](docs/product/SPEC_AUTHORING.md) — how to write `--spec` YAML by hand
+- [`docs/product/HOWTO_BOOTSTRAP.md`](docs/product/HOWTO_BOOTSTRAP.md) — what each bootstrap command does, and which ones to actually run
 
 ## Status
 
 - **Milestone 6 (Multiplayer & tool surface)** — implemented. See
-  [`docs/IMPLEMENTED_MILESTONE6.md`](docs/IMPLEMENTED_MILESTONE6.md).
+  [`docs/milestones/IMPLEMENTED_MILESTONE6.md`](docs/milestones/IMPLEMENTED_MILESTONE6.md).
 - **Milestone 5 (Role packs)** — implemented. See
-  [`docs/IMPLEMENTED_MILESTONE5.md`](docs/IMPLEMENTED_MILESTONE5.md).
+  [`docs/milestones/IMPLEMENTED_MILESTONE5.md`](docs/milestones/IMPLEMENTED_MILESTONE5.md).
 - **Milestone 4 (Insights)** — implemented. See
-  [`docs/IMPLEMENTED_MILESTONE4.md`](docs/IMPLEMENTED_MILESTONE4.md).
+  [`docs/milestones/IMPLEMENTED_MILESTONE4.md`](docs/milestones/IMPLEMENTED_MILESTONE4.md).
 - **Milestone 3 (Bootstrap)** — implemented. See
-  [`docs/IMPLEMENTED_MILESTONE3.md`](docs/IMPLEMENTED_MILESTONE3.md).
+  [`docs/milestones/IMPLEMENTED_MILESTONE3.md`](docs/milestones/IMPLEMENTED_MILESTONE3.md).
 - **Milestone 2 (Ambition loop)** — implemented. See
-  [`docs/IMPLEMENTED_MILESTONE2.md`](docs/IMPLEMENTED_MILESTONE2.md).
+  [`docs/milestones/IMPLEMENTED_MILESTONE2.md`](docs/milestones/IMPLEMENTED_MILESTONE2.md).
 - **Milestone 1 (Runtime engine)** — implemented. See
-  [`docs/IMPLEMENTED_MILESTONE1.md`](docs/IMPLEMENTED_MILESTONE1.md).
+  [`docs/milestones/IMPLEMENTED_MILESTONE1.md`](docs/milestones/IMPLEMENTED_MILESTONE1.md).
 
 ## Quick start
 
@@ -176,7 +172,7 @@ model settings. Values may use `provider/model`, for example
 `ollama/qwen2.5:7b`. If `--provider` is also supplied, a conflicting provider
 prefix is rejected with a clear error.
 
-See [`docs/IMPLEMENTED_MILESTONE1.md`](docs/IMPLEMENTED_MILESTONE1.md) for details.
+See [`docs/milestones/IMPLEMENTED_MILESTONE1.md`](docs/milestones/IMPLEMENTED_MILESTONE1.md) for details.
 
 ## Roadmap
 
@@ -197,7 +193,7 @@ Regenerate the HTML docs from their Markdown sources:
 
 ```bash
 pip install -e ".[dev]"        # brings in ruff + markdown
-python tools/build_docs.py     # rebuilds docs/PRODUCT.html, docs/USER_GUIDE.html
+python tools/build_docs.py     # rebuilds docs/product/PRODUCT.html, docs/product/USER_GUIDE.html
 python tools/build_docs.py --check   # CI mode: fail if committed HTML is stale
 ```
 

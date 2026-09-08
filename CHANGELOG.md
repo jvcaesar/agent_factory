@@ -14,7 +14,7 @@ All notable changes to **Agent Factory** are recorded here. Format follows
 - **`--version` flag** and a real package `__init__.py` exposing
   `agent_factory.__version__`.
 - **`CHANGELOG.md`** (this file).
-- **`docs/RELEASE_CHECKLIST_1.0.md`** — tracked checklist for the MVP → 1.0 hardening phase.
+- **`docs/planning/RELEASE_CHECKLIST_1.0.md`** — tracked checklist for the MVP → 1.0 hardening phase.
 - **Opt-in live-provider smoke tests** (`tests/integration/`, gated by
   `AGENT_FACTORY_LIVE_TESTS=1`): exercise the real OpenAI adapter (verified
   live 2026-09-08) and the real Ollama adapter; each test skips with a clear
@@ -49,7 +49,7 @@ All notable changes to **Agent Factory** are recorded here. Format follows
   `pyproject.toml` and the `ANTHROPIC_API_KEY` / `GOOGLE_API_KEY` entries in
   `.env.example` claimed support that does not exist (no adapter, no
   `KNOWN_PROVIDERS` entry). Anthropic remains a documented *future* adapter
-  on the `LLMClient` interface (see `docs/PROJECT_PLAN.md`); nothing is
+  on the `LLMClient` interface (see `docs/planning/PROJECT_PLAN.md`); nothing is
   advertised as shipped that isn't.
 
 ## [0.1.0] - 2026-09-08  (MVP)
