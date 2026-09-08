@@ -6,9 +6,8 @@ but persists orgs as YAML so they are diffable, reviewable, and reusable.
 
 from __future__ import annotations
 
-from pathlib import Path
 from collections import Counter
-from typing import Optional
+from pathlib import Path
 
 import yaml
 

@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import json
-from typing import Any, Optional
+from typing import Any
 
 # Some local models truncate generation before closing every brace/quote of the
 # action-protocol JSON. Try appending a small number of closing characters to
@@ -11,7 +11,7 @@ from typing import Any, Optional
 _MAX_REPAIR_ATTEMPTS = 4
 
 
-def _try_repair_truncated_object(fragment: str) -> Optional[dict[str, Any]]:
+def _try_repair_truncated_object(fragment: str) -> dict[str, Any] | None:
     open_braces = fragment.count("{") - fragment.count("}")
     if open_braces <= 0 or open_braces > _MAX_REPAIR_ATTEMPTS:
         return None
@@ -26,7 +26,7 @@ def _try_repair_truncated_object(fragment: str) -> Optional[dict[str, Any]]:
     return value if isinstance(value, dict) else None
 
 
-def extract_json_object(text: str) -> Optional[dict[str, Any]]:
+def extract_json_object(text: str) -> dict[str, Any] | None:
     """Return the first valid JSON object in model text, if one exists."""
     cleaned = text.strip()
     if cleaned.startswith("```"):

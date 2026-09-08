@@ -1,0 +1,82 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  # Offline test suite across the supported interpreters and both major OSes.
+  # Live-provider tests stay opt-in (AGENT_FACTORY_LIVE_TESTS=1) so this job
+  # never needs API keys or network beyond installing the package.
+  test:
+    name: test (${{ matrix.os }} / py${{ matrix.python-version }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+        python-version: ["3.10", "3.11", "3.12", "3.13"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v4
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Install package
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -e .
+      - name: Offline test suite
+        run: python -m unittest discover -s tests -v
+
+  # Lint gate: must stay green. The same rules run locally via
+  # `pip install -e ".[dev]"` then `ruff check src tests`.
+  lint:
+    name: lint (ruff)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v4
+        with:
+          python-version: "3.11"
+      - name: Install ruff
+        run: python -m pip install "ruff>=0.8,<0.9"
+      - name: Ruff check
+        run: ruff check src tests
+
+  # Packaging gate: sdist + wheel must build and the wheel must contain the
+  # package and its console entry point (RC-14 relies on this job).
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v4
+        with:
+          python-version: "3.11"
+      - name: Install build
+        run: python -m pip install build
+      - name: Build sdist + wheel
+        run: python -m build
+      - name: Verify wheel contents + entry point
+        run: |
+          python - <<'PY'
+          import glob, zipfile
+          wheels = glob.glob("dist/agent_factory-*.whl")
+          assert len(wheels) == 1, f"expected exactly one wheel, got {wheels}"
+          with zipfile.ZipFile(wheels[0]) as z:
+              names = set(z.namelist())
+          required = ["agent_factory/cli.py", "agent_factory/runtime/tools.py", "agent_factory/runtime/channel.py"]
+          missing = [m for m in required if m not in names]
+          assert not missing, f"package modules missing from wheel: {missing}"
+          ep_files = [n for n in names if n.endswith("entry_points.txt")]
+          assert ep_files, "entry_points.txt missing from wheel"
+          with zipfile.ZipFile(wheels[0]) as z:
+              metadata = {n: z.read(n).decode() for n in names if n.endswith("entry_points.txt")}
+          entry_points = metadata[ep_files[0]]
+          assert "agent_factory = agent_factory.cli:main" in entry_points, entry_points
+          print(f"wheel OK: {wheels[0]} ({len(names)} entries, entry point present)")
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: dist
+          path: dist/

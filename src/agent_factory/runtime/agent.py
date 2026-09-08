@@ -10,17 +10,15 @@ Design goals:
 
 from __future__ import annotations
 
-import json
 from collections.abc import Mapping
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Callable, Optional
 
 from ..config import Org, Role
 from ..llm.base import ChatMessage, LLMClient
+from .protocol import extract_json_object
 from .state import Store
 from .tools import ApprovalFn, Tool, lookup, tools_for_role
-from .protocol import extract_json_object
 
 
 @dataclass
@@ -43,7 +41,7 @@ class AgentLimitError(Exception):
     """Raised when the agent exceeds its step budget."""
 
 
-def _read_sop(root: Optional[Path], role: Role) -> str:
+def _read_sop(root: Path | None, role: Role) -> str:
     if root is None or not role.sop:
         return ""
     p = Path(root) / role.sop
@@ -131,12 +129,12 @@ def run_agent(
     task: str,
     llm: LLMClient,
     *,
-    root: Optional[Path] = None,
-    approval_fn: Optional[ApprovalFn] = None,
+    root: Path | None = None,
+    approval_fn: ApprovalFn | None = None,
     max_steps: int = 8,
     temperature: float = 0.2,
-    store: Optional[Store] = None,
-    job_id: Optional[int] = None,
+    store: Store | None = None,
+    job_id: int | None = None,
 ) -> AgentOutcome:
     """Run one role to completion. Returns an :class:`AgentOutcome`."""
     tools = tools_for_role(role, root=root, org=org, store=store)

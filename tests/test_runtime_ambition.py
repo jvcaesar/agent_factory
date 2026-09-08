@@ -7,7 +7,11 @@ from _helpers import SRC  # noqa: F401
 
 from agent_factory.config import Org, Role
 from agent_factory.llm.fake import FakeLLM
-from agent_factory.runtime.ambition import parse_proposals, propose_actions, run_ambition_loop
+from agent_factory.runtime.ambition import (
+    parse_proposals,
+    propose_actions,
+    run_ambition_loop,
+)
 from agent_factory.runtime.state import Store
 
 # A proactive lead with a worker beneath it; the worker has a read-only grant

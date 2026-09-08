@@ -9,7 +9,6 @@ etc.). For corporate TLS-intercepting proxies set ``OPENAI_VERIFY_SSL=0``
 from __future__ import annotations
 
 import os
-from typing import Optional
 
 from ..config.env import env_get
 from .base import ChatMessage, LLMClient, LLMError, LLMResult
@@ -31,8 +30,8 @@ class OpenAILLM(LLMClient):
 
     def __init__(
         self,
-        api_key: Optional[str] = None,
-        base_url: Optional[str] = None,
+        api_key: str | None = None,
+        base_url: str | None = None,
         model: str = "gpt-4o-mini",
         timeout: int = 60,
     ):
@@ -68,7 +67,7 @@ class OpenAILLM(LLMClient):
         self,
         messages: list[ChatMessage],
         *,
-        model: Optional[str] = None,
+        model: str | None = None,
         temperature: float = 0.2,
         max_tokens: int = 2000,
     ) -> LLMResult:

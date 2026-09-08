@@ -8,9 +8,9 @@ The interface is intentionally narrow so it can be swapped for Postgres later
 from __future__ import annotations
 
 import sqlite3
+from collections.abc import Iterator
 from contextlib import contextmanager
 from pathlib import Path
-from typing import Iterator, Optional
 
 VALID_INSIGHT_LEVELS = {"low", "info", "warning", "critical"}
 VALID_INSIGHT_KINDS = {"friction", "access_gap", "contradiction", "blocker", "opportunity"}
@@ -111,7 +111,7 @@ class Store:
     def close(self) -> None:
         self._conn.close()
 
-    def __enter__(self) -> "Store":
+    def __enter__(self) -> Store:
         return self
 
     def __exit__(self, exc_type, exc_value, traceback) -> None:
@@ -127,7 +127,7 @@ class Store:
             raise
 
     # -- jobs ----------------------------------------------------------------
-    def enqueue(self, org: str, role: str, task: str, provider: Optional[str] = None) -> int:
+    def enqueue(self, org: str, role: str, task: str, provider: str | None = None) -> int:
         with self._tx() as c:
             cur = c.execute(
                 "INSERT INTO jobs (org, role, task, provider) VALUES (?,?,?,?)",
@@ -135,7 +135,7 @@ class Store:
             )
             return int(cur.lastrowid)
 
-    def pull_next(self) -> Optional[sqlite3.Row]:
+    def pull_next(self) -> sqlite3.Row | None:
         """Claim the oldest 'queued' job (mark it running). Returns the row or None."""
         with self._tx() as c:
             row = c.execute(
@@ -181,7 +181,7 @@ class Store:
                 (reason, job_id),
             )
 
-    def get(self, job_id: int) -> Optional[sqlite3.Row]:
+    def get(self, job_id: int) -> sqlite3.Row | None:
         return self._conn.execute("SELECT * FROM jobs WHERE id=?", (job_id,)).fetchone()
 
     def get_last_error(self, job_id: int) -> str:
@@ -194,7 +194,7 @@ class Store:
             return 0
         return int(row["value"])
 
-    def list_jobs(self, status: Optional[str] = None, limit: int = 100) -> list[sqlite3.Row]:
+    def list_jobs(self, status: str | None = None, limit: int = 100) -> list[sqlite3.Row]:
         if status:
             return self._conn.execute(
                 "SELECT * FROM jobs WHERE status=? ORDER BY id DESC LIMIT ?", (status, limit)
@@ -249,7 +249,7 @@ class Store:
                 (key, content, source),
             )
 
-    def get_context(self, key: str) -> Optional[sqlite3.Row]:
+    def get_context(self, key: str) -> sqlite3.Row | None:
         return self._conn.execute("SELECT * FROM context WHERE key=?", (key,)).fetchone()
 
     def list_context(self, limit: int = 100) -> list[sqlite3.Row]:
@@ -318,8 +318,8 @@ class Store:
     def list_insights(
         self,
         *,
-        status: Optional[str] = None,
-        level: Optional[str] = None,
+        status: str | None = None,
+        level: str | None = None,
         limit: int = 100,
     ) -> list[sqlite3.Row]:
         q = "SELECT * FROM insights WHERE 1=1"
@@ -342,8 +342,8 @@ class Store:
         author: str,
         content: str,
         *,
-        requested_role: Optional[str] = None,
-        reply_to: Optional[int] = None,
+        requested_role: str | None = None,
+        reply_to: int | None = None,
         status: str = "pending",
     ) -> int:
         """Post a message into a shared channel. Returns the new message id.
@@ -359,7 +359,7 @@ class Store:
             )
             return int(cur.lastrowid)
 
-    def claim_next_in_channel(self, channel: str) -> Optional[sqlite3.Row]:
+    def claim_next_in_channel(self, channel: str) -> sqlite3.Row | None:
         """Atomically claim the oldest pending message in a channel (pending -> running)."""
         with self._tx() as c:
             row = c.execute(
@@ -394,7 +394,7 @@ class Store:
             )
 
     def list_messages(
-        self, channel: Optional[str] = None, limit: int = 100
+        self, channel: str | None = None, limit: int = 100
     ) -> list[sqlite3.Row]:
         """Newest-first listing; pass ``channel`` to see one conversation thread."""
         if channel is not None:
@@ -407,7 +407,7 @@ class Store:
         ).fetchall()
 
     def pending_messages(
-        self, channel: Optional[str] = None, limit: int = 100
+        self, channel: str | None = None, limit: int = 100
     ) -> list[sqlite3.Row]:
         """Oldest-first list of messages still waiting for an agent reply."""
         if channel is not None:

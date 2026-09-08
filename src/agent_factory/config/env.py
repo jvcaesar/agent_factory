@@ -12,7 +12,6 @@ from __future__ import annotations
 import os
 import re
 from pathlib import Path
-from typing import Optional
 
 _LINE_RE = re.compile(
     r"^\s*(?:export\s+)?([A-Za-z_][A-Za-z0-9_]*)\s*=\s*(.*?)\s*$"
@@ -69,7 +68,7 @@ def load_dotenv(path: str | Path | None = None, *, overwrite: bool = False) -> b
     return changed
 
 
-def env_get(*names: str) -> Optional[str]:
+def env_get(*names: str) -> str | None:
     """Fetch the first non-empty environment variable among ``names``.
 
     Checks both the given casing and its uppercase form because Windows

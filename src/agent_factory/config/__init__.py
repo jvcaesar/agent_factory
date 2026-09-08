@@ -10,7 +10,7 @@ from __future__ import annotations
 
 import re
 from enum import Enum
-from typing import ClassVar, Literal, Optional
+from typing import ClassVar, Literal
 
 from pydantic import BaseModel, Field, field_validator
 
@@ -65,16 +65,16 @@ class Role(BaseModel):
     sop: str
     proactivity_level: int = Field(ge=0, le=5)
     model_tier: ModelTier = ModelTier.SMART
-    provider: Optional[str] = Field(
+    provider: str | None = Field(
         default=None,
         description="Optional per-role LLM provider ('openai'|'ollama'|'fake'). Defaults to the global provider (env AGENT_FACTORY_PROVIDER).",
     )
-    model: Optional[str] = Field(
+    model: str | None = Field(
         default=None,
         description="Optional per-role model override. Defaults to the model resolved from model_tier + env.",
     )
     approval_policy: ApprovalPolicy = ApprovalPolicy.AUTONOMOUS
-    reports_to: Optional[str] = None
+    reports_to: str | None = None
     tool_grants: list[ToolGrant] = Field(default_factory=list)
     subagents: list[str] = Field(default_factory=list, description="Worker archetype ids this role fans out to.")
 
@@ -82,7 +82,7 @@ class Role(BaseModel):
 
     @field_validator("provider")
     @classmethod
-    def _provider_must_be_known(cls, v: Optional[str]) -> Optional[str]:
+    def _provider_must_be_known(cls, v: str | None) -> str | None:
         if v is None:
             return v
         v = (v or "").strip().lower()
@@ -92,7 +92,7 @@ class Role(BaseModel):
 
     @field_validator("reports_to", "id")
     @classmethod
-    def _must_be_canonical_id(cls, v: Optional[str]) -> Optional[str]:
+    def _must_be_canonical_id(cls, v: str | None) -> str | None:
         if v is None:
             return v
         if not isinstance(v, str) or not _ID_RE.fullmatch(v):

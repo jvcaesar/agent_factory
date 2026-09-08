@@ -6,11 +6,27 @@ M6 scope: a shared human<->agent channel (Loop Alley), store-backed memory and
 channel tool adapters, MCP-style tool servers, and risk-aware permissions.
 """
 
-from .agent import Action, AgentLimitError, AgentOutcome, build_system_prompt, parse_action, run_agent
+from .agent import (
+    Action,
+    AgentLimitError,
+    AgentOutcome,
+    build_system_prompt,
+    parse_action,
+    run_agent,
+)
 from .ambition import Proposal, propose_actions, run_ambition_loop
-from .channel import Message, channel_blob, default_lead, list_channel, post_to_channel, run_channel_worker
+from .channel import (
+    Message,
+    channel_blob,
+    default_lead,
+    list_channel,
+    post_to_channel,
+    run_channel_worker,
+)
 from .insights import Observation, build_daily_brief, observe
+from .orchestrator import run_job
 from .state import Store
+from .tools import ApprovalFn, Tool, ToolFunc, approval_needed, tools_for_role
 from .toolservers import (
     REGISTERED_SERVERS,
     ServerTool,
@@ -19,8 +35,6 @@ from .toolservers import (
     register_tool_server,
     server_tools,
 )
-from .tools import ApprovalFn, Tool, ToolFunc, approval_needed, tools_for_role
-from .orchestrator import run_job
 
 __all__ = [
     "Action",

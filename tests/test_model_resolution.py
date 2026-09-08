@@ -2,7 +2,6 @@
 
 import os
 import unittest
-from unittest import mock
 
 from agent_factory.llm.models import model_for_tier, resolve_role
 

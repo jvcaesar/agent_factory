@@ -8,7 +8,6 @@ from _helpers import SRC  # noqa: F401
 from agent_factory.config import Org, Role
 from agent_factory.llm.fake import FakeLLM
 from agent_factory.runtime.insights import (
-    Observation,
     build_daily_brief,
     observe,
     parse_observations,

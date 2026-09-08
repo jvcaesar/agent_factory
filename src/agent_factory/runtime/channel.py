@@ -19,9 +19,9 @@ atomic).
 
 from __future__ import annotations
 
+from collections.abc import Callable
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Callable, Optional
 
 from ..config import Org, Role
 from ..llm.base import LLMClient
@@ -40,8 +40,8 @@ class Message:
     author: str
     content: str
     status: str = "pending"
-    requested_role: Optional[str] = None
-    reply_to: Optional[int] = None
+    requested_role: str | None = None
+    reply_to: int | None = None
 
 
 def post_to_channel(
@@ -51,8 +51,8 @@ def post_to_channel(
     *,
     author_role: str = "human",
     author: str = "human",
-    requested_role: Optional[str] = None,
-    reply_to: Optional[int] = None,
+    requested_role: str | None = None,
+    reply_to: int | None = None,
 ) -> int:
     """Post a message from a human (or agent) into the shared channel."""
     return store.post_message(
@@ -83,7 +83,7 @@ def default_lead(org: Org) -> Role:
     return org.roles[0]
 
 
-def _resolve_role(org: Org, message: dict, resolver: Optional[Callable[[dict], Optional[Role]]]) -> Role:
+def _resolve_role(org: Org, message: dict, resolver: Callable[[dict], Role | None] | None) -> Role:
     requested = message["requested_role"]
     if requested:
         try:
@@ -103,10 +103,10 @@ def run_channel_worker(
     llm: LLMClient,
     *,
     channel: str = "general",
-    role_resolver: Optional[Callable[[dict], Optional[Role]]] = None,
-    role_client: Optional[Callable[[Role], LLMClient]] = None,
-    root: Optional[Path] = None,
-    approval_fn: Optional[ApprovalFn] = None,
+    role_resolver: Callable[[dict], Role | None] | None = None,
+    role_client: Callable[[Role], LLMClient] | None = None,
+    root: Path | None = None,
+    approval_fn: ApprovalFn | None = None,
     max_messages: int = 5,
     temperature: float = 0.2,
 ) -> list[tuple[dict, AgentOutcome, int]]:

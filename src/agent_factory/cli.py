@@ -10,14 +10,14 @@ from __future__ import annotations
 
 import argparse
 import sys
+from collections.abc import Callable
 from pathlib import Path
-from typing import Callable
 
 import yaml
 
 from .bootstrap.archetypes import DOMAIN_CHOICES, KNOWN_TOOLS
 from .bootstrap.generator import generate_org, write_org
-from .bootstrap.interview import AskFn, ConfirmFn, ChoiceFn, InterviewAnswers
+from .bootstrap.interview import AskFn, ChoiceFn, ConfirmFn, InterviewAnswers
 from .config import ApprovalPolicy
 from .config.env import env_get, load_dotenv
 from .config.loader import ConfigError, load_org_yaml, validate_org
@@ -134,7 +134,7 @@ def _interactive() -> InterviewAnswers:
 
 
 def _load_spec(path: Path) -> InterviewAnswers:
-    with open(path, "r", encoding="utf-8") as fh:
+    with open(path, encoding="utf-8") as fh:
         data = yaml.safe_load(fh) or {}
     return InterviewAnswers.from_dict(data)
 
@@ -332,11 +332,12 @@ def cmd_ambition(args: argparse.Namespace) -> int:
     try:
         # Build a per-agent client so the lead and each worker can use
         # different providers/models (from their role YAML + .env).
-        role_client = lambda r: client_for_role(
-            r,
-            provider_override=args.provider,
-            model_override=args.model,
-        )
+        def role_client(r):
+            return client_for_role(
+                r,
+                provider_override=args.provider,
+                model_override=args.model,
+            )
         approval_fn = _approval_policy(args)
         proposals, executed = run_ambition_loop(
             org,
@@ -634,9 +635,10 @@ def cmd_channel_worker(args: argparse.Namespace) -> int:
     store = Store(db)
     try:
         approval_fn = _approval_policy(args)
-        client_of_role = lambda role: client_for_role(
-            role, provider_override=args.provider, model_override=args.model
-        )
+        def client_of_role(role):
+            return client_for_role(
+                role, provider_override=args.provider, model_override=args.model
+            )
         role_resolver = None
         if args.role:
             try:
@@ -647,7 +649,8 @@ def cmd_channel_worker(args: argparse.Namespace) -> int:
                     file=sys.stderr,
                 )
                 return 2
-            role_resolver = lambda _message: forced
+            def role_resolver(_message):
+                return forced
         answered = run_channel_worker(
             org,
             store,
@@ -669,7 +672,7 @@ def cmd_channel_worker(args: argparse.Namespace) -> int:
         print(f"#{args.channel}: no pending messages to answer")
     else:
         print(f"#{args.channel}: answered {len(answered)} message(s)")
-        for message, outcome, job_id in answered:
+        for message, outcome, _ in answered:
             print(f"  #{message['id']} by {outcome.steps} step(s): {outcome.output[:80]}")
     return 0
 

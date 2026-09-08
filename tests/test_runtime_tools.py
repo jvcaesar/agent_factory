@@ -1,9 +1,9 @@
 """Tests for the runtime tool framework: grants, approval flags, stubs."""
 
 import os
-import unittest
 import pathlib
 import tempfile
+import unittest
 from unittest import mock
 
 from _helpers import SRC  # noqa: F401

@@ -8,8 +8,8 @@ SDK and no cloud dependency. Point ``base_url`` at the local Ollama server,
 
 from __future__ import annotations
 
+import contextlib
 import os
-from typing import Optional
 
 from .base import ChatMessage, LLMClient, LLMError, LLMResult
 
@@ -19,7 +19,7 @@ class OllamaLLM(LLMClient):
 
     def __init__(
         self,
-        base_url: Optional[str] = None,
+        base_url: str | None = None,
         model: str = "gemma4",
         timeout: int = 180,
     ):
@@ -35,7 +35,7 @@ class OllamaLLM(LLMClient):
         self,
         messages: list[ChatMessage],
         *,
-        model: Optional[str] = None,
+        model: str | None = None,
         temperature: float = 0.2,
         max_tokens: int = 2000,
     ) -> LLMResult:
@@ -77,10 +77,8 @@ class OllamaLLM(LLMClient):
         self.used_reasoning_fallback = False
         if not (text or "").strip():
             reasoning = ""
-            try:
+            with contextlib.suppress(KeyError, IndexError, TypeError):
                 reasoning = (data["choices"][0]["message"].get("reasoning") or "").strip()
-            except (KeyError, IndexError, TypeError):
-                pass
             if reasoning:
                 self.used_reasoning_fallback = True
                 text = reasoning

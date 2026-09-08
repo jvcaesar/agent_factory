@@ -2,6 +2,8 @@
 # Uses the ideas and principles from a youtube video whose title and transcript are also in this folder.
 # Implemented in VS code with extension Cline and it's free model deepseek/deepseek-v4-flash
 
+[![CI](https://github.com/jvcaesar/agent_factory/actions/workflows/ci.yml/badge.svg)](https://github.com/jvcaesar/agent_factory/actions/workflows/ci.yml)
+
 A generic, config-driven toolkit for designing and eventually running a
 **workforce of AI agents** — generated from a short interview instead of
 hand-written orchestration code.

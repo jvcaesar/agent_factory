@@ -7,8 +7,7 @@ concrete adapters know about vendor specifics (API shape, transport, auth).
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from dataclasses import dataclass, field
-from typing import Optional
+from dataclasses import dataclass
 
 
 class LLMError(Exception):
@@ -28,9 +27,9 @@ class LLMResult:
     """A completed model response."""
 
     text: str
-    model: Optional[str] = None
-    raw: Optional[dict] = None
-    usage: Optional[dict] = None
+    model: str | None = None
+    raw: dict | None = None
+    usage: dict | None = None
 
     def __post_init__(self) -> None:
         if isinstance(self.raw, dict) and self.usage is None:
@@ -51,7 +50,7 @@ class LLMClient(ABC):
         self,
         messages: list[ChatMessage],
         *,
-        model: Optional[str] = None,
+        model: str | None = None,
         temperature: float = 0.2,
         max_tokens: int = 2000,
     ) -> LLMResult:

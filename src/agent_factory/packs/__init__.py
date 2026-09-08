@@ -18,7 +18,6 @@ primitives.
 from __future__ import annotations
 
 from dataclasses import dataclass, field, replace
-from typing import Optional
 
 from ..bootstrap.archetypes import ADDONS, ALL_WORKERS, DIRECTORS
 from ..bootstrap.interview import InterviewAnswers
@@ -194,9 +193,9 @@ def get_pack(pack_id: str) -> RolePack:
 def build_answers(
     pack: RolePack,
     *,
-    org_name: Optional[str] = None,
-    founder: Optional[str] = None,
-    north_star: Optional[str] = None,
+    org_name: str | None = None,
+    founder: str | None = None,
+    north_star: str | None = None,
 ) -> InterviewAnswers:
     """Build an :class:`InterviewAnswers` from a pack's spec, with CLI overrides.
 
@@ -231,9 +230,9 @@ def overridden_archetypes(pack: RolePack) -> tuple[dict, dict, dict]:
     for key, arch in directors.items():
         index[arch.id] = (directors, key)
         index[key] = (directors, key)
-    for key, arch in workers.items():
+    for key, _ in workers.items():
         index[key] = (workers, key)
-    for key, arch in addons.items():
+    for key, _ in addons.items():
         index[key] = (addons, key)
 
     for archetype_id, overrides in pack.archetype_overrides.items():

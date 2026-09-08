@@ -17,7 +17,7 @@ def render_sop(org: Org, role: Role, workers: list[str]) -> str:
         "",
         f"**Role:** `{role.id}`   **Reports to:** `{role.reports_to or 'org lead'}`",
         "",
-        f"## Charter",
+        "## Charter",
         role.charter.strip(),
         "",
         f"## Proactivity level: {role.proactivity_level}",

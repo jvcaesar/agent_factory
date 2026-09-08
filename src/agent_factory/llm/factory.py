@@ -14,7 +14,6 @@ Providers: ``openai`` (default), ``ollama`` (local Gemma/Qwen), ``fake``
 from __future__ import annotations
 
 import os
-from typing import Optional
 
 from ..config import Role
 from .base import LLMClient, LLMError
@@ -25,12 +24,12 @@ from .openai_client import OpenAILLM
 
 
 def get_client(
-    provider: Optional[str] = None,
+    provider: str | None = None,
     *,
-    model: Optional[str] = None,
-    base_url: Optional[str] = None,
-    api_key: Optional[str] = None,
-    responses: Optional[list[str]] = None,
+    model: str | None = None,
+    base_url: str | None = None,
+    api_key: str | None = None,
+    responses: list[str] | None = None,
 ) -> LLMClient:
     """Return a configured LLM client.
 
@@ -49,8 +48,8 @@ def get_client(
 
 def client_for_role(
     role: Role,
-    provider_override: Optional[str] = None,
-    model_override: Optional[str] = None,
+    provider_override: str | None = None,
+    model_override: str | None = None,
 ) -> LLMClient:
     """Build a client configured for a specific role.
 

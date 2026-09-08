@@ -8,7 +8,6 @@ serial execution here; a future worker pool can consume jobs via ``pull_next``.
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Optional
 
 from ..config import Org, Role
 from ..llm.base import LLMClient
@@ -24,11 +23,11 @@ def run_job(
     llm: LLMClient,
     store: Store,
     *,
-    root: Optional[Path] = None,
-    approval_fn: Optional[ApprovalFn] = None,
+    root: Path | None = None,
+    approval_fn: ApprovalFn | None = None,
     max_steps: int = 8,
     temperature: float = 0.2,
-    provider: Optional[str] = None,
+    provider: str | None = None,
 ):
     """Enqueue a job on ``role`` and run it. Returns (job_id, outcome)."""
     job_id = store.enqueue(org.name, role.id, task, provider)

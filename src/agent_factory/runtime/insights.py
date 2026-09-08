@@ -14,8 +14,6 @@ from __future__ import annotations
 
 import re
 from dataclasses import dataclass
-from pathlib import Path
-from typing import Optional
 
 from ..config import Org, Role
 from ..llm.base import ChatMessage, LLMClient
@@ -60,7 +58,7 @@ def _norm(value: str, allowed: tuple[str, ...], default: str) -> str:
     return value if value in allowed else default
 
 
-def parse_observations(text: str, max_count: Optional[int] = None) -> list[Observation]:
+def parse_observations(text: str, max_count: int | None = None) -> list[Observation]:
     """Parse an observer response into a list of :class:`Observation`."""
     data = extract_json_object(text)
     if not data:

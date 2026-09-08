@@ -22,9 +22,9 @@ from __future__ import annotations
 import ipaddress
 import os
 import socket
+from collections.abc import Callable
 from dataclasses import dataclass, replace
 from pathlib import Path
-from typing import Callable, Optional
 from urllib.parse import urljoin, urlparse
 
 from ..config import ApprovalPolicy, Org, Role, ToolAccess
@@ -55,9 +55,9 @@ def approval_needed(
     *,
     grant_approval: bool,
     access: ToolAccess,
-    tool: "Tool",
-    role: Optional[Role] = None,
-    org: Optional[Org] = None,
+    tool: Tool,
+    role: Role | None = None,
+    org: Org | None = None,
 ) -> bool:
     """The single permission rule: does this tool call need a human approval?
 
@@ -92,13 +92,13 @@ class Tool:
     requires_approval: bool = False
     risk: str = "medium"  # risk tier: low | medium | high
 
-    def with_approval(self, value: bool = True) -> "Tool":
+    def with_approval(self, value: bool = True) -> Tool:
         return replace(self, requires_approval=value)
 
-    def with_risk(self, value: str) -> "Tool":
+    def with_risk(self, value: str) -> Tool:
         return replace(self, risk=value)
 
-    def execute(self, inputs: Optional[dict] = None) -> str:
+    def execute(self, inputs: dict | None = None) -> str:
         return self.func(inputs or {})
 
 
@@ -106,7 +106,7 @@ class Tool:
 # Real (minimal) built-in tools.
 # ---------------------------------------------------------------------------
 
-def _confined_path(raw_path: object, root: Optional[Path]) -> tuple[Optional[Path], Optional[str]]:
+def _confined_path(raw_path: object, root: Path | None) -> tuple[Path | None, str | None]:
     if not isinstance(raw_path, str) or not raw_path.strip():
         return None, "ERROR: 'path' is required"
     if root is None:
@@ -125,7 +125,7 @@ def _confined_path(raw_path: object, root: Optional[Path]) -> tuple[Optional[Pat
     return resolved, None
 
 
-def _files_read(inputs: dict, root: Optional[Path]) -> str:
+def _files_read(inputs: dict, root: Path | None) -> str:
     path = inputs.get("path", "")
     target, error = _confined_path(path, root)
     if error:
@@ -137,7 +137,7 @@ def _files_read(inputs: dict, root: Optional[Path]) -> str:
     return text[:8000] + ("...\n[truncated]" if len(text) > 8000 else "")
 
 
-def _files_write(inputs: dict, root: Optional[Path]) -> str:
+def _files_write(inputs: dict, root: Path | None) -> str:
     path = inputs.get("path", "")
     content = inputs.get("content", "")
     target, error = _confined_path(path, root)
@@ -184,7 +184,7 @@ def _is_host_allowed(host: str, allowed_hosts: set[str]) -> bool:
     return False
 
 
-def _validate_web_url(url: object) -> tuple[Optional[str], Optional[str]]:
+def _validate_web_url(url: object) -> tuple[str | None, str | None]:
     if not isinstance(url, str) or not url.strip():
         return None, "ERROR: 'url' is required for web_fetch"
 
@@ -302,7 +302,7 @@ CATALOG: dict[str, dict[str, Tool | list[Tool]]] = {
 }
 
 
-def _file_tools(root: Optional[Path]) -> dict[str, Tool]:
+def _file_tools(root: Path | None) -> dict[str, Tool]:
     return {
         "read": Tool(
             "files_read",
@@ -334,7 +334,7 @@ def _store_missing(what: str) -> str:
     )
 
 
-def _memory_read(inputs: dict, store: Optional[Store]) -> str:
+def _memory_read(inputs: dict, store: Store | None) -> str:
     if store is None:
         return _store_missing("memory")
     key = inputs.get("key", "")
@@ -346,7 +346,7 @@ def _memory_read(inputs: dict, store: Optional[Store]) -> str:
     return f"[{row['key']}] (source: {row['source'] or '--'})\n{row['content']}"
 
 
-def _memory_search(inputs: dict, store: Optional[Store]) -> str:
+def _memory_search(inputs: dict, store: Store | None) -> str:
     if store is None:
         return _store_missing("memory")
     term = inputs.get("term", "")
@@ -358,7 +358,7 @@ def _memory_search(inputs: dict, store: Optional[Store]) -> str:
     return "\n".join(f"[{r['key']}] {r['content'][:800]}" for r in rows)
 
 
-def _memory_write(inputs: dict, store: Optional[Store]) -> str:
+def _memory_write(inputs: dict, store: Store | None) -> str:
     if store is None:
         return _store_missing("memory")
     key = inputs.get("key", "")
@@ -371,7 +371,7 @@ def _memory_write(inputs: dict, store: Optional[Store]) -> str:
     return f"WROTE memory key {key!r} ({len(content)} chars)"
 
 
-def _channel_list(inputs: dict, store: Optional[Store]) -> str:
+def _channel_list(inputs: dict, store: Store | None) -> str:
     if store is None:
         return _store_missing("channel")
     channel = str(inputs.get("channel", "general") or "general")
@@ -389,7 +389,7 @@ def _channel_list(inputs: dict, store: Optional[Store]) -> str:
     return "\n".join(lines)
 
 
-def _channel_post(inputs: dict, store: Optional[Store]) -> str:
+def _channel_post(inputs: dict, store: Store | None) -> str:
     if store is None:
         return _store_missing("channel")
     channel = str(inputs.get("channel", "general") or "general")
@@ -408,7 +408,7 @@ def _channel_post(inputs: dict, store: Optional[Store]) -> str:
     return f"POSTED message #{mid} to channel {channel!r}"
 
 
-def _store_tools(store: Optional[Store]) -> dict[str, dict[str, Tool | list[Tool]]]:
+def _store_tools(store: Store | None) -> dict[str, dict[str, Tool | list[Tool]]]:
     """Build the Store-backed ``memory``/``channel`` tool sets for a resolution."""
     memory_read = Tool(
         "memory_read",
@@ -492,11 +492,11 @@ def _resolve_spec(spec: dict, access: ToolAccess) -> list[Tool]:
 
 def tools_for_role(
     role: Role,
-    root: Optional[Path] = None,
+    root: Path | None = None,
     *,
-    org: Optional[Org] = None,
-    store: Optional[Store] = None,
-    servers: Optional[dict] = None,
+    org: Org | None = None,
+    store: Store | None = None,
+    servers: dict | None = None,
 ) -> list[Tool]:
     """Resolve a role's ``tool_grants`` into executable Tools (respecting access).
 
@@ -564,7 +564,7 @@ def tools_for_role(
     return list(tools.values())
 
 
-def lookup(tools: list[Tool], name: str) -> Optional[Tool]:
+def lookup(tools: list[Tool], name: str) -> Tool | None:
     for t in tools:
         if t.name == name:
             return t

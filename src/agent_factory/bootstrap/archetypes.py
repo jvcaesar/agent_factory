@@ -11,7 +11,7 @@ produce a business-operations, engineering, or research org.
 
 from __future__ import annotations
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 
 from ..config import ApprovalPolicy, ModelTier, ToolAccess, ToolGrant
 

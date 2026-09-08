@@ -21,9 +21,24 @@ agent_factory = "agent_factory.cli:main"
 openai = ["openai>=1.0"]
 ollama = ["requests>=2.0"]
 anthropic = ["anthropic>=0.30"]  # future adapter slot
+# Local development / CI tools
+dev = ["ruff>=0.8,<0.9"]
 
 [tool.setuptools.packages.find]
 where = ["src"]
 
 [tool.setuptools.package-data]
 "agent_factory" = ["templates/**/*.md"]
+
+[tool.ruff]
+# Keep local `ruff check` behavior identical to CI (see .github/workflows/ci.yml).
+target-version = "py310"
+line-length = 88
+
+[tool.ruff.lint]
+# E: pycodestyle errors, F: pyflakes, W: pycodestyle warnings,
+# I: isort, B: flake8-bugbear, UP: pyupgrade, SIM: flake8-simplify, C4: comprehensions.
+# E501 (line length) is intentionally NOT enforced: long docstrings/README blocks
+# and generated prompt text are idiomatic here; flagging them adds noise without value.
+select = ["E", "F", "W", "I", "B", "UP", "SIM", "C4"]
+ignore = ["E501"]

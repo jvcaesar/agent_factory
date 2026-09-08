@@ -16,18 +16,18 @@ still require approval through the normal gate.
 
 from __future__ import annotations
 
-import json
+import contextlib
 import re
+from collections.abc import Callable
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Callable, Optional
 
 from ..config import Org, Role
 from ..llm.base import ChatMessage, LLMClient
 from .agent import AgentOutcome, run_agent
+from .protocol import extract_json_object
 from .state import Store
 from .tools import ApprovalFn, tools_for_role
-from .protocol import extract_json_object
 
 RISK_ORDER = {"low": 1, "medium": 2, "high": 3}
 
@@ -48,7 +48,7 @@ class Proposal:
 ExecutedAction = tuple[Proposal, AgentOutcome, int]
 
 
-def parse_proposals(text: str, max_candidates: Optional[int] = None) -> list[Proposal]:
+def parse_proposals(text: str, max_candidates: int | None = None) -> list[Proposal]:
     """Parse the model's proposal response into a list of :class:`Proposal`."""
     data = extract_json_object(text)
     if not data:
@@ -121,7 +121,7 @@ def propose_actions(
     *,
     max_candidates: int = 5,
     temperature: float = 0.3,
-    store: Optional[Store] = None,
+    store: Store | None = None,
 ) -> list[Proposal]:
     """Propose net-new actions for a role. Returns [] if the role isn't proactive enough."""
     if role.proactivity_level < 3:
@@ -136,10 +136,8 @@ def _pick_worker(org: Org, role: Role, index: int = 0) -> Role:
     """Choose a valid subagent in round-robin order, or the role itself."""
     workers = []
     for sub in role.subagents:
-        try:
+        with contextlib.suppress(KeyError):
             workers.append(org.role(sub))
-        except KeyError:
-            pass
     if workers:
         return workers[index % len(workers)]
     return role
@@ -151,9 +149,9 @@ def run_ambition_loop(
     llm: LLMClient,
     store: Store,
     *,
-    root: Optional[Path] = None,
-    approval_fn: Optional[ApprovalFn] = None,
-    role_client: Optional[Callable[[Role], LLMClient]] = None,
+    root: Path | None = None,
+    approval_fn: ApprovalFn | None = None,
+    role_client: Callable[[Role], LLMClient] | None = None,
     max_candidates: int = 5,
     max_actions: int = 2,
     max_risk: str = "medium",

@@ -11,12 +11,12 @@ from _helpers import SRC  # noqa: F401
 from agent_factory.config import ApprovalPolicy, Org, Role, ToolAccess, ToolGrant
 from agent_factory.runtime.state import Store
 from agent_factory.runtime.tools import (
+    CATALOG,
     RISK_ORDER,
     Tool,
     approval_needed,
     lookup,
     tools_for_role,
-    CATALOG,
 )
 from agent_factory.runtime.toolservers import (
     REGISTERED_SERVERS,

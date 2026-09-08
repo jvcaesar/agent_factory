@@ -8,25 +8,25 @@ from _helpers import SRC  # noqa: F401
 
 from agent_factory.bootstrap.generator import generate_org
 from agent_factory.bootstrap.interview import InterviewAnswers
-from agent_factory.config import ApprovalPolicy, ModelTier, Role, ToolAccess, ToolGrant
+from agent_factory.config import ApprovalPolicy, ModelTier, Role
 from agent_factory.config.loader import ConfigError, load_org_yaml, validate_org
 
 
 def answers(**over):
-    base = dict(
-        org_name="TestCo",
-        founder="Tester",
-        north_star="Do great things",
-        quarterly_goals=["Target A"],
-        human_team_size=1,
-        domains=["product"],
-        tools={"notion", "files", "docs"},
-        risk_tier=ApprovalPolicy.REVIEW_EXTERNAL,
-        budget_tier="medium",
-        add_amplifier=False,
-        add_observer=False,
-        use_lead=True,
-    )
+    base = {
+        "org_name": "TestCo",
+        "founder": "Tester",
+        "north_star": "Do great things",
+        "quarterly_goals": ["Target A"],
+        "human_team_size": 1,
+        "domains": ["product"],
+        "tools": {"notion", "files", "docs"},
+        "risk_tier": ApprovalPolicy.REVIEW_EXTERNAL,
+        "budget_tier": "medium",
+        "add_amplifier": False,
+        "add_observer": False,
+        "use_lead": True,
+    }
     base.update(over)
     return InterviewAnswers(**base)
 

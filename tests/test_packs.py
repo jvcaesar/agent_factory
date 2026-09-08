@@ -7,7 +7,6 @@ import tempfile
 import unittest
 
 import yaml
-
 from _helpers import SRC  # noqa: F401
 
 from agent_factory.bootstrap.archetypes import ADDONS, ALL_WORKERS, DIRECTORS

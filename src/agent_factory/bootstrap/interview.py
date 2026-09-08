@@ -10,15 +10,15 @@ depends on how answers were gathered.
 
 from __future__ import annotations
 
+from collections.abc import Callable
 from dataclasses import dataclass, field
-from typing import Callable, Optional
 
 from ..config import ApprovalPolicy
 
 # A minimal prompt function shaped like input() so interactive and CLI agree.
 AskFn = Callable[[str, str], str]  # (question, default) -> answer
 ConfirmFn = Callable[[str, bool], bool]  # (question, default) -> bool
-ChoiceFn = Callable[[str, list[str], Optional[str]], str]  # (q, options, default) -> selection
+ChoiceFn = Callable[[str, list[str], str | None], str]  # (q, options, default) -> selection
 
 
 @dataclass
@@ -53,7 +53,7 @@ class InterviewAnswers:
         }
 
     @classmethod
-    def from_dict(cls, d: dict) -> "InterviewAnswers":
+    def from_dict(cls, d: dict) -> InterviewAnswers:
         if not isinstance(d, dict):
             raise ValueError("interview spec must be a mapping")
 
@@ -79,7 +79,7 @@ class InterviewAnswers:
             quarterly_goals=[str(g) for g in d.get("quarterly_goals", [])],
             human_team_size=integer("human_team_size"),
             domains=[str(x) for x in d.get("domains", [])],
-            tools=set(str(x) for x in d.get("tools", [])),
+            tools={str(x) for x in d.get("tools", [])},
             risk_tier=ApprovalPolicy(d.get("risk_tier", "review_external")),
             budget_tier=str(d.get("budget_tier", "medium")),
             add_amplifier=boolean("add_amplifier"),

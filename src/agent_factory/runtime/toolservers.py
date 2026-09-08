@@ -17,7 +17,7 @@ tool the server advertises, gateable by the same permission rules as built-ins.
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Optional, Protocol, runtime_checkable
+from typing import Protocol, runtime_checkable
 
 from .tools import Tool
 
@@ -72,5 +72,5 @@ def register_tool_server(tool_id: str, server: ToolServer) -> None:
     REGISTERED_SERVERS[tool_id] = server
 
 
-def get_registered_server(tool_id: str) -> Optional[ToolServer]:
+def get_registered_server(tool_id: str) -> ToolServer | None:
     return REGISTERED_SERVERS.get(tool_id)

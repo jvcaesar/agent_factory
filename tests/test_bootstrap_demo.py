@@ -9,8 +9,7 @@ import tempfile
 import unittest
 
 import yaml
-
-from _helpers import SRC, FIXTURES  # noqa: F401  (SRC added for import path)
+from _helpers import FIXTURES, SRC  # noqa: F401  (SRC added for import path)
 
 from agent_factory.bootstrap.generator import generate_org, write_org
 from agent_factory.bootstrap.interview import InterviewAnswers
@@ -27,7 +26,7 @@ def export_and_reload(answers, out_dir):
 
 class TestBootstrapDemo(unittest.TestCase):
     def setUp(self):
-        with open(FIXTURES / "demo_spec.yaml", "r", encoding="utf-8") as fh:
+        with open(FIXTURES / "demo_spec.yaml", encoding="utf-8") as fh:
             self.spec = yaml.safe_load(fh)
         self.answers = InterviewAnswers.from_dict(self.spec)
         self.tmp = tempfile.TemporaryDirectory()

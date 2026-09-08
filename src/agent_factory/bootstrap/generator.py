@@ -71,9 +71,9 @@ def _lead_role(tools: set[str], risk: ApprovalPolicy, budget: str) -> Role:
 def generate_org(
     answers: InterviewAnswers,
     *,
-    directors: Optional[dict[str, Archetype]] = None,
-    workers: Optional[dict[str, Archetype]] = None,
-    addons: Optional[dict[str, Archetype]] = None,
+    directors: dict[str, Archetype] | None = None,
+    workers: dict[str, Archetype] | None = None,
+    addons: dict[str, Archetype] | None = None,
 ) -> Org:
     """Build an :class:`Org` from interview answers (no writes to disk).
 

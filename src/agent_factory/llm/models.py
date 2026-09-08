@@ -16,7 +16,6 @@ entirely configured through the ``.env`` file and the role YAML.
 from __future__ import annotations
 
 import os
-from typing import Optional
 
 from ..config import ModelTier, Role
 from ..config.env import env_get
@@ -43,7 +42,7 @@ _DEFAULTS = {
     "ollama": {"fast": "qwen2.5:0.5b", "smart": "gemma4", "big": "gemma4"},
 }
 
-def model_for_tier(provider: str, tier: ModelTier) -> Optional[str]:
+def model_for_tier(provider: str, tier: ModelTier) -> str | None:
     """Resolve a concrete model name for a provider + model tier from env.
 
     Priority: provider tier env > provider general env > generic
@@ -83,7 +82,7 @@ def resolve_default_provider() -> str:
     return p if p in KNOWN_PROVIDERS else "openai"
 
 
-def split_provider_model(value: str) -> tuple[Optional[str], str]:
+def split_provider_model(value: str) -> tuple[str | None, str]:
     """Split an optional ``provider/model`` prefix: ``openai/gpt-4o`` -> (``openai``, ``gpt-4o``).
 
     Bare values pass through unchanged as ``(None, value)``. Unknown prefixes
@@ -100,9 +99,9 @@ def split_provider_model(value: str) -> tuple[Optional[str], str]:
 
 def resolve_role(
     role: Role,
-    provider_override: Optional[str] = None,
-    model_override: Optional[str] = None,
-) -> tuple[str, Optional[str]]:
+    provider_override: str | None = None,
+    model_override: str | None = None,
+) -> tuple[str, str | None]:
     """Return (provider, model_name) for a role.
 
     Precedence for the provider: ``provider_override`` (CLI ``--provider``) >
@@ -113,8 +112,8 @@ def resolve_role(
     it selects the provider unless ``provider_override`` is supplied; conflicting
     explicit prefixes are rejected.
     """
-    provider: Optional[str] = provider_override
-    model: Optional[str] = None
+    provider: str | None = provider_override
+    model: str | None = None
 
     if model_override:
         model_provider, model = split_provider_model(model_override)
