@@ -120,8 +120,22 @@ Requires Python 3.10+ and `pydantic` + `pyyaml`. Tests run on stdlib
 `unittest` with no extra installs:
 
 ```bash
-py -m unittest discover -s tests -v   # 143 tests, offline
+py -m unittest discover -s tests -v   # offline, no API keys needed
 ```
+
+**Live-provider smoke tests** are opt-in and never run in the default suite.
+Set `AGENT_FACTORY_LIVE_TESTS=1` to exercise the *real* adapters:
+
+```bash
+# OpenAI: needs OPENAI_API_KEY (honors OPENAI_BASE_URL / OPENAI_MODEL)
+AGENT_FACTORY_LIVE_TESTS=1 py -m unittest discover -s tests/integration -v
+
+# Ollama: needs a local server; OLLAMA_MODEL should be a *pulled, tagged* id
+# (e.g. gemma4:12b — Ollama rejects bare names like `gemma4` with a 404)
+AGENT_FACTORY_LIVE_TESTS=1 OLLAMA_MODEL=gemma4:12b py -m unittest discover -s tests/integration -v
+```
+
+Each test skips with a clear reason when its prerequisite is missing.
 
 ## Providers (M1)
 
