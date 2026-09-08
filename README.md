@@ -189,4 +189,4 @@ See [`docs/IMPLEMENTED_MILESTONE1.md`](docs/IMPLEMENTED_MILESTONE1.md) for detai
 - [x] **M6 Multiplayer & tool surface** — shared human↔agent channel
   (`channel post|list|worker`), store-backed `memory`/`channel` tools,
   MCP-style `ToolServer` registry, risk-aware `approval_needed()` rules
-  (+30 tests — 143 total)
+  (+30 tests)

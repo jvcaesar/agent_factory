@@ -27,7 +27,7 @@ real (non-`fake`) provider run — with docs that say exactly what the code does
 | RC-05 | Tool-list command + "real vs stub" docs | 1 | S | ✅ |
 | RC-06 | Anthropic: implement, or cut the claim | 1 | M | ✅ |
 | RC-07 | Windows console encoding fix | 2 | S | ✅ |
-| RC-08 | Test-count / docs drift sweep | 2 | S | ☐ |
+| RC-08 | Test-count / docs drift sweep | 2 | S | ✅ |
 | RC-09 | Docs HTML regeneration step | 2 | S | ☐ |
 | RC-10 | Cleanup (drop `_ok.txt`, verify gitignore) | 2 | S | ☐ |
 | RC-11 | Add `SECURITY.md` | 2 | S | ☐ |
@@ -210,15 +210,28 @@ real (non-`fake`) provider run — with docs that say exactly what the code does
     mojibake-char scan CLEAN; ~~existing tests pass~~ ✅ (163 OK, 3 skipped;
     ruff clean).
 
-- [ ] **RC-08 — Test-count / docs drift sweep**
-  - *Why:* docs still claim "143 tests" (README, ROADMAP, milestone docs,
-    ARCHITECTURE) but the suite actually runs **146**; older docs mention 87/95/
-    97/113.
-  - Update every count to the final number after RC-01–RC-07 land (run
-    `python -m unittest discover -s tests` and use the real count).
-  - Add a tiny helper `scripts/check_docs.py`? (optional) or a PR-template note:
-    "did you update test counts?"
-  - **Done when:** `grep -rn "143 tests\|97 tests\|95 tests\|113 tests" . --include='*.md'` returns nothing; the README quickstart count matches a fresh run.
+- [x] **RC-08 — Test-count / docs drift sweep**
+  - *Why:* docs claimed "143 tests" (README, ROADMAP, ARCHITECTURE, milestone
+    docs) and 146 in USER_GUIDE/CHANGELOG, while the suite actually runs
+    **163** after RC-04/05/07 additions.
+  - Sweep results (verified against a fresh `python -m unittest discover -s
+    tests` → **Ran 163 tests, OK (skipped=3)**):
+    - README M6 line: dropped the stale "— 143 total" (delta kept).
+    - `docs/ARCHITECTURE.md`: `# 143 tests, offline` → `# 163 tests, offline`.
+    - `docs/ROADMAP.md`: removed trailing "95/113/143 tests." suffixes from the
+      M4/M5/M6 sections and the milestone checklist ("+N tests" deltas kept —
+      totals age badly; deltas don't).
+    - `docs/USER_GUIDE.md` and `CHANGELOG.md` (unreleased 1.0.0 entry):
+      updated to 163, CHANGELOG also notes the 3 opt-in live-skips.
+    - `docs/PRODUCT.md`: "143 offline tests" → "163 offline tests".
+  - Historical logs (`DECISION_LOG.md`, `IMPLEMENTED_MILESTONE*.md`,
+    `REVIEW_FIXES.md`) intentionally **not** rewritten — they are point-in-time
+    records ("87 tests pass" was true when written); rewriting history would
+    defeat their purpose.
+  - **Done when:** ~~stale counts gone from current-facing docs~~ ✅ verified:
+    scanning all tracked `*.md` except the three historical logs returns no
+    `(143|97|95|113|146) tests` hits; README/ARCHITECTURE counts match a fresh
+    suite run (163).
 
 - [ ] **RC-09 — Docs HTML regeneration**
   - *Why:* `docs/USER_GUIDE.html` / `docs/PRODUCT.html` are hand-generated
@@ -332,7 +345,8 @@ git clone  → pip install wheel (or -e .)  → python -m unittest discover -s t
 → agent_factory bootstrap --pack engineering → validate → run --provider fake   ✅
 → agent_factory channel post|worker|list                       completes          ✅
 → one real-provider flow (RC-16)                                completes          ✅
-→ grep -rn "143\|97\|95\|113 tests" **/*.md                     nothing            ✅
+→ grep stale counts in current-facing *.md (exclude DECISION_LOG,           nothing            ✅
+   IMPLEMENTED_MILESTONE*, REVIEW_FIXES — those are point-in-time records)
 → ruff check src tests                                          0 errors           ✅
 → git ls-files has no _ok.txt, has SECURITY.md, CHANGELOG.md                       ✅
 ```

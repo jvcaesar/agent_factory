@@ -127,5 +127,5 @@ python -m agent_factory channel post --org orgs/Acme --text "Did the client resp
 python -m agent_factory channel worker --org orgs/Acme --provider fake
 python -m agent_factory channel list --org orgs/Acme
 
-python -m unittest discover -s tests -v   # 143 tests, offline
+python -m unittest discover -s tests -v   # 163 tests, offline
 ```

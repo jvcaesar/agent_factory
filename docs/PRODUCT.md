@@ -218,7 +218,7 @@ portable folder — files plus one SQLite database — that the client owns enti
 | SaaS startups | Governed multi-agent features shipped as config | YAML org charts, pluggable providers |
 | Platform/AI teams | Department workforces with auditable governance | Grants, risk tiers, approval events in the store |
 | Consultancies | Fast client prototypes they fully own | Portable org folders, no hidden cloud state |
-| Education | Teaching multi-agent architecture offline | Deterministic `fake` provider, 143 offline tests |
+| Education | Teaching multi-agent architecture offline | Deterministic `fake` provider, 163 offline tests |
 | Hackathons | A working "AI company" demo in minutes | `bootstrap --pack` → running workforce before coffee |
 
 ## How it compares

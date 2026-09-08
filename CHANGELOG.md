@@ -75,5 +75,6 @@ All notable changes to **Agent Factory** are recorded here. Format follows
   (+HTML), per-milestone notes, roadmap, project plan.
 
 ### Notes
-- 146 offline tests (stdlib `unittest`, no API keys/network, deterministic
-  via `FakeLLM`).
+- 163 offline tests (stdlib `unittest`, no API keys/network, deterministic
+  via `FakeLLM`; 3 additional live-provider smoke tests skip unless
+  `AGENT_FACTORY_LIVE_TESTS=1`).

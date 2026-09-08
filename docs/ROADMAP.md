@@ -27,12 +27,12 @@ See `IMPLEMENTED_MILESTONE3.md`.
 ## M4 — Insights ✅ (implemented)
 - **Observer roles:** low-cost scan agents log friction, access gaps, blockers, contradictions, opportunities (video 22:20–23:31).
 - **Watchdogs / insight → action:** "what should I do today" brief, not dashboards (video 26:04).
-- **Mission control:** `status` CLI report of queue, agent activity, open insights, approvals. See `IMPLEMENTED_MILESTONE4.md`. 95 tests.
+- **Mission control:** `status` CLI report of queue, agent activity, open insights, approvals. See `IMPLEMENTED_MILESTONE4.md`.
 
 ## M5 — Role packs ✅ (implemented)
 - Package the engine for business-ops, engineering, and research orgs via a `packs` registry (`bootstrap --pack <name>`), with per-pack archetype charter overrides.
 - Larger orgs & repeatable templates: `examples/packs/*.yaml` usable directly as `--spec`.
-- Naming: pack ids are plain function names (`business_ops`, `engineering`, `research`). See `IMPLEMENTED_MILESTONE5.md`. 113 tests.
+- Naming: pack ids are plain function names (`business_ops`, `engineering`, `research`). See `IMPLEMENTED_MILESTONE5.md`.
 
 ## M6 — Multiplayer & tool surface ✅ (implemented)
 - Human teammates talk to the workforce via a shared Slack-style channel
@@ -42,7 +42,7 @@ See `IMPLEMENTED_MILESTONE3.md`.
 - Broader MCP/local tool surface + permission model polish: store-backed
   `memory`/`channel` adapters, a `ToolServer`/`register_tool_server` framework
   for local MCP-style servers, and risk-aware `approval_needed()` rules.
-- See `IMPLEMENTED_MILESTONE6.md`. 143 tests.
+- See `IMPLEMENTED_MILESTONE6.md`.
 
 ## Suggested order & reasoning
 
@@ -59,8 +59,8 @@ See `IMPLEMENTED_MILESTONE3.md`.
 - [x] M3 bootstrap + 16 tests
 - [x] M1 runtime: provider adapter, agent loop, SQLite, offline tests
 - [x] M2 ambition loop: proactive propose/execute, context store, guarded scope
-- [x] M4 mission control + observers/watchdogs (+8 tests — 95 total)
-- [x] M5 role packs (business-ops / engineering / research) (+16 tests — 113 total)
-- [x] M6 multiplayer + wider tool surface (+30 tests — 143 total)
+- [x] M4 mission control + observers/watchdogs (+8 tests)
+- [x] M5 role packs (business-ops / engineering / research) (+16 tests)
+- [x] M6 multiplayer + wider tool surface (+30 tests)
 
 Each milestone should keep the test suite green (offline, no API keys).

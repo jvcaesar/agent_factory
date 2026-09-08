@@ -85,7 +85,7 @@ line per pair. Exit code is `0` only if all pairs answer. Limit it with
 `--only openai` or `--only ollama`.
 
 > Running the tests? They are fully offline: `py -m unittest discover -s tests`
-> (146 tests at the time of writing, no API keys).
+> (163 tests at the time of writing, no API keys).
 
 ---
 
