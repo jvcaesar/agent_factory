@@ -325,12 +325,16 @@ real (non-`fake`) provider run — with docs that say exactly what the code does
     `orgs/QA_RC16`) — run against **both** OpenAI (`gpt-4o-mini`) and Ollama
     (`gemma3:12b`); see `docs/planning/QA_1.0.md` "RC-16" section.
 
-- [ ] **RC-17 — README status flip**
+- [x] **RC-17 — README status flip**
   - Change the top README Status block to "**Release 1.0** (2026-…)" and point
     the docs list at `RELEASE_CHECKLIST_1.0.md`; state supported providers,
     the tool-surface table (RC-05), and the live-test flag (RC-04).
-  - **Done when:** a new reader can tell from the README exactly what 1.0
-    supports without opening the milestone docs.
+  - **Done when:** ~~a new reader can tell from the README exactly what 1.0
+    supports without opening the milestone docs~~ ✅ (2026-09-09) — the
+    `## Status` section now states providers, tool-surface counts, test
+    counts, and links `RELEASE_CHECKLIST_1.0.md` + `QA_1.0.md` directly,
+    replacing the old milestone-by-milestone list (that detail now lives only
+    in `## Roadmap`, avoiding duplication).
 
 ---
 

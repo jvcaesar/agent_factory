@@ -52,18 +52,22 @@ The `docs/` folder is the project's source of truth:
 
 ## Status
 
-- **Milestone 6 (Multiplayer & tool surface)** — implemented. See
-  [`docs/milestones/IMPLEMENTED_MILESTONE6.md`](docs/milestones/IMPLEMENTED_MILESTONE6.md).
-- **Milestone 5 (Role packs)** — implemented. See
-  [`docs/milestones/IMPLEMENTED_MILESTONE5.md`](docs/milestones/IMPLEMENTED_MILESTONE5.md).
-- **Milestone 4 (Insights)** — implemented. See
-  [`docs/milestones/IMPLEMENTED_MILESTONE4.md`](docs/milestones/IMPLEMENTED_MILESTONE4.md).
-- **Milestone 3 (Bootstrap)** — implemented. See
-  [`docs/milestones/IMPLEMENTED_MILESTONE3.md`](docs/milestones/IMPLEMENTED_MILESTONE3.md).
-- **Milestone 2 (Ambition loop)** — implemented. See
-  [`docs/milestones/IMPLEMENTED_MILESTONE2.md`](docs/milestones/IMPLEMENTED_MILESTONE2.md).
-- **Milestone 1 (Runtime engine)** — implemented. See
-  [`docs/milestones/IMPLEMENTED_MILESTONE1.md`](docs/milestones/IMPLEMENTED_MILESTONE1.md).
+**Release 1.0** (2026-09-08) is out — see
+[`docs/planning/RELEASE_CHECKLIST_1.0.md`](docs/planning/RELEASE_CHECKLIST_1.0.md)
+for the concrete, trackable checklist that shipped it, and
+[`docs/planning/QA_1.0.md`](docs/planning/QA_1.0.md) for live end-to-end proof
+runs. What 1.0 supports:
+
+- **Providers:** `openai` (default), `ollama` (local Gemma/Qwen), and `fake`
+  (offline/deterministic, for tests) — see [Providers](#providers-m1) below.
+- **Tool surface:** 4 of 17 declared tool ids have live adapters today
+  (`files`, `web`, `memory`, `channel`); the rest are STUB placeholders — see
+  [Tool surface](#tool-surface-real-vs-stub) below, or run `agent_factory tools`.
+- **Test suite:** 163 tests, 100% offline by default; opt-in live-provider
+  smoke tests via `AGENT_FACTORY_LIVE_TESTS=1` (see below).
+- **All 6 milestones implemented:** bootstrap, runtime engine, ambition loop,
+  insights/observers, role packs, and the shared human↔agent channel — see
+  [Roadmap](#roadmap) for the milestone-by-milestone breakdown and links.
 
 ## Quick start
 
