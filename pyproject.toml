@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "agent_factory"
-version = "0.1.0"
+version = "1.0.0"
 description = "A generic factory for generating and running AI agent workforces from config-driven role charts."
 requires-python = ">=3.10"
 dependencies = [

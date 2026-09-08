@@ -15,6 +15,7 @@ from pathlib import Path
 
 import yaml
 
+from . import __version__
 from .bootstrap.archetypes import DOMAIN_CHOICES, KNOWN_TOOLS
 from .bootstrap.generator import generate_org, write_org
 from .bootstrap.interview import AskFn, ChoiceFn, ConfirmFn, InterviewAnswers
@@ -680,6 +681,12 @@ def cmd_channel_worker(args: argparse.Namespace) -> int:
 def main(argv: list[str] | None = None) -> int:
     load_dotenv()
     parser = argparse.ArgumentParser(prog="agent_factory", description="Generate and manage AI agent workforces.")
+    parser.add_argument(
+        "--version",
+        action="version",
+        version=f"%(prog)s {__version__}",
+        help="Print the agent_factory version and exit",
+    )
     sub = parser.add_subparsers(dest="command", required=True)
 
     bp = sub.add_parser("bootstrap", help="Interview -> generated org chart")

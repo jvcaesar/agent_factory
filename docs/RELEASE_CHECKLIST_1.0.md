@@ -22,7 +22,7 @@ real (non-`fake`) provider run — with docs that say exactly what the code does
 | P0-02 | Record verified baseline numbers | 0 | S | ✅ |
 | RC-01 | CI pipeline (tests + matrix) | 1 | M | ✅ |
 | RC-02 | Lint gate (ruff) | 1 | S | ✅ |
-| RC-03 | Version 1.0.0 + `--version` + `__init__.py` + CHANGELOG | 1 | S | ☐ |
+| RC-03 | Version 1.0.0 + `--version` + `__init__.py` + CHANGELOG | 1 | S | ✅ |
 | RC-04 | Live-provider smoke tests | 1 | M | ☐ |
 | RC-05 | Tool-list command + "real vs stub" docs | 1 | S | ☐ |
 | RC-06 | Anthropic: implement, or cut the claim | 1 | M | ☐ |
@@ -109,17 +109,18 @@ real (non-`fake`) provider run — with docs that say exactly what the code does
   - **Done when:** `ruff check src tests` exits 0 locally *and* is a required
     green job in the RC-01 workflow.
 
-- [ ] **RC-03 — Version 1.0.0 + `--version` + package `__init__.py` + CHANGELOG**
-  - Add `src/agent_factory/__init__.py` — currently missing (works as a
-    namespace package, but it's nonstandard and blocks `__version__`). Put
-    `__version__ = "1.0.0"` and a one-line docstring in it.
-  - Bump `pyproject.toml` `version = "0.1.0"` → `"1.0.0"`.
-  - Add `--version` to the CLI (argparse `action="version"` reading
-    `agent_factory.__version__`).
-  - Add `CHANGELOG.md` at repo root with `0.1.0` (MVP) and `1.0.0` entries.
-  - **Done when:** `python -m agent_factory --version` prints `1.0.0`;
-    `pip show agent_factory` reports 1.0.0; the wheel contains
-    `agent_factory/__init__.py`; CHANGELOG has both entries.
+- [x] **RC-03 — Version 1.0.0 + `--version` + package `__init__.py` + CHANGELOG**
+  - `src/agent_factory/__init__.py` added: module docstring + `__version__ = "1.0.0"`.
+  - `pyproject.toml` `version` bumped `0.1.0` → `1.0.0`.
+  - `--version` flag added to `cli.main()` (argparse `action="version"`,
+    reads `agent_factory.__version__`).
+  - `CHANGELOG.md` added at repo root (Keep-a-Changelog format; `0.1.0` MVP
+    + `1.0.0` entries) and linked from the README docs list.
+  - Verified: `python -m agent_factory --version` prints `agent_factory 1.0.0`;
+    `import agent_factory; agent_factory.__version__` == `"1.0.0"`.
+  - **Done when:** ~~`python -m agent_factory --version` prints `1.0.0`~~ ✅;
+    the wheel contains `agent_factory/__init__.py` (re-check at RC-14 build
+    gate); CHANGELOG has both entries ✅.
 
 - [ ] **RC-04 — Live-provider smoke tests (opt-in, not CI-by-default)**
   - *Why:* today only `FakeLLM` is exercised; the real OpenAI/Ollama adapters
