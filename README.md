@@ -46,6 +46,7 @@ The `docs/` folder is the project's source of truth:
 - [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) — module map, data flow, contracts, seams for later milestones
 - [`docs/DESIGN_PRINCIPLES.md`](docs/DESIGN_PRINCIPLES.md) — the generic patterns and guiding rules
 - [`docs/DECISION_LOG.md`](docs/DECISION_LOG.md) — running record of design decisions
+- [`docs/RELEASE_CHECKLIST_1.0.md`](docs/RELEASE_CHECKLIST_1.0.md) — the concrete, trackable checklist for shipping MVP → Release 1.0
 - [`docs/TRANSCRIPT_NOTES.md`](docs/TRANSCRIPT_NOTES.md) — distilled ideas from the source video (with timestamps)
 - [`docs/SPEC_AUTHORING.md`](docs/SPEC_AUTHORING.md) — how to write `--spec` YAML by hand
 - [`docs/HOWTO_BOOTSTRAP.md`](docs/HOWTO_BOOTSTRAP.md) — what each bootstrap command does, and which ones to actually run
