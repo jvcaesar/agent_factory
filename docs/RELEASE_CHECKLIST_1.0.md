@@ -28,7 +28,7 @@ real (non-`fake`) provider run — with docs that say exactly what the code does
 | RC-06 | Anthropic: implement, or cut the claim | 1 | M | ✅ |
 | RC-07 | Windows console encoding fix | 2 | S | ✅ |
 | RC-08 | Test-count / docs drift sweep | 2 | S | ✅ |
-| RC-09 | Docs HTML regeneration step | 2 | S | ☐ |
+| RC-09 | Docs HTML regeneration step | 2 | S | ✅ |
 | RC-10 | Cleanup (drop `_ok.txt`, verify gitignore) | 2 | S | ☐ |
 | RC-11 | Add `SECURITY.md` | 2 | S | ☐ |
 | RC-12 | Error-path QA pass (12 commands × bad input) | 2 | M | ☐ |
@@ -238,14 +238,19 @@ real (non-`fake`) provider run — with docs that say exactly what the code does
     "at the time of …"); README/ARCHITECTURE counts match a fresh suite run
     (**Ran 163 tests, OK (skipped=3)**).
 
-- [ ] **RC-09 — Docs HTML regeneration**
-  - *Why:* `docs/USER_GUIDE.html` / `docs/PRODUCT.html` are hand-generated
-    snapshots; they drift from the Markdown.
-  - Add `scripts/render_docs.py` (stdlib or pandoc if available) that renders
-    `USER_GUIDE.md` → `USER_GUIDE.html` and `PRODUCT.md` → `PRODUCT.html`
-    deterministically, and re-generate before release.
-  - **Done when:** running the script twice produces `git diff` = empty
-    (deterministic output) and the HTML files contain the 1.0 updates.
+- [x] **RC-09 — Docs HTML regeneration**
+  - `tools/build_docs.py` added. Rebuilds `docs/PRODUCT.html` and
+    `docs/USER_GUIDE.html` from their Markdown sources using the `markdown`
+    package (added to the `dev` extra). Self-contained Forge Palette template
+    (no external CDN links → renders offline). `--check` mode exits non-zero if
+    a rebuild would differ from what's committed.
+  - CI: a new `docs (freshness)` job in `.github/workflows/ci.yml` runs
+    `python tools/build_docs.py --check` on every push/PR, so the HTML can't
+    silently drift from the Markdown.
+  - README: a "Development" section documents the regenerate command.
+  - **Done when:** ~~script exists~~ ✅; ~~deterministic (rebuild = no diff)~~ ✅
+    (`--check` reports "All docs up to date"); ~~CI job added~~ ✅; ~~README
+    documents it~~ ✅.
 
 - [ ] **RC-10 — Cleanup / gitignore audit**
   - Delete the committed `_ok.txt` ("compile OK") leftover; ensure `.gitignore`

@@ -7,547 +7,308 @@
 <style>
 :root{
   /* The Forge Palette (docs/forge_palette.md) — dark industrial theme */
-  --bg:#1E2022; --card:#26292C; --ink:#F4F5F6; --muted:#9BA3AE;
-  --accent:#EAA115; --accent2:#F0C244; --line:#33373C;
-  --term-bg:#17191B; --term-ink:#E8EAED; --term-dim:#667085;
-  --ok:#6FCF97; --warn:#EAA115; --err:#E5484D;
+  --bg:#1E2022; --bg2:#17191B; --card:#26292C; --card2:#2B2F33; --ink:#F4F5F6;
+  --muted:#9BA3AE; --accent:#EAA115; --accent2:#F0C244; --cyan:#F0C244;
+  --line:#33373C; --ok:#6FCF97; --warn:#EAA115; --err:#E5484D;
 }
 *{box-sizing:border-box;margin:0;padding:0}
-html{scroll-behavior:smooth;scroll-padding-top:20px}
+html{scroll-behavior:smooth}
 body{font-family:"Segoe UI",system-ui,-apple-system,Roboto,Arial,sans-serif;
-  background:var(--bg);color:var(--ink);line-height:1.65;font-size:16px}
+  background:radial-gradient(1200px 600px at 80% -10%,#1e1b4b 0%,transparent 60%),
+             radial-gradient(900px 500px at -10% 30%,#172554 0%,transparent 55%),
+             var(--bg);
+  color:var(--ink);line-height:1.7;font-size:16px}
 a{color:var(--accent);text-decoration:none}
 a:hover{text-decoration:underline}
 code{font-family:"Cascadia Code",Consolas,Menlo,monospace;font-size:.88em;
-  background:#eceefc;color:#4338ca;padding:.1em .4em;border-radius:5px}
-pre code{background:none;color:inherit;padding:0}
-/* ---------- layout ---------- */
-.wrap{display:flex;min-height:100vh}
-nav.side{width:270px;flex-shrink:0;background:#171c2e;color:#c7cde0;
-  padding:26px 18px 40px;position:sticky;top:0;height:100vh;overflow-y:auto}
-nav.side .logo{font-weight:700;font-size:19px;color:#fff;margin-bottom:4px}
-nav.side .logo span{color:#a5b4fc}
-nav.side .sub{font-size:12px;color:#7c86a6;margin-bottom:22px}
-nav.side a{display:flex;gap:10px;align-items:baseline;color:#c7cde0;
-  padding:7px 10px;border-radius:8px;font-size:14px;margin-bottom:2px}
-nav.side a:hover{background:#232a45;color:#fff;text-decoration:none}
-nav.side a .n{font-size:11px;color:#6d78a0;min-width:20px}
-nav.side .group{font-size:11px;letter-spacing:.12em;text-transform:uppercase;
-  color:#5d6890;margin:18px 10px 6px}
-main{flex:1;min-width:0;padding:0 34px 90px;max-width:980px}
-/* ---------- hero ---------- */
-.hero{background:linear-gradient(120deg,#4f46e5 0%,#7c3aed 55%,#a855f7 100%);
-  color:#fff;border-radius:0 0 22px 22px;padding:44px 40px 38px;margin:0 -34px 30px}
-.hero h1{font-size:34px;line-height:1.2;margin-bottom:10px}
-.hero p{max-width:760px;color:#e5e1ff;font-size:16.5px}
-.badges{margin-top:18px;display:flex;flex-wrap:wrap;gap:8px}
-.badge{background:rgba(255,255,255,.16);border:1px solid rgba(255,255,255,.35);
-  padding:4px 12px;border-radius:999px;font-size:12.5px;font-weight:600}
-/* ---------- sections & cards ---------- */
-section{margin-top:44px}
-h2{font-size:26px;display:flex;align-items:center;gap:12px;margin-bottom:6px}
-h2 .num{background:linear-gradient(135deg,var(--accent),var(--accent2));color:#fff;
-  width:38px;height:38px;border-radius:11px;display:inline-flex;align-items:center;
-  justify-content:center;font-size:17px;flex-shrink:0}
-h3{font-size:19px;margin:26px 0 10px;color:#312e81}
-.card{background:var(--card);border:1px solid var(--line);border-radius:14px;
-  padding:22px 24px;margin:14px 0;box-shadow:0 1px 3px rgba(23,28,46,.05)}
-.lead{color:var(--muted);font-size:15px;margin-bottom:14px}
-/* ---------- purpose / command / output pattern ---------- */
-.purpose{display:flex;gap:10px;background:#eef0ff;border-left:4px solid var(--accent);
-  border-radius:0 10px 10px 0;padding:12px 16px;margin:14px 0;font-size:15px}
-.purpose b{color:#3730a3}
-.term{position:relative;background:var(--term-bg);border-radius:12px;margin:14px 0;
-  box-shadow:0 4px 14px rgba(15,23,42,.25);overflow:hidden}
-.term-head{display:flex;align-items:center;gap:8px;padding:9px 14px;
-  background:#1b2440;color:#93a3c8;font-size:12px;letter-spacing:.06em;
-  text-transform:uppercase;font-weight:700}
-.term-head .dot{width:11px;height:11px;border-radius:50%}
-.dot.r{background:#f66}.dot.y{background:#fc3}.dot.g{background:#4c4}
-.term pre{padding:16px 18px;overflow-x:auto;color:var(--term-ink);
-  font-family:"Cascadia Code",Consolas,Menlo,monospace;font-size:13.5px;line-height:1.6}
-.term.out .term-head{color:#6ee7b7}
-.term.out pre{color:#b9f3d9}
-.term .cmt{color:var(--term-dim)}
-.copy{margin-left:auto;background:#2a3558;color:#c7d2fe;border:none;border-radius:6px;
-  padding:3px 10px;font-size:11.5px;cursor:pointer;font-weight:600}
-.copy:hover{background:#3a4780;color:#fff}
-/* ---------- callouts ---------- */
-.callout{border-radius:12px;padding:14px 18px;margin:16px 0;font-size:15px;
-  display:flex;gap:12px;align-items:flex-start}
-.callout .ico{font-size:20px;line-height:1.4}
-.callout.tip{background:#ecfdf5;border:1px solid #a7f3d0}
-.callout.info{background:#eff6ff;border:1px solid #bfdbfe}
-.callout.warn{background:#fffbeb;border:1px solid #fde68a}
-/* ---------- milestone badges ---------- */
-.m{display:inline-block;padding:2px 10px;border-radius:999px;font-size:11.5px;
-  font-weight:700;color:#fff;letter-spacing:.03em}
-.m1{background:#3b82f6}.m2{background:#f59e0b}.m3{background:#10b981}
-.m4{background:#8b5cf6}.m5{background:#14b8a6}.m6{background:#ec4899}
-/* ---------- tables ---------- */
-table{width:100%;border-collapse:collapse;margin:16px 0;background:var(--card);
-  border-radius:12px;overflow:hidden;box-shadow:0 1px 3px rgba(23,28,46,.06);
-  font-size:14.5px}
-th{background:#312e81;color:#fff;text-align:left;padding:11px 14px;font-size:13px;
-  letter-spacing:.04em;text-transform:uppercase}
-td{padding:11px 14px;border-top:1px solid var(--line);vertical-align:top}
-tr:nth-child(even) td{background:#fafbff}
-/* ---------- option grid ---------- */
-.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:14px;margin:16px 0}
-.opt{background:var(--card);border:1px solid var(--line);border-radius:14px;
-  padding:18px 20px;box-shadow:0 1px 3px rgba(23,28,46,.05)}
-.opt .tag{display:inline-block;font-size:11px;font-weight:800;letter-spacing:.1em;
-  text-transform:uppercase;color:#7c3aed;background:#f3e8ff;border-radius:6px;
-  padding:2px 9px;margin-bottom:8px}
-.opt h4{font-size:16px;margin-bottom:6px}
-.opt p{font-size:14px;color:var(--muted)}
-/* ---------- steps ---------- */
-.step{display:flex;gap:16px;margin:18px 0;align-items:flex-start}
-.step .sn{background:linear-gradient(135deg,var(--accent),var(--accent2));color:#fff;
-  min-width:34px;height:34px;border-radius:50%;display:flex;align-items:center;
-  justify-content:center;font-weight:800;font-size:15px;margin-top:3px}
-.step .sb{flex:1;min-width:0}
-.step .sb h4{font-size:16.5px;margin-bottom:2px}
-.step .sb .what{font-size:14px;color:var(--muted);margin-bottom:8px}
-/* ---------- channel flow diagram ---------- */
-.flow{display:flex;flex-wrap:wrap;align-items:stretch;gap:0;margin:20px 0}
-.flow .node{background:var(--card);border:2px solid var(--accent);border-radius:12px;
-  padding:12px 14px;font-size:13.5px;flex:1;min-width:150px;box-shadow:0 1px 3px rgba(23,28,46,.06)}
-.flow .node b{display:block;color:#312e81;font-size:14px;margin-bottom:3px}
-.flow .arr{display:flex;align-items:center;padding:0 8px;color:var(--accent);
-  font-size:22px;font-weight:800}
-.flow .node.human{border-color:#10b981}.flow .node.human b{color:#065f46}
-.flow .node.store{border-color:#f59e0b}.flow .node.store b{color:#92400e}
-/* ---------- misc ---------- */
-.kbd{display:inline-block;background:#1f2937;color:#e5e7eb;border-radius:6px;
-  padding:1px 8px;font-family:Consolas,monospace;font-size:12.5px}
-.filetree{background:#fff;border:1px solid var(--line);border-radius:12px;
-  padding:16px 20px;font-family:Consolas,monospace;font-size:13.5px;
-  line-height:1.9;margin:14px 0;overflow-x:auto}
-.filetree .d{color:#7c3aed;font-weight:700}
-.filetree .c{color:#94a3b8}
-.qa{margin:14px 0;padding:16px 20px;background:var(--card);border:1px solid var(--line);
-  border-left:5px solid var(--accent2);border-radius:0 12px 12px 0}
-.qa b{color:#312e81}
-footer{margin-top:60px;padding-top:22px;border-top:1px solid var(--line);
-  color:var(--muted);font-size:13.5px}
-@media(max-width:900px){
-  nav.side{display:none}
-  main{padding:0 18px 70px}
-  .hero{margin:0 -18px 26px;padding:34px 24px 30px}
-  .hero h1{font-size:26px}
-  .flow{flex-direction:column}
-  .flow .arr{transform:rotate(90deg);justify-content:center;padding:4px 0}
-}
-/* ===== FORGE PALETTE OVERRIDES (docs/forge_palette.md) ===== */
-body{background:#1E2022;color:#F4F5F6}
-a{color:#EAA115}
-code{background:#2A2E33;color:#F0C244}
-nav.side{background:#17191B;border-right:1px solid #26292C}
-nav.side .logo{color:#F4F5F6}
-nav.side .logo span{color:#EAA115}
-nav.side .sub{color:#667085}
-nav.side .group{color:#667085}
-nav.side a{color:#C6CCD4}
-nav.side a:hover{background:#26292C;color:#F0C244}
-nav.side a .n{color:#667085}
-.hero{background:linear-gradient(120deg,#26292C 0%,#1E2022 65%),repeating-linear-gradient(45deg,rgba(234,161,21,.05) 0 14px,transparent 14px 32px);border-bottom:3px solid #EAA115;color:#F4F5F6}
-.hero h1{background:linear-gradient(100deg,#F4F5F6 20%,#EAA115 90%);-webkit-background-clip:text;background-clip:text;color:transparent}
-.hero p{color:#C6CCD4}
-.badge{background:rgba(234,161,21,.12);border:1px solid rgba(234,161,21,.5);color:#F0C244}
-h3{color:#F0C244}
-.card{background:#26292C;border:1px solid #33373C;box-shadow:none}
-.lead{color:#9BA3AE}
-.purpose{background:rgba(234,161,21,.08)}
-.purpose b{color:#F0C244}
-.term{border:1px solid #33373C;box-shadow:none}
-.term-head{background:#17191B;border-bottom:1px solid #26292C;color:#667085}
-.copy{background:#33373C;color:#F0C244}
-.copy:hover{background:#4A4F56;color:#F4F5F6}
-.callout.tip{background:rgba(111,207,151,.08);border:1px solid rgba(111,207,151,.35)}
-.callout.info{background:rgba(234,161,21,.07);border:1px solid rgba(234,161,21,.35)}
-.callout.warn{background:rgba(229,72,77,.08);border:1px solid rgba(229,72,77,.35)}
-table{background:#26292C;box-shadow:none}
-th{background:#17191B;color:#F0C244}
-td{border-top:1px solid #33373C}
-tr:nth-child(even) td{background:#2B2F33}
-.opt{background:#26292C;border:1px solid #33373C;box-shadow:none}
-.opt .tag{color:#1E2022;background:#EAA115}
-.flow .node{background:#26292C;border:2px solid #EAA115;box-shadow:none}
-.flow .node b{color:#F0C244}
-.flow .node.human{border-color:#6FCF97}.flow .node.human b{color:#6FCF97}
-.flow .node.store{border-color:#667085}.flow .node.store b{color:#9BA3AE}
-.kbd{background:#33373C;color:#F4F5F6}
-.filetree{background:#26292C;border:1px solid #33373C}
-.filetree .d{color:#EAA115}
-.filetree .c{color:#667085}
-.qa{background:#26292C;border:1px solid #33373C;border-left:5px solid #EAA115}
-.qa b{color:#F0C244}
-footer{border-top:1px solid #33373C;color:#9BA3AE}
-/* milestone badges on the Forge scale */
-.m1{background:#667085}.m2{background:#EAA115}.m3{background:#6FCF97}
-.m4{background:#F0C244;color:#1E2022}.m5{background:#9BA3AE}.m6{background:#E5484D}
-.step .sn{color:#1E2022;background:linear-gradient(135deg,#EAA115,#F0C244)}
-.term.out .term-head{color:#6FCF97}
-.term.out pre{color:#C9E8D4}
+  background:#1c2440;color:#a5b4fc;padding:.12em .45em;border-radius:6px}
+main{max-width:1060px;margin:0 auto;padding:0 28px 100px}
+nav.top{position:sticky;top:0;z-index:50;background:rgba(11,15,26,.85);
+  backdrop-filter:blur(10px);border-bottom:1px solid var(--line)}
+nav.top .in{max-width:1060px;margin:0 auto;padding:12px 28px;display:flex;
+  align-items:center;gap:20px;flex-wrap:wrap}
+section{margin-top:80px}
+h1,h2,h3{line-height:1.2}
+h1{font-size:38px;font-weight:800;margin-bottom:10px}
+h2{font-size:28px;font-weight:700;margin-bottom:12px}
+h3{font-size:20px;font-weight:600;margin-bottom:8px}
+p,ul,ol{margin-bottom:14px}
+ul,ol{padding-left:24px}
+table{border-collapse:collapse;width:100%;margin:16px 0}
+th,td{border:1px solid var(--line);padding:10px 14px;text-align:left}
+th{background:var(--card2)}
+pre{background:#0d1117;color:#e6edf3;border-radius:12px;padding:18px 20px;
+  overflow-x:auto;margin:16px 0;font-size:.9em;line-height:1.5}
+blockquote{border-left:3px solid var(--accent);padding-left:16px;color:var(--muted);
+  margin:16px 0}
+hr{border:none;border-top:1px solid var(--line);margin:30px 0}
+footer{margin-top:80px;padding:28px;border-top:1px solid var(--line);
+  color:var(--muted);font-size:14px;text-align:center}
 </style>
 </head>
 <body>
-<div class="wrap">
-<nav class="side">
-  <div class="logo">Agent<span>Factory</span></div>
-  <div class="sub">User Guide · CLI v M6</div>
-  <div class="group">Get started</div>
-  <a href="#s1"><span class="n">1</span>Installation &amp; setup</a>
-  <a href="#s2"><span class="n">2</span>Quick start (offline)</a>
-  <div class="group">Daily use</div>
-  <a href="#s3"><span class="n">3</span>Create your workforce</a>
-  <a href="#s4"><span class="n">4</span>Run work</a>
-  <a href="#s5"><span class="n">5</span>Memory &amp; proactivity</a>
-  <a href="#s6"><span class="n">6</span>Observability</a>
-  <a href="#s7"><span class="n">7</span>Talk to your workforce</a>
-  <div class="group">Reference</div>
-  <a href="#s8"><span class="n">8</span>Providers &amp; models</a>
-  <a href="#s9"><span class="n">9</span>Command cheat sheet</a>
-  <a href="#s10"><span class="n">10</span>Where your data lives</a>
-  <a href="#s11"><span class="n">11</span>Troubleshooting &amp; FAQ</a>
-</nav>
 <main>
-
-<div class="hero">
-  <h1>🤖 Agent Factory — User Guide</h1>
-  <p>A practical, step-by-step guide to the <code style="background:rgba(255,255,255,.2);color:#fff">agent_factory</code> CLI.
-  The offline examples use the deterministic <strong>fake</strong> provider, so
-  you can reproduce every command <strong>without an API key</strong>. Real model
-  output requires OpenAI or a local Ollama server.</p>
-  <div class="badges">
-    <span class="badge">✅ All examples verified</span>
-    <span class="badge">🔌 Works offline (fake provider)</span>
-    <span class="badge">🐍 Python 3.10+</span>
-    <span class="badge">🧪 146 tests green</span>
-  </div>
-</div>
-
-<div class="callout info"><div class="ico">🧭</div><div>
-  <b>How to read this guide.</b> Each command section follows the same pattern:
-  <b>Purpose → Command → Expected output → Notes</b>. Sections are ordered the way
-  you would actually use the tool: create a workforce → run work → make it
-  proactive → observe it → talk to it.
-</div></div>
-
-<div class="card">
-  <h3 style="margin-top:0">🧠 The mental model in one paragraph</h3>
-  <p style="font-size:15.5px">You <em>bootstrap</em> an org chart (roles, SOPs, goals) from a short interview,
-  a YAML spec, or a pre-built pack. Each role becomes a runnable agent backed by an LLM.
-  Work runs through a durable SQLite store in the org folder
-  (<code>jobs</code>, <code>context</code>, <code>insights</code>, <code>messages</code>), so every job,
-  proposal, finding, and channel conversation is recorded and queryable. Guardrails
-  (risk tier + approval policy) are enforced on every tool call, and the human talks
-  to agents through a shared channel.</p>
-</div>
-
-<!-- ======================= 1. INSTALL ======================= -->
-<section id="s1">
-  <h2><span class="num">1</span>Installation and setup</h2>
-  <div class="purpose">📋 <div><b>Purpose:</b> get the CLI installed and pick an LLM provider.</div></div>
-
-  <div class="term"><div class="term-head"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span>install from the repo root<button class="copy" onclick="cp(this)">Copy</button></div>
-<pre><code>py --version                     <span class="cmt"># requires Python 3.10+</span>
-py -m pip install -e .           <span class="cmt"># core: pydantic and pyyaml</span>
-py -m pip install -e ".[openai]" <span class="cmt"># OpenAI support, when needed</span>
-<span class="cmt"># or: py -m pip install -e ".[ollama]"  # local Ollama support</span></code></pre></div>
-
-  <p>Select a provider in the current PowerShell session. <code>fake</code> is the
-  best first run:</p>
-
-  <div class="term"><div class="term-head">PowerShell — pick ONE provider<button class="copy" onclick="cp(this)">Copy</button></div>
-<pre><code>$env:AGENT_FACTORY_PROVIDER = "fake"       <span class="cmt"># offline, deterministic</span>
-<span class="cmt"># $env:AGENT_FACTORY_PROVIDER = "openai"   # also set OPENAI_API_KEY</span>
-<span class="cmt"># $env:AGENT_FACTORY_PROVIDER = "ollama"   # Ollama at localhost:11434</span></code></pre></div>
-  <p class="lead">The environment variable lasts for the current terminal session.
-  The CLI also accepts <code>--provider</code> for a single command.</p>
-
-  <h3>Check that your providers are reachable — <code>probe</code></h3>
-  <div class="term"><div class="term-head"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span>terminal<button class="copy" onclick="cp(this)">Copy</button></div>
-<pre><code>agent_factory probe</code></pre></div>
-
-  <div class="term out"><div class="term-head">✔ expected output (working provider)</div>
-<pre>Probing 3 configured provider/model pair(s)...
+<h1 id="agent-factory-user-guide">Agent Factory — User Guide</h1>
+<p>A practical, step-by-step guide to using the <code>agent_factory</code> CLI. The offline
+examples use the deterministic <code>fake</code> provider, so they can be reproduced
+without an API key. Real model output requires either OpenAI or a local Ollama
+server.</p>
+<blockquote>
+<p><strong>How to read this guide</strong>
+Each command section shows: <strong>Purpose</strong> → <strong>Command</strong> → <strong>Expected output</strong>
+→ <strong>Notes</strong>. Sections are ordered the way you would actually use the tool:
+create a workforce → run work → make it proactive → observe it → talk to it.</p>
+</blockquote>
+<p><strong>The mental model in one paragraph:</strong> you <em>bootstrap</em> an org chart (roles,
+SOPs, goals) from a short interview, a YAML spec, or a pre-built pack. Each
+role becomes a runnable agent backed by an LLM. Work runs through a durable
+SQLite store in the org folder (<code>jobs</code>, <code>context</code>, <code>insights</code>, <code>messages</code>),
+so every job, proposal, finding, and channel conversation is recorded and
+queryable. Guardrails (risk tier + approval policy) are enforced on every
+tool call, and the human talks to agents through a shared channel.</p>
+<hr />
+<h2 id="table-of-contents">Table of contents</h2>
+<ol>
+<li><a href="#1-installation--setup">Installation &amp; setup</a></li>
+<li><a href="#2-quick-start-5-commands-offline">Quick start (5 commands, offline)</a></li>
+<li><a href="#3-create-your-workforce">Create your workforce</a></li>
+<li><a href="#4-run-work">Run work</a></li>
+<li><a href="#5-memory--proactivity">Memory &amp; proactivity</a></li>
+<li><a href="#6-observability">Observability</a></li>
+<li><a href="#7-talk-to-your-workforce">Talk to your workforce</a></li>
+<li><a href="#8-providers--models">Providers &amp; models</a></li>
+<li><a href="#9-command-reference-cheat-sheet">Command reference (cheat sheet)</a></li>
+<li><a href="#10-where-your-data-lives">Where your data lives</a></li>
+<li><a href="#11-troubleshooting--faq">Troubleshooting &amp; FAQ</a></li>
+</ol>
+<hr />
+<h2 id="1-installation-and-setup">1. Installation and setup</h2>
+<p><strong>Purpose:</strong> get the CLI installed and pick an LLM provider.</p>
+<p>From PowerShell, run these commands in the repository root:</p>
+<pre><code class="language-powershell">py --version                     # requires Python 3.10+
+py -m pip install -e .           # core: pydantic and pyyaml
+py -m pip install -e &quot;.[openai]&quot; # OpenAI support, when needed
+# or: py -m pip install -e &quot;.[ollama]&quot;  # local Ollama support
+</code></pre>
+<p>Select a provider in the current PowerShell session. <code>fake</code> is the best first
+run:</p>
+<pre><code class="language-powershell">$env:AGENT_FACTORY_PROVIDER = &quot;fake&quot;       # offline, deterministic
+# $env:AGENT_FACTORY_PROVIDER = &quot;openai&quot;   # also set OPENAI_API_KEY
+# $env:AGENT_FACTORY_PROVIDER = &quot;ollama&quot;   # Ollama at localhost:11434
+</code></pre>
+<p>The environment variable lasts for the current terminal session. The CLI also
+accepts <code>--provider</code> for a single command.</p>
+<p><strong>Check that your configured providers are reachable</strong> with <code>probe</code>:</p>
+<pre><code class="language-bash">agent_factory probe
+</code></pre>
+<p><em>Expected output (with a working provider):</em></p>
+<pre><code>Probing 3 configured provider/model pair(s)...
 
 [OK]   openai  gpt-4o-mini           0.9s  -&gt; 'OK'
 [OK]   openai  gpt-4o                1.4s  -&gt; 'OK'
 [OK]   openai  o1                    2.1s  -&gt; 'OK' [reasoning-fallback]
 
-3/3 reachable.</pre></div>
+3/3 reachable.
+</code></pre>
+<p><code>probe</code> pings every <code>MODEL_*</code> pair configured in your environment (or the
+provider&rsquo;s built-in defaults if none are set) and reports one <code>[OK]</code>/<code>[FAIL]</code>
+line per pair. Exit code is <code>0</code> only if all pairs answer. Limit it with
+<code>--only openai</code> or <code>--only ollama</code>.</p>
+<blockquote>
+<p>Running the tests? They are fully offline: <code>py -m unittest discover -s tests</code>
+(163 tests at the time of writing, no API keys).</p>
+</blockquote>
+<hr />
+<h2 id="2-quick-start-5-commands-offline">2. Quick start (5 commands, offline)</h2>
+<p>Copy-paste this to see the whole system work in under a minute — no API key:</p>
+<pre><code class="language-bash">$env:AGENT_FACTORY_PROVIDER = &quot;fake&quot;                # PowerShell
 
-  <div class="card"><p style="font-size:15px"><code>probe</code> pings every <code>MODEL_*</code> pair configured in your
-  environment (or the provider's built-in defaults if none are set) and reports one
-  <span style="color:var(--ok);font-weight:700">[OK]</span> /
-  <span style="color:var(--err);font-weight:700">[FAIL]</span> line per pair. Exit code is
-  <code>0</code> only if all pairs answer. Limit it with <code>--only openai</code> or
-  <code>--only ollama</code>.</p></div>
-
-  <div class="callout tip"><div class="ico">🧪</div><div><b>Running the tests?</b> They are fully offline:
-  <code>py -m unittest discover -s tests</code> (146 tests, no API keys).</div></div>
-</section>
-
-<!-- ======================= 2. QUICK START ======================= -->
-<section id="s2">
-  <h2><span class="num">2</span>Quick start <span style="font-size:16px;color:var(--muted);font-weight:500">(5 commands, offline)</span></h2>
-  <p class="lead">Copy-paste this to see the whole system work in under a minute — no API key.</p>
-
-  <div class="step"><div class="sn">1</div><div class="sb">
-    <h4>Create a workforce from a pack</h4>
-    <div class="what">Generates a validated 23-role org chart on disk.</div>
-    <div class="term"><div class="term-head"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span>terminal<button class="copy" onclick="cp(this)">Copy</button></div>
-<pre><code>$env:AGENT_FACTORY_PROVIDER = "fake"                <span class="cmt"># PowerShell</span>
-
-agent_factory bootstrap --pack business_ops --name "Demo Co" ^
-    --north-star "Become the trusted advisor for our clients" --out orgs/Demo</code></pre></div>
-  </div></div>
-
-  <div class="step"><div class="sn">2</div><div class="sb">
-    <h4>Validate the org</h4>
-    <div class="what">→ <span class="kbd">OK: orgs\Demo is a valid org (23 roles).</span></div>
-    <div class="term"><div class="term-head"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span>terminal<button class="copy" onclick="cp(this)">Copy</button></div>
-<pre><code>agent_factory validate --root orgs/Demo</code></pre></div>
-  </div></div>
-
-  <div class="step"><div class="sn">3</div><div class="sb">
-    <h4>Run a job with a role</h4>
-    <div class="what">→ job #1 completes and prints its output.</div>
-    <div class="term"><div class="term-head"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span>terminal<button class="copy" onclick="cp(this)">Copy</button></div>
-<pre><code>agent_factory run --org orgs/Demo --role worker_research_1 ^
-    --task "List the quarterly targets." --approval deny</code></pre></div>
-  </div></div>
-
-  <div class="step"><div class="sn">4</div><div class="sb">
-    <h4>Open mission control</h4>
-    <div class="what">→ queue counts, recent jobs, insights, pending channel messages.</div>
-    <div class="term"><div class="term-head"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span>terminal<button class="copy" onclick="cp(this)">Copy</button></div>
-<pre><code>agent_factory status --org orgs/Demo</code></pre></div>
-  </div></div>
-
-  <div class="step"><div class="sn">5</div><div class="sb">
-    <h4>Post to the shared channel</h4>
-    <div class="what">→ a human message queued for an agent reply (see §7).</div>
-    <div class="term"><div class="term-head"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span>terminal<button class="copy" onclick="cp(this)">Copy</button></div>
-<pre><code>agent_factory channel post --org orgs/Demo --text "Did the client respond?" --role lead_exec</code></pre></div>
-  </div></div>
-</section>
-
-<!-- ======================= 3. CREATE ======================= -->
-<section id="s3">
-  <h2><span class="num">3</span>Create your workforce</h2>
-  <div class="purpose">📋 <div><b>Purpose:</b> turn intent (an interview, a spec file, or a pack) into a
-  validated org chart on disk: <code>org.yaml</code>, <code>settings.yaml</code>, per-role YAML + SOPs,
-  and <code>goals/current.md</code>.</div></div>
-
-  <h3>3.1 &nbsp;<code>bootstrap</code> — three ways to generate an org</h3>
-  <div class="grid">
-    <div class="opt"><span class="tag">Recommended first</span>
-      <h4>📦 A — Pre-built pack</h4>
-      <p>Pick a ready-made workforce (<code>business_ops</code>, <code>engineering</code>,
-      <code>research</code>) and just name it.</p></div>
-    <div class="opt"><span class="tag">Conversational</span>
-      <h4>💬 B — Interactive interview</h4>
-      <p>Answer questions about goals, domains, tools, and risk; the chart is generated and validated.</p></div>
-    <div class="opt"><span class="tag">Repeatable</span>
-      <h4>📄 C — YAML spec</h4>
-      <p>Non-interactive generation from a checked-in spec file — ideal for CI or templates.</p></div>
-  </div>
-
-  <div class="term"><div class="term-head"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span>option A · list packs, then bootstrap<button class="copy" onclick="cp(this)">Copy</button></div>
-<pre><code>agent_factory packs                                   <span class="cmt"># see what is available</span>
-agent_factory bootstrap --pack business_ops --name "Demo Co" ^
-    --north-star "Become the trusted advisor for our clients" --out orgs/Demo</code></pre></div>
-
-  <div class="term out"><div class="term-head">✔ expected output of <b>&nbsp;packs</b></div>
-<pre>business_ops    Business Operations         Go-to-market and operations workforce: marketing, operations, support, finance, data, and partnerships.
+agent_factory bootstrap --pack business_ops --name &quot;Demo Co&quot; ^
+    --north-star &quot;Become the trusted advisor for our clients&quot; --out orgs/Demo
+agent_factory validate --root orgs/Demo
+agent_factory run --org orgs/Demo --role worker_research_1 ^
+    --task &quot;List the quarterly targets.&quot; --approval deny
+agent_factory status --org orgs/Demo
+agent_factory channel post --org orgs/Demo --text &quot;Did the client respond?&quot; --role lead_exec
+</code></pre>
+<p>If these commands succeed you have a valid org, one completed job, a
+mission-control report, and a message queued in the shared channel. The
+channel message is answered only after you run <code>channel worker</code>.</p>
+<hr />
+<h2 id="3-create-your-workforce">3. Create your workforce</h2>
+<h3 id="31-bootstrap-three-ways-to-generate-an-org">3.1 <code>bootstrap</code> — three ways to generate an org</h3>
+<p><strong>Purpose:</strong> turn intent (an interview, a spec file, or a pack) into a
+validated org chart on disk: <code>org.yaml</code>, <code>settings.yaml</code>, per-role YAML + SOPs,
+and <code>goals/current.md</code>.</p>
+<h4 id="option-a-pre-built-pack-fastest-recommended-first">Option A — pre-built pack (fastest, recommended first)</h4>
+<pre><code class="language-bash">agent_factory packs                                   # see what is available
+agent_factory bootstrap --pack business_ops --name &quot;Demo Co&quot; ^
+    --north-star &quot;Become the trusted advisor for our clients&quot; --out orgs/Demo
+</code></pre>
+<p><em>Expected output of <code>packs</code>:</em></p>
+<pre><code>business_ops    Business Operations         Go-to-market and operations workforce: marketing, operations, support, finance, data, and partnerships.
 engineering     Software Engineering        Delivery-focused workforce: product, engineering, research, data, and agent-operations.
-research        Research &amp; Analysis         Evidence workforce: research, data, product-use, and partnership research.</pre></div>
-
-  <div class="term out"><div class="term-head">✔ expected output of <b>&nbsp;bootstrap --pack</b></div>
-<pre>Generated org 'Demo Co' at: orgs/Demo
+research        Research &amp; Analysis         Evidence workforce: research, data, product-use, and partnership research.
+</code></pre>
+<p><em>Expected output of <code>bootstrap --pack</code>:</em></p>
+<pre><code>Generated org 'Demo Co' at: orgs/Demo
   pack: business_ops
   roles: 23  lead=True  risk=review_external  budget=medium
-  top -&gt; lead_exec (Org Lead (Chief of Staff), proactivity 5)</pre></div>
-
-  <p>Each pack ships a ready-made spec you can use directly, e.g.
-  <code>agent_factory bootstrap --spec examples/packs/research.yaml --out orgs/Research</code>.</p>
-
-  <div class="term"><div class="term-head"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span>option B · interactive interview<button class="copy" onclick="cp(this)">Copy</button></div>
-<pre><code>agent_factory bootstrap</code></pre></div>
-  <p>You will be asked for: the workforce name, your (founder) name, the north-star
-  goal, 2–3 quarterly targets, which domains to staff, which tools roles may use,
-  and the risk/budget tiers. Answers are written to <code>orgs/&lt;name&gt;/</code> when the
-  generated chart validates.</p>
-
-  <div class="term"><div class="term-head"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span>option C · YAML spec (excerpt of examples/packs/business_ops.yaml)<button class="copy" onclick="cp(this)">Copy</button></div>
-<pre><code>name: Demo Co
-north_star: Become the trusted advisor for our clients
-quarterly_targets:
-  - "Sign 6 new logo clients"
-  - "Launch the standard ops playbook"
+  top -&gt; lead_exec (Org Lead (Chief of Staff), proactivity 5)
+</code></pre>
+<p>Available packs: <code>business_ops</code>, <code>engineering</code>, <code>research</code>. Each pack ships a
+ready-made spec you can use directly as a <code>--spec</code> file, e.g.
+<code>agent_factory bootstrap --spec examples/packs/research.yaml --out orgs/Research</code>.</p>
+<h4 id="option-b-interactive-interview">Option B — interactive interview</h4>
+<pre><code class="language-bash">agent_factory bootstrap
+</code></pre>
+<p>You will be asked for: the workforce name, your (founder) name, the
+north-star goal, 2–3 quarterly targets, which domains to staff, which tools
+roles may use, and the risk/budget tiers. Answers are written to
+<code>orgs/&lt;name&gt;/</code> when the generated chart validates.</p>
+<h4 id="option-c-yaml-spec-non-interactive-repeatable">Option C — YAML spec (non-interactive, repeatable)</h4>
+<pre><code class="language-bash">agent_factory bootstrap --spec my_answers.yaml --out my_org
+</code></pre>
+<p>A spec is plain YAML — here is the business-ops pack&rsquo;s own spec
+(<code>examples/packs/business_ops.yaml</code>):</p>
+<pre><code class="language-yaml">org_name: MyCo Operations
+founder: Founder
+north_star: Drive predictable growth and operational efficiency across revenue, service, and brand.
+quarterly_goals:
+  - Lift pipeline and closed revenue
+  - Reduce support resolution time
+  - Ship a monthly business-health report
+human_team_size: 2
+domains: [marketing, operations, support, finance, data, partnerships]
+tools: [files, web, memory, channel]
 risk_tier: review_external
-roles:
-  - id: lead_exec
-    title: Org Lead (Chief of Staff)
-    reports_to: null
-    proactivity: 5
-  - id: worker_research_1
-    title: Market Researcher
-    reports_to: lead_exec
-    tools: [memory, channel, web.search]
-  - id: worker_ops_1
-    title: Operations Coordinator
-    reports_to: lead_exec
-    tools: [memory, channel, docs.write]</code></pre></div>
-
-  <h3>3.2 &nbsp;What gets generated</h3>
-  <div class="filetree">
-<span class="d">orgs/Demo/</span><br>
-├── <span class="d">roles/</span>            <span class="c"># one YAML per role (id, title, reports_to, tools, risk)</span><br>
-│   ├── lead_exec.yaml<br>
-│   └── worker_research_1.yaml  <span class="c"># …22 more</span><br>
-├── <span class="d">sops/</span>             <span class="c"># one SOP per role — how the role works</span><br>
-├── <span class="d">goals/</span><br>
-│   └── current.md     <span class="c"># north-star + quarterly targets</span><br>
-├── org.yaml           <span class="c"># the whole chart in one file</span><br>
-└── settings.yaml      <span class="c"># org-level risk tier, budget, defaults</span><br>
-  </div>
-
-  <h3>3.3 &nbsp;<code>validate</code> — check an org before running jobs</h3>
-  <div class="term"><div class="term-head"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span>terminal<button class="copy" onclick="cp(this)">Copy</button></div>
-<pre><code>agent_factory validate --root orgs/Demo</code></pre></div>
-  <div class="term out"><div class="term-head">✔ expected output</div>
-<pre>OK: orgs/Demo is a valid org (23 roles).</pre></div>
-  <div class="callout warn"><div class="ico">⚠️</div><div><b>If validation fails</b> you get the specific reason (a bad <code>reports_to</code>
-  link, an unknown tool id, a missing goal) with exit code <code>1</code> — fix the YAML and re-run.
-  Always re-run <code>validate</code> after hand-editing <code>org.yaml</code>.</div></div>
-</section>
-
-<!-- ======================= 4. RUN WORK ======================= -->
-<section id="s4">
-  <h2><span class="num">4</span>Run work</h2>
-  <div class="purpose">📋 <div><b>Purpose:</b> enqueue a task for a specific role and watch it execute
-  against the durable job ledger. Every job is stored — with results, events, and status —
-  in <code>orgs/&lt;name&gt;/.agentfactory/jobs.db</code>.</div></div>
-
-  <div class="term"><div class="term-head"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span>terminal · run a job<button class="copy" onclick="cp(this)">Copy</button></div>
-<pre><code>agent_factory run --org orgs/Demo --role worker_research_1 ^
-    --task "List the quarterly targets." --approval deny</code></pre></div>
-
-  <div class="term out"><div class="term-head">✔ expected output (fake provider)</div>
-<pre>job #1 [worker_research_1] -&gt; done in 1 step(s)
+budget_tier: medium
+add_amplifier: true
+add_observer: true
+use_lead: true
+</code></pre>
+<p>See <a href="SPEC_AUTHORING.md"><code>docs/SPEC_AUTHORING.md</code></a> for every field.</p>
+<blockquote>
+<p><code>--pack</code> and <code>--spec</code> are mutually exclusive — pick one.</p>
+</blockquote>
+<h3 id="32-what-a-generated-org-looks-like">3.2 What a generated org looks like</h3>
+<pre><code>orgs/Demo/
+├── org.yaml                  # the org chart (roles, reports_to, tools, model tiers)
+├── settings.yaml             # risk tier, budget tier, defaults
+├── README.md                 # human-readable summary of the org
+├── goals/current.md          # north star + quarterly targets agents act against
+├── roles/*.yaml              # one file per role (23 roles in the demo org)
+├── sops/*.md                 # one SOP per role (how the role works)
+└── .agentfactory/jobs.db     # created on first run — the durable store
+</code></pre>
+<h3 id="33-validate-check-any-org-tree">3.3 <code>validate</code> — check any org tree</h3>
+<p><strong>Purpose:</strong> confirm an org folder is structurally valid before running it.</p>
+<pre><code class="language-bash">agent_factory validate --root orgs/Demo
+</code></pre>
+<p><em>Expected output:</em></p>
+<pre><code>OK: orgs\Demo is a valid org (23 roles).
+</code></pre>
+<p>Validation checks every role&rsquo;s <code>reports_to</code> links, tool grants, model tiers,
+and the settings/goals files. A broken tree exits non-zero with a specific
+error message.</p>
+<hr />
+<h2 id="4-run-work">4. Run work</h2>
+<h3 id="41-run-give-a-role-a-job">4.1 <code>run</code> — give a role a job</h3>
+<p><strong>Purpose:</strong> enqueue a task for a specific role and run it through the agent
+loop (LLM actions + granted tools + approval gating), recording everything in
+the store.</p>
+<pre><code class="language-bash">agent_factory run --org orgs/Demo --role worker_research_1 ^
+    --task &quot;List the quarterly targets.&quot; --approval deny
+</code></pre>
+<p><em>Expected output (fake provider):</em></p>
+<pre><code>job #1 [worker_research_1] -&gt; done in 1 step(s)
 events:
 --- output ---
-List the quarterly targets.</pre></div>
-
-  <div class="card"><p style="font-size:15px"><b>Notes.</b> <code>--role</code> must be a role id from
-  <code>orgs/Demo/roles/</code> (e.g. <code>lead_exec</code>, <code>director_marketing</code>,
-  <code>worker_research_1</code>). <code>--max-steps</code> caps the agent loop; use
-  <code>--provider</code>/<code>--model</code> to override the role's configured LLM for one run
-  (see <a href="#s8">§8</a>).</p></div>
-
-  <h3>4.1 &nbsp;Approval modes — the main safety dial</h3>
-  <p class="lead">When an agent wants to call a tool, its <b>risk tier</b> and the org's
-  <b>approval policy</b> decide what happens. <code>--approval</code> is your per-run override:</p>
-  <table>
-    <tr><th>Flag value</th><th>Behavior</th><th>Use when</th></tr>
-    <tr><td><code>ask</code></td><td>Pause and prompt you in the terminal for each gated tool call</td><td>Interactive runs where you want control</td></tr>
-    <tr><td><code>deny</code></td><td>Refuse all gated calls automatically (job may end <code>blocked</code>)</td><td>Unattended runs, CI, first dry-run of a new role</td></tr>
-    <tr><td><code>allow</code></td><td>Auto-approve all gated calls</td><td>Trusted, low-risk setups</td></tr>
-  </table>
-
-  <div class="callout info"><div class="ico">🛡️</div><div><b>What "gated" means.</b> A tool call is gated when the tool's risk tier is
-  <code>high</code>, or the tool writes outside the org and the org's risk tier is
-  <code>review_external</code>. Grants in <code>org.yaml</code> / role YAML decide
-  which tools each role may use at all; the approval policy decides when using them needs a human.</div></div>
-
-  <h3>4.2 &nbsp;<code>jobs</code> — the durable ledger</h3>
-  <div class="term"><div class="term-head"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span>terminal<button class="copy" onclick="cp(this)">Copy</button></div>
-<pre><code>agent_factory jobs --org orgs/Demo</code></pre></div>
-  <div class="term out"><div class="term-head">✔ expected output</div>
-<pre>id   org            role                     status    task
-1    Demo Co        worker_research_1        done      List the quarterly targets.</pre></div>
-  <p class="lead">Statuses: <code>queued → running → done</code>, or <code>error</code> /
-  <code>blocked</code> (e.g. all tool calls needed approval). Every job's events and final
-  output are stored in <code>.agentfactory/jobs.db</code> (see <a href="#s10">§10</a>).</p>
-</section>
-
-<!-- ======================= 5. MEMORY & PROACTIVITY ======================= -->
-<section id="s5">
-  <h2><span class="num">5</span>Memory &amp; proactivity</h2>
-  <div class="purpose">📋 <div><b>Purpose:</b> capture knowledge the whole org shares
-  (<code>context</code>) and let leads propose and execute their own next steps within
-  guardrails (<code>ambition</code>).</div></div>
-
-  <h3>5.1 &nbsp;<code>context</code> — the shared company memory</h3>
-  <p class="lead">Capture facts the whole workforce should be able to query — the "diary flow".
-  Agents see relevant context in their prompts, and roles granted the <code>memory</code>
-  tool can read/search it themselves.</p>
-  <div class="term"><div class="term-head"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span>terminal · add, list, search<button class="copy" onclick="cp(this)">Copy</button></div>
-<pre><code><span class="cmt"># add an entry:  context --org &lt;org&gt; --add &lt;key&gt; --detail &lt;text&gt;</span>
+List the quarterly targets.
+</code></pre>
+<p>Notes:</p>
+<ul>
+<li><code>--role</code> must be a role id from <code>orgs/Demo/roles/</code> (e.g. <code>lead_exec</code>,
+  <code>director_marketing</code>, <code>worker_research_1</code>).</li>
+<li><code>--approval</code> controls what happens when the agent wants to use a tool that
+  needs approval: <code>deny</code> (refuse and continue — safe default), <code>allow</code>
+  (approve automatically), <code>ask</code> (prompt you in the terminal).</li>
+<li><code>--max-steps</code> caps the agent loop (default keeps jobs bounded); use
+  <code>--provider</code>/<code>--model</code> to override the role&rsquo;s configured LLM for one run
+  (see <a href="#8-providers--models">§8</a>).</li>
+</ul>
+<h3 id="42-jobs-the-durable-job-ledger">4.2 <code>jobs</code> — the durable job ledger</h3>
+<p><strong>Purpose:</strong> list every job ever recorded in the org&rsquo;s store.</p>
+<pre><code class="language-bash">agent_factory jobs --org orgs/Demo
+</code></pre>
+<p><em>Expected output:</em></p>
+<pre><code>id   org            role                     status    task
+1    Demo Co        worker_research_1        done      List the quarterly targets.
+</code></pre>
+<p>Statuses: <code>queued → running → done</code>, or <code>error</code> / <code>blocked</code> (e.g. all
+tool calls needed approval). Every job&rsquo;s events and final output are stored
+in <code>.agentfactory/jobs.db</code> (see <a href="#10-where-your-data-lives">§10</a>).</p>
+<hr />
+<h2 id="5-memory-proactivity">5. Memory &amp; proactivity</h2>
+<h3 id="51-context-the-shared-company-memory">5.1 <code>context</code> — the shared company memory</h3>
+<p><strong>Purpose:</strong> capture facts the whole workforce should be able to query — the
+&ldquo;diary flow&rdquo;. Agents see relevant context in their prompts, and roles granted
+the <code>memory</code> tool can read/search it themselves.</p>
+<pre><code class="language-bash"># add an entry:  context --org &lt;org&gt; --add &lt;key&gt; --detail &lt;text&gt;
 agent_factory context --org orgs/Demo --add diary/today ^
-    --detail "Client wants a demo before signing."
+    --detail &quot;Client wants a demo before signing.&quot;
 
-<span class="cmt"># list everything</span>
+# list everything
 agent_factory context --org orgs/Demo
 
-<span class="cmt"># search by substring</span>
-agent_factory context --org orgs/Demo --search demo</code></pre></div>
-
-  <div class="term out"><div class="term-head">✔ expected output of <b>&nbsp;list / search</b> (same table)</div>
-<pre>key                                  source     content
-diary/today                          diary      Client wants a demo before signing.</pre></div>
-
-  <div class="callout tip"><div class="ico">💡</div><div><b>Notes.</b> <code>source</code> records where the entry came from
-  (<code>diary</code> = you typed it; <code>ambition</code> = the proactive loop logged a
-  proposal/execution). Adding the same <code>--add</code> key again <b>updates</b> the entry.</div></div>
-
-  <h3>5.2 &nbsp;<code>ambition</code> — the proactive "do smart things" loop</h3>
-  <p class="lead">Let a high-proactivity lead <em>initiate</em> net-new work against the north star,
-  quarterly goals, and captured context: it proposes actions (risk-rated, prioritized),
-  then executes up to <code>--max-actions</code> of them as real jobs.</p>
-
-  <div class="flow">
-    <div class="node"><b>💡 Propose</b>risk-rated, prioritized next steps from goals + context</div>
-    <div class="arr">→</div>
-    <div class="node store"><b>🧮 Evaluate</b>--max-risk ceiling, tool grants, approval gate</div>
-    <div class="arr">→</div>
-    <div class="node human"><b>✅ Execute</b>up to --max-actions become real jobs in the ledger</div>
-  </div>
-
-  <div class="term"><div class="term-head"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span>terminal<button class="copy" onclick="cp(this)">Copy</button></div>
-<pre><code>agent_factory ambition --org orgs/Demo --role lead_exec --max-actions 2</code></pre></div>
-  <div class="term out"><div class="term-head">✔ expected output (fake provider — real models produce concrete titles)</div>
-<pre>Proposals from lead_exec (proactivity 5):
+# search by substring
+agent_factory context --org orgs/Demo --search demo
+</code></pre>
+<p><em>Expected output of <code>list</code> / <code>search</code> (same table):</em></p>
+<pre><code>key                                  source     content
+diary/today                          diary      Client wants a demo before signing.
+</code></pre>
+<p>Notes:</p>
+<ul>
+<li><code>source</code> records where the entry came from (<code>diary</code> = you typed it;
+  <code>ambition</code> = the proactive loop logged a proposal/execution).</li>
+<li>Adding the same <code>--add</code> key again updates the entry.</li>
+</ul>
+<h3 id="52-ambition-the-proactive-do-smart-things-loop">5.2 <code>ambition</code> — the proactive &ldquo;do smart things&rdquo; loop</h3>
+<p><strong>Purpose:</strong> let a high-proactivity lead <em>initiate</em> net-new work against the
+north star, quarterly goals, and captured context — it proposes actions
+(risk-rated, prioritized), then executes up to <code>--max-actions</code> of them as
+real jobs.</p>
+<pre><code class="language-bash">agent_factory ambition --org orgs/Demo --role lead_exec --max-actions 2
+</code></pre>
+<p><em>Expected output (fake provider — real models produce concrete titles):</em></p>
+<pre><code>Proposals from lead_exec (proactivity 5):
   - &lt;short title&gt; (risk=medium, priority=1)
       action: &lt;concrete task a worker should do&gt;
 
 Executed 1 action(s):
-  job #2 [&lt;short title&gt;] -&gt; done</pre></div>
-
-  <div class="callout warn"><div class="ico">⚠️</div><div><b>Guardrails.</b> Only roles with
-  <code>proactivity_level &gt;= 3</code> initiate (the bootstrap lead has level 5).
-  A proposal whose risk exceeds the <code>--max-risk</code> ceiling is proposed but
-  <b>not executed</b>, and <code>requires_approval</code> tools still go through the
-  approval gate. Executed proposals become real jobs (and context entries), so
-  <code>status</code> and <code>brief</code> see them.</div></div>
-</section>
-
-<!-- ======================= 6. OBSERVABILITY ======================= -->
-<section id="s6">
-  <h2><span class="num">6</span>Observability</h2>
-  <div class="purpose">📋 <div><b>Purpose:</b> answer "what is my workforce doing right now?"
-  and "what should I do today?" without reading the database.</div></div>
-
-  <h3>6.1 &nbsp;<code>status</code> — mission control</h3>
-  <div class="term"><div class="term-head"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span>terminal<button class="copy" onclick="cp(this)">Copy</button></div>
-<pre><code>agent_factory status --org orgs/Demo</code></pre></div>
-  <div class="term out"><div class="term-head">✔ expected output</div>
-<pre>Mission control — Demo Co
+  job #2 [&lt;short title&gt;] -&gt; done
+</code></pre>
+<p>Notes:</p>
+<ul>
+<li>Only roles with <code>proactivity_level &gt;= 3</code> initiate; lower levels are
+  passively assigned work. The lead role generated by <code>bootstrap</code> has level 5.</li>
+<li><code>--max-actions</code> and <code>--max-risk</code> are your guardrails: a proposal whose
+  risk exceeds the tier&rsquo;s ceiling is proposed but not executed, and
+  <code>requires_approval</code> tools still go through the approval gate.</li>
+<li>Executed proposals become real jobs in the ledger (and context entries),
+  so <code>status</code> and <code>brief</code> see them.</li>
+</ul>
+<hr />
+<h2 id="6-observability">6. Observability</h2>
+<h3 id="61-status-mission-control">6.1 <code>status</code> — mission control</h3>
+<p><strong>Purpose:</strong> one report answering &ldquo;what is my workforce doing right now&rdquo;:
+job queue counts, recent jobs, open insights, approvals, pending channel
+messages.</p>
+<pre><code class="language-bash">agent_factory status --org orgs/Demo
+</code></pre>
+<p><em>Expected output:</em></p>
+<pre><code>Mission control — Demo Co
   Jobs: 2 total  (queued=0, running=0, done=2, error=0, blocked=0)
   Open insights: 1
   Pending channel messages: 0
@@ -558,32 +319,34 @@ Executed 1 action(s):
 
   Open insights: none
 
-  Recent approval events: none</pre></div>
-  <p class="lead"><code>--limit</code> controls how many recent jobs are shown (default 20).</p>
-
-  <h3>6.2 &nbsp;<code>observe</code> — the observer/watchdog pass</h3>
-  <p class="lead">Runs the cheap observer role to surface friction, access gaps, blockers,
-  contradictions, and opportunities as <em>insights</em> in the store — not a dashboard,
-  input for the brief.</p>
-  <div class="term"><div class="term-head"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span>terminal<button class="copy" onclick="cp(this)">Copy</button></div>
-<pre><code>agent_factory observe --org orgs/Demo --limit 3</code></pre></div>
-  <div class="term out"><div class="term-head">✔ expected output (fake provider)</div>
-<pre>Observer observer surfaced 1 finding(s):
+  Recent approval events: none
+</code></pre>
+<p>(<code>--limit</code> controls how many recent jobs are shown; default 20.)</p>
+<h3 id="62-observe-the-observerwatchdog-pass">6.2 <code>observe</code> — the observer/watchdog pass</h3>
+<p><strong>Purpose:</strong> run the cheap observer role to surface friction, access gaps,
+blockers, contradictions, and opportunities as <em>insights</em> in the store — not
+a dashboard, input for the brief.</p>
+<pre><code class="language-bash">agent_factory observe --org orgs/Demo --limit 3
+</code></pre>
+<p><em>Expected output (fake provider):</em></p>
+<pre><code>Observer observer surfaced 1 finding(s):
   [info/friction] &lt;short title&gt;
       detail: &lt;what you found&gt;
-      suggest: &lt;what to do about it&gt;</pre></div>
-  <div class="card"><p style="font-size:15px">Each finding is <code>[level/kind]</code> — e.g.
-  <span class="m m1">info/friction</span> <span class="m m2">warn/access_gap</span>
-  <span class="m m4">blocker</span>. <code>--role</code> lets you use a different observer
-  role; the default is the org's <code>observer</code> role (or the lead).</p></div>
-
-  <h3>6.3 &nbsp;<code>brief</code> — "what should I do today"</h3>
-  <p class="lead">Turns open insights + context + job state into a short, prioritized action
-  plan (WHAT / WHO / FIRST STEP) as if the org lead were briefing the founder.</p>
-  <div class="term"><div class="term-head"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span>terminal<button class="copy" onclick="cp(this)">Copy</button></div>
-<pre><code>agent_factory brief --org orgs/Demo</code></pre></div>
-  <div class="term out"><div class="term-head">✔ output: the brief prompt sent to the lead's model (fake provider echoes it verbatim)</div>
-<pre>You are Org Lead (Chief of Staff) (role `lead_exec`) acting as the founder's morning brief for the workforce "Demo Co".
+      suggest: &lt;what to do about it&gt;
+</code></pre>
+<p>Each finding is <code>[level/kind]</code> — e.g. <code>info/friction</code>,
+<code>warn/access_gap</code>, <code>blocker</code>. <code>--role</code> lets you use a different observer
+role; the default is the org&rsquo;s <code>observer</code> role (or the lead).</p>
+<h3 id="63-brief-what-should-i-do-today">6.3 <code>brief</code> — &ldquo;what should I do today&rdquo;</h3>
+<p><strong>Purpose:</strong> turn open insights + context + job state into a short,
+prioritized action plan (WHAT / WHO / FIRST STEP) as if the org lead were
+briefing the founder.</p>
+<pre><code class="language-bash">agent_factory brief --org orgs/Demo
+</code></pre>
+<p><em>Expected output:</em> the brief prompt sent to the lead&rsquo;s model; with a real
+provider the reply is the actual plan. With the <code>fake</code> provider the prompt is
+echoed back verbatim, so you see exactly what the model receives:</p>
+<pre><code>You are Org Lead (Chief of Staff) (role `lead_exec`) acting as the founder's morning brief for the workforce &quot;Demo Co&quot;.
 
 STATE OF THE WORKFORCE
 Job counts: 2 total (queued=0, running=0, done=2, error=0, blocked=0). Open insights: 1. Recent jobs: #2 [director_marketing] done: ... #1 [worker_research_1] done: ...
@@ -594,220 +357,286 @@ OPEN INSIGHTS
 CAPTURED CONTEXT
 [diary/today] (diary) Client wants a demo before signing. ...
 
-Produce a short, prioritized "what should I do today" plan ...</pre></div>
-  <div class="callout info"><div class="ico">🪞</div><div><b>Fake provider and placeholders.</b> <code>fake</code> is an echo
-  client, so outputs contain placeholders like <code>&lt;short title&gt;</code>. With
-  <code>openai</code>/<code>ollama</code> you get real content in the same shape — the commands
-  are identical, only the text inside changes.</div></div>
-</section>
-
-<!-- ======================= 7. CHANNEL ======================= -->
-<section id="s7">
-  <h2><span class="num">7</span>Talk to your workforce <span class="m m6" style="vertical-align:middle">M6</span></h2>
-  <div class="purpose">📋 <div><b>Purpose:</b> the shared channel is how a human teammate asks
-  the workforce things: you post into <code>#general</code>, a channel worker runs the
-  addressed role through the <em>normal</em> agent loop, and the agent's answer is posted
-  back into the same channel as a reply.</div></div>
-
-  <div class="flow">
-    <div class="node human"><b>👤 You</b>channel post --text "…" --role lead_exec</div>
-    <div class="arr">→</div>
-    <div class="node store"><b>💾 #general (SQLite)</b>message queued as pending</div>
-    <div class="arr">→</div>
-    <div class="node"><b>⚙️ channel worker</b>claims pending → runs the role (tools, approvals, ledger)</div>
-    <div class="arr">→</div>
-    <div class="node human"><b>💬 Reply</b>agent's answer posted back to the channel</div>
-  </div>
-
-  <h3>7.1 &nbsp;<code>channel post</code> — a human asks something</h3>
-  <div class="term"><div class="term-head"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span>terminal<button class="copy" onclick="cp(this)">Copy</button></div>
-<pre><code>agent_factory channel post --org orgs/Demo ^
-    --text "Did the client respond to my email?" --role lead_exec</code></pre></div>
-  <div class="term out"><div class="term-head">✔ expected output</div>
-<pre>posted message #1 to #general (addressed to lead_exec) — queued for an agent reply</pre></div>
-  <p class="lead"><code>--role</code> addresses a specific role (default: the org lead); omit it to
-  let the lead route the question. <code>--author</code> overrides the displayed human name
-  (default: the org founder).</p>
-
-  <h3>7.2 &nbsp;<code>channel worker</code> — agents answer in-channel</h3>
-  <div class="term"><div class="term-head"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span>terminal<button class="copy" onclick="cp(this)">Copy</button></div>
-<pre><code>agent_factory channel worker --org orgs/Demo</code></pre></div>
-  <div class="term out"><div class="term-head">✔ expected output (fake provider)</div>
-<pre>#general: answered 1 message(s)
+Produce a short, prioritized &quot;what should I do today&quot; plan ...
+</code></pre>
+<blockquote>
+<p><strong>Fake provider and placeholders:</strong> <code>fake</code> is an echo client, so outputs
+contain placeholders like <code>&lt;short title&gt;</code>. With <code>openai</code>/<code>ollama</code> you get
+real content in the same shape. All offline examples in this guide use the
+same commands — only the text inside changes.</p>
+</blockquote>
+<hr />
+<h2 id="7-talk-to-your-workforce">7. Talk to your workforce</h2>
+<p>The shared channel (video 23:56, &ldquo;Loop Alley&rdquo;) is how a human teammate asks
+the workforce things: you post into <code>#general</code>, a channel worker runs the
+addressed role through the <em>normal</em> agent loop, and the agent&rsquo;s answer is
+posted back into the same channel as a reply.</p>
+<h3 id="71-channel-post-a-human-asks-something">7.1 <code>channel post</code> — a human asks something</h3>
+<pre><code class="language-bash">agent_factory channel post --org orgs/Demo ^
+    --text &quot;Did the client respond to my email?&quot; --role lead_exec
+</code></pre>
+<p><em>Expected output:</em></p>
+<pre><code>posted message #1 to #general (addressed to lead_exec) — queued for an agent reply
+</code></pre>
+<p><code>--role</code> addresses a specific role (default: the org lead); omit it to let
+the lead route the question. <code>--author</code> overrides the displayed human name
+(default: the org founder).</p>
+<h3 id="72-channel-worker-agents-answer-in-channel">7.2 <code>channel worker</code> — agents answer in-channel</h3>
+<pre><code class="language-bash">agent_factory channel worker --org orgs/Demo
+</code></pre>
+<p><em>Expected output (fake provider):</em></p>
+<pre><code>#general: answered 1 message(s)
   #1 by 1 step(s): A human teammate posted this into the shared channel #general:
 
-Did the client r...</pre></div>
-  <div class="card"><p style="font-size:15px"><b>Notes.</b> The worker claims pending messages
-  <b>atomically</b> (<code>pending → running → done</code> in SQLite), so a second worker or a
-  restart never double-answers. <code>--max-messages</code> (default 5) bounds one worker run;
-  <code>--approval</code>, <code>--provider</code>, <code>--model</code>, <code>--temperature</code>
-  behave exactly like <code>run</code>; <code>--role</code> forces one role to answer regardless
-  of addressing. The answering role runs with its normal grants, so tools it uses are recorded
-  in the job ledger like any other job.</p></div>
-
-  <h3>7.3 &nbsp;<code>channel list</code> — read the conversation</h3>
-  <div class="term"><div class="term-head"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span>terminal<button class="copy" onclick="cp(this)">Copy</button></div>
-<pre><code>agent_factory channel list --org orgs/Demo</code></pre></div>
-  <div class="term out"><div class="term-head">✔ expected output (newest first; * = human, -&gt; = agent reply)</div>
-<pre>#general (2 message(s), newest first)
+Did the client r...
+</code></pre>
+<p>Notes:</p>
+<ul>
+<li>The worker claims pending messages <strong>atomically</strong> (<code>pending → running →
+  done</code> in SQLite), so a second worker or a restart never double-answers.</li>
+<li><code>--max-messages</code> (default 5) bounds one worker run; <code>--approval</code>,
+  <code>--provider</code>, <code>--model</code>, <code>--temperature</code> behave exactly like <code>run</code>;
+  <code>--role</code> forces one role to answer regardless of addressing.</li>
+<li>The answering role runs with its normal grants, so tools it uses are
+  recorded in the job ledger like any other job.</li>
+</ul>
+<h3 id="73-channel-list-read-the-conversation">7.3 <code>channel list</code> — read the conversation</h3>
+<pre><code class="language-bash">agent_factory channel list --org orgs/Demo
+</code></pre>
+<p><em>Expected output (newest first; <code>*</code> = the human&rsquo;s message, <code>-&gt;</code> = the agent&rsquo;s reply):</em></p>
+<pre><code>#general (2 message(s), newest first)
 -&gt; #2   [lead_exec:Org Lead (Chief of Staff) (lead_exec)] (done) A human teammate posted this into the shared channel #general:
 
 Did th...
-*  #1   [human:Founder] -&gt; lead_exec (done) Did the client respond to my email?</pre></div>
-  <p class="lead">Both messages show <code>(done)</code> — a question stays
-  <code><span class="m m2">pending</span></code> until a worker claims it, then
-  <code>running</code> while answered, then <code><span class="m m3">done</span></code> once
-  the reply is posted. <code>--channel</code> switches channels (default <code>general</code>).</p>
-</section>
-
-<!-- ======================= 8. PROVIDERS ======================= -->
-<section id="s8">
-  <h2><span class="num">8</span>Providers &amp; models</h2>
-  <div class="purpose">📋 <div><b>Purpose:</b> choose where the intelligence comes from and override
-  it per-run when needed.</div></div>
-
-  <p class="lead">Every command that runs an LLM (<code>run</code>, <code>ambition</code>,
-  <code>observe</code>, <code>brief</code>, <code>channel worker</code>) accepts the same two overrides:</p>
-  <table>
-    <tr><th>Flag</th><th>Meaning</th><th>Example</th></tr>
-    <tr><td><code>--provider</code></td><td><code>openai</code> | <code>ollama</code> | <code>fake</code> for this one run</td><td><code>--provider ollama</code></td></tr>
-    <tr><td><code>--model</code></td><td>override the role/environment model; may carry a <code>provider/</code> prefix</td><td><code>--model ollama/qwen2.5:7b</code></td></tr>
-  </table>
-
-  <h3>Rules</h3>
-  <div class="card"><ul style="font-size:15px;padding-left:22px">
-    <li>Defaults come from <code>AGENT_FACTORY_PROVIDER</code> (default <code>openai</code>) and the
-    role's model tier (<code>fast</code> / <code>smart</code> / <code>big</code>, driven by the org's
-    <code>budget_tier</code>).</li>
-    <li>If <code>--model</code> has a provider prefix that conflicts with <code>--provider</code>
-    (e.g. <code>--provider openai --model ollama/qwen2.5:7b</code>), you get a clear configuration
-    error instead of a silent mismatch.</li>
-    <li>Per-role environment models: set <code>MODEL_DEFAULT</code>, <code>MODEL_FAST</code>,
-    <code>MODEL_SMART</code>, <code>MODEL_BIG</code>, or role-specific <code>MODEL_&lt;ROLE_ID&gt;</code>
-    vars — <code>probe</code> shows every pair it finds.</li>
-  </ul></div>
-
-  <h3>Available providers</h3>
-  <table>
-    <tr><th>Provider</th><th>Needs</th><th>Good for</th></tr>
-    <tr><td><span class="m m3">fake</span></td><td>nothing</td><td>tests, demos, headless smoke runs (echoes input)</td></tr>
-    <tr><td><span class="m m1">openai</span></td><td><code>OPENAI_API_KEY</code> (+ optional <code>OPENAI_BASE_URL</code>), <code>pip install -e ".[openai]"</code></td><td>production-quality work</td></tr>
-    <tr><td><span class="m m2">ollama</span></td><td>local Ollama at <code>http://localhost:11434/v1</code> (override <code>OLLAMA_BASE_URL</code>/<code>OLLAMA_MODEL</code>), <code>pip install -e ".[ollama]"</code></td><td>private/local models (Gemma, Qwen, …)</td></tr>
-  </table>
-
-  <div class="callout warn"><div class="ico">⚠️</div><div><b>Anthropic is not wired yet.</b>
-  Installing the optional Anthropic package does not enable an Anthropic provider.</div></div>
-
-  <h3>Live and stubbed tools</h3>
-  <div class="card"><p style="font-size:15px">The currently live tools are
-  <code>files</code>, <code>web</code>, <code>memory</code>, and <code>channel</code>.
-  Third-party tool ids such as <code>notion</code>, <code>gmail</code>,
-  <code>calendar</code>, <code>slack</code>, <code>stripe</code>, <code>supabase</code>,
-  <code>github</code>, <code>sheets</code>, <code>docs</code>, <code>crm</code>,
-  <code>cms</code>, <code>payments</code>, and <code>analytics</code> are declared
-  integration stubs. Calling one returns a <code>STUB</code> message and does not
-  modify the external service.</p></div>
-</section>
-
-<!-- ======================= 9. CHEAT SHEET ======================= -->
-<section id="s9">
-  <h2><span class="num">9</span>Command reference <span style="font-size:16px;color:var(--muted);font-weight:500">(cheat sheet)</span></h2>
-  <table>
-    <tr><th>Command</th><th>Purpose</th><th>Milestone</th></tr>
-    <tr><td><code>bootstrap</code></td><td>interview → validated org chart in <code>orgs/&lt;name&gt;/</code></td><td><span class="m m3">M3</span></td></tr>
-    <tr><td><code>bootstrap --pack &lt;id&gt;</code></td><td>same, from a pre-built workforce pack (<code>packs</code> lists them)</td><td><span class="m m5">M5</span></td></tr>
-    <tr><td><code>bootstrap --spec file.yaml</code></td><td>same, non-interactive from YAML</td><td><span class="m m3">M3</span></td></tr>
-    <tr><td><code>packs</code></td><td>list built-in role packs</td><td><span class="m m5">M5</span></td></tr>
-    <tr><td><code>validate --root &lt;org&gt;</code></td><td>check an org tree is structurally valid</td><td><span class="m m3">M3</span></td></tr>
-    <tr><td><code>run --org --role --task</code></td><td>enqueue + execute a job with one role</td><td><span class="m m1">M1</span></td></tr>
-    <tr><td><code>jobs --org</code></td><td>list the durable job ledger</td><td><span class="m m1">M1</span></td></tr>
-    <tr><td><code>context --org [--add/--search]</code></td><td>capture / list / search shared memory</td><td><span class="m m2">M2</span></td></tr>
-    <tr><td><code>ambition --org --role</code></td><td>proactive propose→execute loop for a lead</td><td><span class="m m2">M2</span></td></tr>
-    <tr><td><code>status --org</code></td><td>mission-control report (jobs, insights, channel)</td><td><span class="m m4">M4</span></td></tr>
-    <tr><td><code>observe --org</code></td><td>observer pass → insights (friction, gaps, blockers)</td><td><span class="m m4">M4</span></td></tr>
-    <tr><td><code>brief --org</code></td><td>"what should I do today" action plan</td><td><span class="m m4">M4</span></td></tr>
-    <tr><td><code>channel post/list/worker --org</code></td><td>shared human↔agent conversation</td><td><span class="m m6">M6</span></td></tr>
-    <tr><td><code>probe</code></td><td>ping every configured provider/model pair</td><td><span class="m m1">M1</span></td></tr>
-  </table>
-  <p class="lead">Common flags on LLM-running commands: <code>--provider</code>, <code>--model</code>,
-  <code>--approval ask|deny|allow</code>, <code>--temperature</code>.</p>
-</section>
-
-<!-- ======================= 10. DATA ======================= -->
-<section id="s10">
-  <h2><span class="num">10</span>Where your data lives</h2>
-  <p class="lead">Everything durable lives <b>inside the org folder</b>, so an org is portable:</p>
-  <div class="filetree">orgs/Demo/.agentfactory/jobs.db      <span class="c"># SQLite store</span></div>
-  <table>
-    <tr><th>Table</th><th>Written by</th><th>Read by</th></tr>
-    <tr><td><code>jobs</code>, <code>results</code>, <code>events</code></td><td><code>run</code>, <code>ambition</code>, <code>channel worker</code></td><td><code>jobs</code>, <code>status</code></td></tr>
-    <tr><td><code>context</code></td><td><code>context --add</code>, <code>ambition</code></td><td>prompts, <code>context list/search</code></td></tr>
-    <tr><td><code>insights</code></td><td><code>observe</code></td><td><code>status</code>, <code>brief</code></td></tr>
-    <tr><td><code>messages</code></td><td><code>channel post</code>, <code>channel worker</code></td><td><code>channel list</code>, <code>status</code></td></tr>
-  </table>
-  <div class="callout tip"><div class="ico">🗑️</div><div>Delete <code>jobs.db</code> to reset an org's history
-  (the chart itself is plain files).</div></div>
-</section>
-
-<!-- ======================= 11. FAQ ======================= -->
-<section id="s11">
-  <h2><span class="num">11</span>Troubleshooting &amp; FAQ</h2>
-
-  <div class="qa"><b>🔧 <code>run</code> says the role does not exist.</b><br>
-  Role ids are file names under <code>roles/</code> without <code>.yaml</code> —
-  check <code>orgs/Demo/roles/</code> or <code>org.yaml</code>.</div>
-
-  <div class="qa"><b>🔧 A job ends <code>blocked</code>.</b><br>
-  Every tool the agent tried required approval and <code>--approval deny</code> refused them all.
-  Re-run with <code>--approval ask</code> to approve interactively, or lower the tool risk
-  in the role's YAML.</div>
-
-  <div class="qa"><b>🔧 <code>bootstrap</code> fails validation.</b><br>
-  Read the specific error (bad <code>reports_to</code> link, unknown tool, missing goal).
-  If hand-editing <code>org.yaml</code>, re-run <code>validate</code> before running jobs.</div>
-
-  <div class="qa"><b>🔧 The output contains <code>&lt;short title&gt;</code> placeholders.</b><br>
-  You are on the <code>fake</code> provider — it echoes prompts for deterministic offline runs.
-  Switch to <code>openai</code>/<code>ollama</code> for real content.</div>
-
-  <div class="qa"><b>🔧 <code>probe</code> reports <code>[FAIL] ...</code></b><br>
-  Check <code>OPENAI_API_KEY</code> / base URL (OpenAI) or that Ollama is running
-  (<code>ollama serve</code>) and the model is pulled (<code>ollama pull qwen2.5:7b</code>).</div>
-
-  <div class="qa"><b>🔧 A third-party tool returns <code>STUB</code>.</b><br>
-  This is expected for the integrations listed in the live/stubbed tools section.
-  Use <code>files</code>, <code>web</code>, <code>memory</code>, or <code>channel</code>
-  for the implemented tool surface, or register a local MCP-style server through
-  the runtime API.</div>
-
-  <div class="qa"><b>❓ Two channel workers at once?</b><br>
-  Safe. Message claims are atomic (<code>pending → running</code>), so each question is
-  answered exactly once.</div>
-
-  <div class="qa"><b>❓ Can I extend the tools?</b><br>
-  Yes — see <code>docs/ARCHITECTURE.md</code>: the <code>Tool</code> catalog
-  (<code>runtime/tools.py</code>) and <code>register_tool_server()</code> for MCP-style local
-  servers (<code>runtime/toolservers.py</code>) are the extension points; new tools inherit
-  the same grant + risk + approval gating.</div>
-</section>
-
-<footer>
-  Agent Factory — User Guide · Generated from <code>docs/USER_GUIDE.md</code> ·
-  All examples verified offline with the <code>fake</code> provider ·
-  <a href="https://github.com/jvcaesar/agent_factory">GitHub</a>
-</footer>
-
+*  #1   [human:Founder] -&gt; lead_exec (done) Did the client respond to my email?
+</code></pre>
+<p>Both messages show <code>(done)</code> — a question stays <code>pending</code> until a worker
+claims it, then <code>running</code> while answered, then <code>done</code> once the reply is
+posted. <code>--channel</code> switches channels (default <code>general</code>).</p>
+<hr />
+<h2 id="8-providers-models">8. Providers &amp; models</h2>
+<p>Every command that runs an LLM (<code>run</code>, <code>ambition</code>, <code>observe</code>, <code>brief</code>,
+<code>channel worker</code>) accepts the same two overrides:</p>
+<table>
+<thead>
+<tr>
+<th>Flag</th>
+<th>Meaning</th>
+<th>Example</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>--provider</code></td>
+<td><code>openai</code> | <code>ollama</code> | <code>fake</code> for this one run</td>
+<td><code>--provider ollama</code></td>
+</tr>
+<tr>
+<td><code>--model</code></td>
+<td>override the role/environment model; may carry a <code>provider/</code> prefix</td>
+<td><code>--model ollama/qwen2.5:7b</code></td>
+</tr>
+</tbody>
+</table>
+<p>Rules:</p>
+<ul>
+<li>Defaults come from <code>AGENT_FACTORY_PROVIDER</code> (default <code>openai</code>) and the
+  role&rsquo;s model tier (<code>fast</code> / <code>smart</code> / <code>big</code>, driven by the org&rsquo;s
+  <code>budget_tier</code>).</li>
+<li>If <code>--model</code> has a provider prefix that conflicts with <code>--provider</code>
+  (e.g. <code>--provider openai --model ollama/qwen2.5:7b</code>), you get a clear
+  configuration error instead of a silent mismatch.</li>
+<li>Per-role environment models: set <code>MODEL_DEFAULT</code>, <code>MODEL_FAST</code>,
+  <code>MODEL_SMART</code>, <code>MODEL_BIG</code>, or role-specific <code>MODEL_&lt;ROLE_ID&gt;</code> vars —
+  <code>probe</code> shows every pair it finds.</li>
+</ul>
+<p>Providers:</p>
+<table>
+<thead>
+<tr>
+<th>Provider</th>
+<th>Needs</th>
+<th>Good for</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>fake</code></td>
+<td>nothing</td>
+<td>tests, demos, headless smoke runs (echoes input)</td>
+</tr>
+<tr>
+<td><code>openai</code></td>
+<td><code>OPENAI_API_KEY</code> (+ optional <code>OPENAI_BASE_URL</code>), <code>pip install -e ".[openai]"</code></td>
+<td>production-quality work</td>
+</tr>
+<tr>
+<td><code>ollama</code></td>
+<td>local Ollama at <code>http://localhost:11434/v1</code> (override <code>OLLAMA_BASE_URL</code>/<code>OLLAMA_MODEL</code>), <code>pip install -e ".[ollama]"</code></td>
+<td>private/local models (Gemma, Qwen, …)</td>
+</tr>
+</tbody>
+</table>
+<p>There is no Anthropic adapter yet. Installing the optional Anthropic package
+does not enable an Anthropic provider.</p>
+<h3 id="live-and-stubbed-tools">Live and stubbed tools</h3>
+<p>The following tools execute locally: <code>files</code>, <code>web</code>, <code>memory</code>, and <code>channel</code>.
+Third-party tool ids such as <code>notion</code>, <code>gmail</code>, <code>calendar</code>, <code>slack</code>, <code>stripe</code>,
+<code>supabase</code>, <code>github</code>, <code>sheets</code>, <code>docs</code>, <code>crm</code>, <code>cms</code>, <code>payments</code>, and
+<code>analytics</code> are currently declared integration stubs. A role may be granted
+one of these tools, but calling it returns a <code>STUB</code> message and does not modify
+the external service.</p>
+<hr />
+<h2 id="9-command-reference-cheat-sheet">9. Command reference (cheat sheet)</h2>
+<table>
+<thead>
+<tr>
+<th>Command</th>
+<th>Purpose</th>
+<th>Milestone</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>bootstrap</code></td>
+<td>interview → validated org chart in <code>orgs/&lt;name&gt;/</code></td>
+<td>M3</td>
+</tr>
+<tr>
+<td><code>bootstrap --pack &lt;id&gt;</code></td>
+<td>same, from a pre-built workforce pack (<code>packs</code> lists them)</td>
+<td>M5</td>
+</tr>
+<tr>
+<td><code>bootstrap --spec file.yaml</code></td>
+<td>same, non-interactive from YAML</td>
+<td>M3</td>
+</tr>
+<tr>
+<td><code>packs</code></td>
+<td>list built-in role packs</td>
+<td>M5</td>
+</tr>
+<tr>
+<td><code>validate --root &lt;org&gt;</code></td>
+<td>check an org tree is structurally valid</td>
+<td>M3</td>
+</tr>
+<tr>
+<td><code>run --org --role --task</code></td>
+<td>enqueue + execute a job with one role</td>
+<td>M1</td>
+</tr>
+<tr>
+<td><code>jobs --org</code></td>
+<td>list the durable job ledger</td>
+<td>M1</td>
+</tr>
+<tr>
+<td><code>context --org [--add/--search]</code></td>
+<td>capture / list / search shared memory</td>
+<td>M2</td>
+</tr>
+<tr>
+<td><code>ambition --org --role</code></td>
+<td>proactive propose→execute loop for a lead</td>
+<td>M2</td>
+</tr>
+<tr>
+<td><code>status --org</code></td>
+<td>mission-control report (jobs, insights, channel)</td>
+<td>M4</td>
+</tr>
+<tr>
+<td><code>observe --org</code></td>
+<td>observer pass → insights (friction, gaps, blockers)</td>
+<td>M4</td>
+</tr>
+<tr>
+<td><code>brief --org</code></td>
+<td>&ldquo;what should I do today&rdquo; action plan</td>
+<td>M4</td>
+</tr>
+<tr>
+<td><code>channel post/list/worker --org</code></td>
+<td>shared human↔agent conversation</td>
+<td>M6</td>
+</tr>
+<tr>
+<td><code>probe</code></td>
+<td>ping every configured provider/model pair</td>
+<td>M1</td>
+</tr>
+</tbody>
+</table>
+<p>Common flags on LLM-running commands: <code>--provider</code>, <code>--model</code>,
+<code>--approval ask|deny|allow</code>, <code>--temperature</code>.</p>
+<hr />
+<h2 id="10-where-your-data-lives">10. Where your data lives</h2>
+<p>Everything durable lives <strong>inside the org folder</strong>, so an org is portable:</p>
+<pre><code>orgs/Demo/.agentfactory/jobs.db      # SQLite store
+</code></pre>
+<table>
+<thead>
+<tr>
+<th>Table</th>
+<th>Written by</th>
+<th>Read by</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>jobs</code>, <code>results</code>, <code>events</code></td>
+<td><code>run</code>, <code>ambition</code>, <code>channel worker</code></td>
+<td><code>jobs</code>, <code>status</code></td>
+</tr>
+<tr>
+<td><code>context</code></td>
+<td><code>context --add</code>, <code>ambition</code></td>
+<td>prompts, <code>context list/search</code></td>
+</tr>
+<tr>
+<td><code>insights</code></td>
+<td><code>observe</code></td>
+<td><code>status</code>, <code>brief</code></td>
+</tr>
+<tr>
+<td><code>messages</code></td>
+<td><code>channel post</code>, <code>channel worker</code></td>
+<td><code>channel list</code>, <code>status</code></td>
+</tr>
+</tbody>
+</table>
+<p>Delete <code>jobs.db</code> to reset an org&rsquo;s history (the chart itself is plain files).</p>
+<hr />
+<h2 id="11-troubleshooting-faq">11. Troubleshooting &amp; FAQ</h2>
+<p><strong><code>run</code> says the role does not exist.</strong> Role ids are file names under
+<code>roles/</code> without <code>.yaml</code> — check <code>orgs/Demo/roles/</code> or <code>org.yaml</code>.</p>
+<p><strong>A job ends <code>blocked</code>.</strong> Every tool the agent tried required approval and
+<code>--approval deny</code> refused them all. Re-run with <code>--approval ask</code> to approve
+interactively, or lower the tool risk in the role&rsquo;s YAML.</p>
+<p><strong><code>bootstrap</code> fails validation.</strong> Read the specific error (bad <code>reports_to</code>
+link, unknown tool, missing goal). If hand-editing <code>org.yaml</code>, re-run
+<code>validate</code> before running jobs.</p>
+<p><strong>The output contains <code>&lt;short title&gt;</code> placeholders.</strong> You are on the <code>fake</code>
+provider — it echoes prompts for deterministic offline runs. Switch to
+<code>openai</code>/<code>ollama</code> for real content.</p>
+<p><strong><code>probe</code> reports <code>[FAIL] ...</code>.</strong> Check <code>OPENAI_API_KEY</code> / base URL (OpenAI),
+or that Ollama is running (<code>ollama serve</code>) and the model is pulled
+(<code>ollama pull qwen2.5:7b</code>).</p>
+<p><strong>A third-party tool returns <code>STUB</code>.</strong> This is expected for the integrations
+listed in the “Live and stubbed tools” section. Use <code>files</code>, <code>web</code>, <code>memory</code>,
+or <code>channel</code> for the currently implemented tool surface, or register a local
+MCP-style server through the runtime API.</p>
+<p><strong>Two channel workers at once?</strong> Safe. Message claims are atomic
+(<code>pending → running</code>), so each question is answered exactly once.</p>
+<p><strong>Can I extend the tools?</strong> Yes — see <code>docs/ARCHITECTURE.md</code>: the <code>Tool</code>
+catalog (<code>runtime/tools.py</code>) and <code>register_tool_server()</code> for MCP-style
+local servers (<code>runtime/toolservers.py</code>) are the extension points; new tools
+inherit the same grant + risk + approval gating.</p>
 </main>
-</div>
-<script>
-function cp(btn){
-  var pre=btn.closest('.term').querySelector('pre');
-  navigator.clipboard.writeText(pre.innerText).then(function(){
-    var old=btn.textContent;btn.textContent='Copied ✓';
-    setTimeout(function(){btn.textContent=old;},1400);
-  });
-}
-</script>
+<footer>Agent Factory — open source — docs: <a href="USER_GUIDE.html">User Guide</a> |
+<a href="ARCHITECTURE.md">Architecture</a> | <a href="ROADMAP.md">Roadmap</a> |
+<a href="USER_GUIDE.md">this page (markdown)</a></footer>
 </body>
 </html>
-

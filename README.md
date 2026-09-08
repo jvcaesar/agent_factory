@@ -189,4 +189,16 @@ See [`docs/IMPLEMENTED_MILESTONE1.md`](docs/IMPLEMENTED_MILESTONE1.md) for detai
 - [x] **M6 Multiplayer & tool surface** — shared human↔agent channel
   (`channel post|list|worker`), store-backed `memory`/`channel` tools,
   MCP-style `ToolServer` registry, risk-aware `approval_needed()` rules
-  (+30 tests)
+  (163 tests, all offline / green)
+
+## Development
+
+Regenerate the HTML docs from their Markdown sources:
+
+```bash
+pip install -e ".[dev]"        # brings in ruff + markdown
+python tools/build_docs.py     # rebuilds docs/PRODUCT.html, docs/USER_GUIDE.html
+python tools/build_docs.py --check   # CI mode: fail if committed HTML is stale
+```
+
+The `docs` job in `.github/workflows/ci.yml` runs `--check` on every push/PR, so the committed HTML can never silently drift from the Markdown.

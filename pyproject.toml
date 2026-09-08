@@ -24,7 +24,7 @@ agent_factory = "agent_factory.cli:main"
 openai = ["openai>=1.0"]
 ollama = ["requests>=2.0"]
 # Local development / CI tools
-dev = ["ruff>=0.8,<0.9"]
+dev = ["ruff>=0.8,<0.9", "markdown>=3.0"]
 
 [tool.setuptools.packages.find]
 where = ["src"]
