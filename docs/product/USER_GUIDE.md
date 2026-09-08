@@ -535,8 +535,8 @@ Providers:
 | `openai` | `OPENAI_API_KEY` (+ optional `OPENAI_BASE_URL`), `pip install -e ".[openai]"` | production-quality work |
 | `ollama` | local Ollama at `http://localhost:11434/v1` (override `OLLAMA_BASE_URL`/`OLLAMA_MODEL`), `pip install -e ".[ollama]"` | private/local models (Gemma, Qwen, …) |
 
-There is no Anthropic adapter yet. Installing the optional Anthropic package
-does not enable an Anthropic provider.
+There is no Anthropic (Claude) adapter — it is a documented future addition
+(see `docs/planning/ROADMAP.md`), not an installable extra today.
 
 ### Live and stubbed tools
 
@@ -557,6 +557,7 @@ the external service.
 | `bootstrap --pack <id>` | same, from a pre-built workforce pack (`packs` lists them) | M5 |
 | `bootstrap --spec file.yaml` | same, non-interactive from YAML | M3 |
 | `packs` | list built-in role packs | M5 |
+| `tools` | list declared tools, tagged REAL (live) or STUB (placeholder) | RC-05 |
 | `validate --root <org>` | check an org tree is structurally valid | M3 |
 | `run --org --role --task` | enqueue + execute a job with one role | M1 |
 | `jobs --org` | list the durable job ledger | M1 |

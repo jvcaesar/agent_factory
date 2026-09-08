@@ -3,6 +3,12 @@
 > Every Python command you may see for driving the factory, what it does, and
 > which ones to actually run. The short version is at the bottom.
 
+> **Since Release 1.0:** the package installs a console script, so
+> `agent_factory bootstrap` works directly after `pip install -e .` (or
+> installing the built wheel) — no `PYTHONPATH` needed. The `set
+> PYTHONPATH=src` step below only applies when running from a source checkout
+> **without** installing the package (e.g. `python -m agent_factory ...`).
+
 ## The commands
 
 All three run through Python's `-m` (module) mode, i.e. "run the installed

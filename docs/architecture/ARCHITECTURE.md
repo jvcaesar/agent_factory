@@ -11,7 +11,8 @@ src/agent_factory/
 ├── __main__.py                # python -m agent_factory support
 ├── config/
 │   ├── __init__.py            # pydantic schema (Org, Role, ToolGrant, enums)
-│   └── loader.py              # YAML loading (org_from_dict) + validate_org()
+│   ├── loader.py              # YAML loading (org_from_dict) + validate_org()
+│   └── env.py                 # dependency-free .env loader (load_dotenv, env_get)
 ├── bootstrap/
 │   ├── __init__.py            # package docstring only
 │   ├── archetypes.py          # generic role library (workers/directors/add-ons)
@@ -24,6 +25,7 @@ src/agent_factory/
 │   ├── openai_client.py       #   OpenAILLM (legacy + modern API)
 │   ├── ollama_client.py       #   OllamaLLM (local Gemma/Qwen)
 │   ├── factory.py             #   get_client(provider) <- AGENT_FACTORY_PROVIDER
+│   ├── models.py              #   model-tier resolution (MODEL_<tier>/MODEL_<role> env vars)
 │   └── __init__.py            #   re-exports
 ├── runtime/                   # M1+M2: execute an Org
 │   ├── __init__.py            #   re-exports
@@ -33,15 +35,16 @@ src/agent_factory/
 │   ├── channel.py             #   M6: shared human<->agent channel + run_channel_worker()
 │   ├── state.py               #   SQLite Store: jobs/results/events + context/insights/messages
 │   ├── agent.py               #   run_agent() loop, build_system_prompt(), parse_action()
+│   ├── protocol.py            #   extract_json_object() — model-output JSON parsing + repair
 │   ├── orchestrator.py        #   run_job() — enqueue + run + record
 │   ├── ambition.py            #   M2: propose_actions(), run_ambition_loop(), Proposal
 │   └── insights.py            #   M4: observe() / build_daily_brief(), Observation
-├── packs/                     # M5: role packs (dataset workforces)
-│   └── __init__.py            #   RolePack registry + build_answers/overrides
-└── cli.py                     # argparse CLI: bootstrap, validate, run, jobs,
-                               #   ambition, context, probe, observe, brief, status,
-                               #   packs
+└── packs/                     # M5: role packs (dataset workforces)
+    └── __init__.py            #   RolePack registry + build_answers/overrides
 ```
+
+`cli.py` (top-level) wires every subcommand: `bootstrap, packs, tools, validate,
+run, jobs, ambition, context, probe, observe, brief, status, channel`.
 
 ## 2. Data flow
 

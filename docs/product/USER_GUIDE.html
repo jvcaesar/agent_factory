@@ -477,8 +477,8 @@ posted. <code>--channel</code> switches channels (default <code>general</code>).
 </tr>
 </tbody>
 </table>
-<p>There is no Anthropic adapter yet. Installing the optional Anthropic package
-does not enable an Anthropic provider.</p>
+<p>There is no Anthropic (Claude) adapter — it is a documented future addition
+(see <code>docs/planning/ROADMAP.md</code>), not an installable extra today.</p>
 <h3 id="live-and-stubbed-tools">Live and stubbed tools</h3>
 <p>The following tools execute locally: <code>files</code>, <code>web</code>, <code>memory</code>, and <code>channel</code>.
 Third-party tool ids such as <code>notion</code>, <code>gmail</code>, <code>calendar</code>, <code>slack</code>, <code>stripe</code>,
@@ -516,6 +516,11 @@ the external service.</p>
 <td><code>packs</code></td>
 <td>list built-in role packs</td>
 <td>M5</td>
+</tr>
+<tr>
+<td><code>tools</code></td>
+<td>list declared tools, tagged REAL (live) or STUB (placeholder)</td>
+<td>RC-05</td>
 </tr>
 <tr>
 <td><code>validate --root &lt;org&gt;</code></td>

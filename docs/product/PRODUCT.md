@@ -7,7 +7,7 @@ into a **complete, governed AI workforce**: an org chart of specialized agents w
 roles, SOPs, goals, shared memory, and a shared channel — running on the LLM provider
 you choose, with durable state and human-approval guardrails built in.
 
-**Version 0.1.0 · Python 3.10+ · Works fully offline · 143 automated tests, zero API keys required**
+**Version 1.0.0 · Python 3.10+ · Works fully offline · 163 automated tests, zero API keys required**
 
 ---
 
@@ -172,7 +172,7 @@ actually review — enforced in code, not in a prompt paragraph.
 
 ### 🎓 Educators & workshop leaders
 Teach multi-agent patterns with zero setup friction: the entire course can run
-offline on the `fake` provider, and 143 automated tests show students what
+offline on the `fake` provider, and 163 automated tests show students what
 production discipline looks like.
 
 ### 🤝 Agencies & consultants
@@ -254,7 +254,7 @@ portable folder — files plus one SQLite database — that the client owns enti
 
 - **Zero-to-demo offline:** `AGENT_FACTORY_PROVIDER=fake` — no keys, no cost,
   deterministic output for tests and CI.
-- **Battle-tested:** 143 automated tests run offline in seconds.
+- **Battle-tested:** 163 automated tests run offline in seconds.
 - **Extensible by design:** add tools to the risk-rated catalog, or graft on
   MCP-style local tool servers via `register_tool_server()` — new tools inherit
   the full grant + risk + approval pipeline automatically.

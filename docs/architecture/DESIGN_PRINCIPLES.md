@@ -20,7 +20,7 @@ into a named, configurable property.
 | "risk tier stays the same, width expands" | **Graded approval** — more autonomy in *breadth*, same approval ceiling for *risky* actions |
 | "interview me → workforce in one prompt" | **Bootstrap** — data-driven org generation from an interview/spec |
 | "build the factory, not the thing" | **Runtime primitives** — role registry, state, queue, eval as reusable layers (M1+) |
-| Goals reviewed quarterly; company stays queryable | **Goal orientation + context capture** — goals doc injected into every role; diary/context flow planned (M2) |
+| Goals reviewed quarterly; company stays queryable | **Goal orientation + context capture** — goals doc injected into every role; diary/context flow implemented (M2, `agent_factory context`) |
 
 ## 2. Guiding rules
 
