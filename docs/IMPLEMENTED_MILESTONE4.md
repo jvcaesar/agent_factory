@@ -55,7 +55,7 @@ Persisted insights start `status='open'`; they can be marked `accepted`/`dismiss
 
 ## 4. Test coverage
 
-Added `tests/test_runtime_insights.py`. Combined suite is now **95 tests,
+Added `tests/test_runtime_insights.py`. At the time of M4 the combined suite was **95 tests,
 all offline / green**:
 
 ```

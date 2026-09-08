@@ -92,7 +92,7 @@ register_tool_server("notion_lite", my_local_server)   # grants of "notion_lite"
 ## 5. Test coverage
 
 Added `tests/test_runtime_channel.py` and `tests/test_runtime_toolservers.py`.
-Combined suite is now **143 tests, all offline / green**:
+At the time of M6 the combined suite was **143 tests, all offline / green**:
 
 ```bash
 python -m unittest discover -s tests

@@ -112,7 +112,7 @@ python -m agent_factory jobs --org orgs/Acme
 ## 8. Test coverage
 
 Added `tests/test_runtime_state.py`, `test_runtime_tools.py`,
-`test_runtime_agent.py`. The current combined suite is **87 tests, all offline / green**:
+`test_runtime_agent.py`. At the time of M1 the combined suite stood at **87 tests, all offline / green**
 
 ```
 python -m unittest discover -s tests

@@ -225,13 +225,18 @@ real (non-`fake`) provider run — with docs that say exactly what the code does
       updated to 163, CHANGELOG also notes the 3 opt-in live-skips.
     - `docs/PRODUCT.md`: "143 offline tests" → "163 offline tests".
   - Historical logs (`DECISION_LOG.md`, `IMPLEMENTED_MILESTONE*.md`,
-    `REVIEW_FIXES.md`) intentionally **not** rewritten — they are point-in-time
-    records ("87 tests pass" was true when written); rewriting history would
-    defeat their purpose.
+    `REVIEW_FIXES.md`): kept as point-in-time records, but in a **second pass**
+    every bare count was qualified so it can't be misread as current —
+    "The current combined suite is 87 tests" → "At the time of M1 the combined
+    suite stood at 87 tests", "Combined suite is now 143 tests" → "At the time
+    of M6 …", DECISION_LOG "113/95 tests pass." → "… passed at M5/M4 time",
+    REVIEW_FIXES "97 tests ran" → "at the time of the review … (suite has since
+    grown — see the README)".
   - **Done when:** ~~stale counts gone from current-facing docs~~ ✅ verified:
-    scanning all tracked `*.md` except the three historical logs returns no
-    `(143|97|95|113|146) tests` hits; README/ARCHITECTURE counts match a fresh
-    suite run (163).
+    scanning all tracked `*.md` returns no bare `(143|97|95|113|146) tests`
+    claims reading as current (remaining hits are explicitly qualified with
+    "at the time of …"); README/ARCHITECTURE counts match a fresh suite run
+    (**Ran 163 tests, OK (skipped=3)**).
 
 - [ ] **RC-09 — Docs HTML regeneration**
   - *Why:* `docs/USER_GUIDE.html` / `docs/PRODUCT.html` are hand-generated

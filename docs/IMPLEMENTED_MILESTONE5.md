@@ -66,7 +66,7 @@ orgs/Eng`), run jobs on it, observe it, etc.
 
 ## 5. Test coverage
 
-Added `tests/test_packs.py`. Combined suite is now **113 tests, all offline /
+Added `tests/test_packs.py`. At the time of M5 the combined suite was **113 tests, all offline /
 green**:
 
 ```

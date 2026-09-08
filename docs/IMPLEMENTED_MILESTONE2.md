@@ -56,7 +56,7 @@ The model responds (to a proactive role) with one JSON object:
 
 ## 5. Test coverage
 
-Added `tests/test_runtime_ambition.py`. The current combined suite is **87 tests,
+Added `tests/test_runtime_ambition.py`. At the time of M2 the combined suite stood at **87 tests,
 all offline / green**:
 
 ```

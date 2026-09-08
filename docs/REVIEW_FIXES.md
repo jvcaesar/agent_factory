@@ -36,6 +36,6 @@ The fixes were validated with the project’s standard unittest discovery comman
 python -m unittest discover -s tests
 ```
 
-Result: 97 tests ran and all passed (`OK`).
+Result: at the time of the review, 97 tests ran and all passed (`OK`). (The suite has since grown — see the README for the current count.)
 
 Filesystem confinement and SSRF protection are covered separately in the project documentation if needed. Other high-severity findings remain outside this review-fix scope.

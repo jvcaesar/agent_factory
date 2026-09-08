@@ -20,7 +20,7 @@ tools). No LLM, no network — so it is fully offline and testable.
 | `src/agent_factory/bootstrap/prompts.py` | Markdown templates: SOP runbooks, goals doc, org README |
 | `src/agent_factory/cli.py` | CLI entry: `bootstrap` (interactive/`--spec`), `validate` |
 | `src/agent_factory/__main__.py` | `python -m agent_factory ...` support |
-| `tests/` | 16 offline tests (stdlib `unittest`) |
+| `tests/` | 16 offline tests at M3 time (stdlib `unittest`); the suite has grown since — see current counts in the README |
 | `orgs/Acme/` | Sample generated org (18 roles) |
 | `tests/fixtures/demo_spec.yaml` | Scripted interview answers driving the demo/test |
 | `pyproject.toml`, `.gitignore`, `README.md`, `LICENSE` | Project scaffolding |
