@@ -316,12 +316,14 @@ real (non-`fake`) provider run — with docs that say exactly what the code does
   - Release body drafted in `RELEASE_BODY_v1.0.0.md` (highlights, what's new, known limitations, install, verify, CI matrix).
   - **Done when:** ~~artifacts built~~ ✅; ~~release body drafted~~ ✅; release page live on GitHub listing the changelog + both artifacts (user action required — see below).
 
-- [ ] **RC-16 — Live end-to-end proof run (record in `docs/QA_1.0.md`)**
+- [x] **RC-16 — Live end-to-end proof run (record in `docs/QA_1.0.md`)**
   - With a real provider (OpenAI key or running Ollama): bootstrap an org from
     the `engineering` pack, then run **four** flows: `run`, `ambition`,
     `brief`, and `channel post → worker → list`. Record samples of the output.
-  - **Done when:** the QA doc contains one page showing all four flows
-    completing with real model output (truncated where long).
+  - **Done when:** ~~the QA doc contains one page showing all four flows
+    completing with real model output (truncated where long)~~ ✅ (2026-09-09,
+    `orgs/QA_RC16`) — run against **both** OpenAI (`gpt-4o-mini`) and Ollama
+    (`gemma3:12b`); see `docs/planning/QA_1.0.md` "RC-16" section.
 
 - [ ] **RC-17 — README status flip**
   - Change the top README Status block to "**Release 1.0** (2026-…)" and point
