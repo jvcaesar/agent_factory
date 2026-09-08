@@ -136,15 +136,17 @@ real (non-`fake`) provider run — with docs that say exactly what the code does
     - **Real bug found by the smoke test:** the adapter's bare default model
       name (`gemma4`) is rejected by the real Ollama server with
       `404 Not Found` on `POST /v1/chat/completions` — Ollama requires the
-      *tagged* id (`gemma4:12b`). The test now resolves the concrete id from
-      `GET /v1/models` (as a user would via `OLLAMA_MODEL`), and the README
-      documents the tagged-id requirement. Consider this when setting
-      `OLLAMA_MODEL` in `.env`.
+      *tagged* id (`gemma4:12b`). **Fixed in the adapter**: `OllamaLLM`
+      lazily resolves bare names to tagged ids via `GET /v1/models`
+      (cached per client, tagged names pass through, listing failure falls
+      back to the configured name). Covered by 7 offline unit tests in
+      `tests/test_llm_ollama.py` (resolution, caching, pass-through,
+      fallbacks, error wrapping, reasoning fallback).
     - Success-path test is written and correct but could not complete in this
       sandbox: local 12B model load+generation exceeds the shell harness's
       process time window (the run is killed mid-test). Run it manually:
-      `AGENT_FACTORY_LIVE_TESTS=1 OLLAMA_MODEL=gemma4:12b python -m unittest
-      discover -s tests/integration -v`.
+      `AGENT_FACTORY_LIVE_TESTS=1 python -m unittest discover
+      -s tests/integration -v` (the adapter now resolves bare names itself).
   - Flag documented in `README.md` (Testing section).
   - **Done when:** ~~normal suite stays green offline~~ ✅ (149 OK, 3 skipped);
     ~~live mode skips with clear reasons~~ ✅; ~~OpenAI live run passes~~ ✅;

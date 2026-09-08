@@ -130,9 +130,10 @@ Set `AGENT_FACTORY_LIVE_TESTS=1` to exercise the *real* adapters:
 # OpenAI: needs OPENAI_API_KEY (honors OPENAI_BASE_URL / OPENAI_MODEL)
 AGENT_FACTORY_LIVE_TESTS=1 py -m unittest discover -s tests/integration -v
 
-# Ollama: needs a local server; OLLAMA_MODEL should be a *pulled, tagged* id
-# (e.g. gemma4:12b — Ollama rejects bare names like `gemma4` with a 404)
-AGENT_FACTORY_LIVE_TESTS=1 OLLAMA_MODEL=gemma4:12b py -m unittest discover -s tests/integration -v
+# Ollama: needs a local server. Bare model names (e.g. `gemma4`) are
+# auto-resolved to their tagged id (`gemma4:12b`) by the adapter — a tagged
+# `OLLAMA_MODEL` works too and skips one lookup.
+AGENT_FACTORY_LIVE_TESTS=1 py -m unittest discover -s tests/integration -v
 ```
 
 Each test skips with a clear reason when its prerequisite is missing.
