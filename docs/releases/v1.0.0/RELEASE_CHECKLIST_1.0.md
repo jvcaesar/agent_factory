@@ -270,7 +270,7 @@ real (non-`fake`) provider run — with docs that say exactly what the code does
   - **Done when:** ~~`SECURITY.md` exists~~ ✅; ~~README links to it~~ ✅; ~~a reviewer
     can explain the security posture in 5 minutes from this file~~ ✅.
 
-- [x] **RC-12 — Error-path QA pass (recorded in `docs/QA_1.0.md`) ✅ (2026-09-08)**
+- [x] **RC-12 — Error-path QA pass (recorded in `docs/releases/v1.0.0/QA_1.0.md`) ✅ (2026-09-08)**
   - All 12 CLI commands × bad input exercised (19 test cases total, including
     subcommands). Every case exits cleanly with a friendly stderr message and
     a non-zero exit code — no tracebacks on handled paths.
@@ -278,7 +278,7 @@ real (non-`fake`) provider run — with docs that say exactly what the code does
     stdin (pipes, CI, redirection) crashed with a raw `EOFError` traceback.
     Now caught in `main()` and surfaces a helpful hint pointing to
     `--pack <id>` / `--spec <file>` for non-interactive use.
-  - QA log: `docs/QA_1.0.md`.
+  - QA log: `docs/releases/v1.0.0/QA_1.0.md`.
   - **Done when:** ~~QA log lists 12 commands × bad input~~ ✅ (19 cases);
     ~~only acceptable tracebacks are genuinely unexpected bugs~~ ✅.
 
@@ -313,17 +313,17 @@ real (non-`fake`) provider run — with docs that say exactly what the code does
 
 - [x] **RC-15 — GitHub release + notes**
   - Artifacts built in `dist/` (from RC-14): `agent_factory-1.0.0-py3-none-any.whl` (67,197 bytes) + `agent_factory-1.0.0.tar.gz` (77,415 bytes).
-  - Release body drafted in `RELEASE_BODY_v1.0.0.md` (highlights, what's new, known limitations, install, verify, CI matrix).
+  - Release body archived in `docs/releases/v1.0.0/GITHUB_RELEASE_BODY.md` (highlights, what's new, known limitations, install, verify, CI matrix).
   - **Done when:** ~~artifacts built~~ ✅; ~~release body drafted~~ ✅; release page live on GitHub listing the changelog + both artifacts (user action required — see below).
 
-- [x] **RC-16 — Live end-to-end proof run (record in `docs/QA_1.0.md`)**
+- [x] **RC-16 — Live end-to-end proof run (record in `docs/releases/v1.0.0/QA_1.0.md`)**
   - With a real provider (OpenAI key or running Ollama): bootstrap an org from
     the `engineering` pack, then run **four** flows: `run`, `ambition`,
     `brief`, and `channel post → worker → list`. Record samples of the output.
   - **Done when:** ~~the QA doc contains one page showing all four flows
     completing with real model output (truncated where long)~~ ✅ (2026-09-09,
     `orgs/QA_RC16`) — run against **both** OpenAI (`gpt-4o-mini`) and Ollama
-    (`gemma3:12b`); see `docs/planning/QA_1.0.md` "RC-16" section.
+    (`gemma3:12b`); see `docs/releases/v1.0.0/QA_1.0.md` "RC-16" section.
 
 - [x] **RC-17 — README status flip**
   - Change the top README Status block to "**Release 1.0** (2026-…)" and point

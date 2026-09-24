@@ -1,6 +1,7 @@
-# Agent Factory — Project Plan
+# Agent Factory — Foundation Project Plan
 
-> **Status:** Milestones 1–6 complete; external integrations and PostgreSQL remain future work · **Working directory:** `c:\MyCodeJunk\LearningAi\AI-agents\agent_factory`
+> **Status:** Complete. Milestones 1-6 form the Release 1.0 foundation.
+> **Current work:** See [CURRENT.md](CURRENT.md) and the [Release 2.0 workspace](../releases/v2.0/README.md).
 > **Origin:** Greg Isenberg × Alli K. Miller video, *"My top secrets to running an AI Agent Workforce"* — used as a source of *patterns*, not a blueprint to copy.
 
 ## 1. Goal
@@ -49,7 +50,7 @@ agent_factory/
 | M5 | **Role packs** | specialized orgs from the same engine | ✅ implemented |
 | M6 | **Multiplayer & tool surface** | shared channel, local tools, MCP-style servers, risk-aware approvals | ✅ implemented |
 
-## 5. Current state and next work
+## 5. Completed foundation
 
 The milestone scope is complete through M6. The project currently provides:
 
@@ -60,13 +61,9 @@ The milestone scope is complete through M6. The project currently provides:
 5. Proactive ambition, observer, daily brief, mission-control, and shared-channel flows.
 6. Local files/web/memory/channel tools plus an MCP-style registration seam.
 
-The next work is product hardening rather than another declared milestone:
-
-- replace the third-party tool stubs with live adapters;
-- add the deferred Anthropic provider;
-- add a PostgreSQL-backed store for multi-process or hosted deployments;
-- refresh generated HTML documentation when the Markdown guides change;
-- add integration tests for live providers and external services.
+The active implementation stage and next task are maintained in
+[CURRENT.md](CURRENT.md). Future intent beyond the active release is maintained
+in [ROADMAP.md](ROADMAP.md).
 
 ## 6. Acceptance criteria for M3 (all met)
 
@@ -87,4 +84,4 @@ The complete milestone details are recorded in `IMPLEMENTED_MILESTONE1.md`
 through `IMPLEMENTED_MILESTONE6.md`, and the command-level workflow is in
 `USER_GUIDE.md`.
 
-See [DECISION_LOG.md](./DECISION_LOG.md) for the running decision record.
+See [DECISION_LOG.md](../architecture/DECISION_LOG.md) for the running decision record.

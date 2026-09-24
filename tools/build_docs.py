@@ -1,10 +1,8 @@
 #!/usr/bin/env python
 """Regenerate the HTML docs from their Markdown sources.
 
-Rebuilds docs/product/PRODUCT.html and docs/product/USER_GUIDE.html (and any
-future ``*.md`` paired with a ``*.html``, anywhere under docs/) from the
-matching Markdown source, so the rendered HTML can never silently drift from
-the canonical Markdown.
+Rebuilds the explicitly registered generated documents so a missing output
+cannot silently disappear from the freshness check.
 
 Run with:
 
@@ -25,6 +23,11 @@ import sys
 from pathlib import Path
 
 DOCS = Path(__file__).resolve().parent.parent / "docs"
+
+GENERATED_DOCS = (
+    (DOCS / "product" / "PRODUCT.md", DOCS / "product" / "PRODUCT.html"),
+    (DOCS / "product" / "USER_GUIDE.md", DOCS / "product" / "USER_GUIDE.html"),
+)
 
 # Footer links, resolved relative to each generated file's own directory
 # (docs have moved into topic subfolders — the shared shell can't hardcode
@@ -199,11 +202,8 @@ def build_one(md_path: Path, html_path: Path) -> str:
 
 
 def targets():
-    """Yield (md, html) pairs for every Markdown that has a matching HTML."""
-    for md in sorted(DOCS.rglob("*.md")):
-        html = md.with_suffix(".html")
-        if html.exists():
-            yield md, html
+    """Yield the registered Markdown and generated HTML pairs."""
+    yield from GENERATED_DOCS
 
 
 def main() -> int:
@@ -216,25 +216,25 @@ def main() -> int:
     args = parser.parse_args()
 
     dirty = []
-    for md, html in targets():
-        rendered = build_one(md, html)
-        existing = html.read_text(encoding="utf-8") if html.exists() else ""
+    for md, html_path in targets():
+        rendered = build_one(md, html_path)
+        existing = html_path.read_text(encoding="utf-8") if html_path.exists() else ""
         if rendered == existing:
-            print(f"ok        {html.name}")
+            print(f"ok        {html_path.name}")
             continue
-        dirty.append(html.name)
+        dirty.append(html_path.name)
         if args.check:
             diff = difflib.unified_diff(
                 existing.splitlines(),
                 rendered.splitlines(),
-                fromfile=f"{html.name} (on disk)",
-                tofile=f"{html.name} (rebuilt)",
+                fromfile=f"{html_path.name} (on disk)",
+                tofile=f"{html_path.name} (rebuilt)",
                 lineterm="",
             )
             print("\n".join(diff[:40]))
         else:
-            html.write_text(rendered, encoding="utf-8")
-            print(f"rebuilt   {html.name}")
+            html_path.write_text(rendered, encoding="utf-8")
+            print(f"rebuilt   {html_path.name}")
 
     if dirty:
         if args.check:

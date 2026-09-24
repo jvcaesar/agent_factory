@@ -1,0 +1,444 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#17191b">
+<title>Agent Factory - Alloy Console Design System</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700&amp;family=DM+Mono:wght@400;500&amp;family=IBM+Plex+Mono:wght@400;500&amp;family=JetBrains+Mono:wght@400;500&amp;family=Manrope:wght@400;500;600;700&amp;family=Newsreader:opsz,wght@6..72,500;6..72,600&amp;family=Public+Sans:wght@400;500;600;700&amp;family=Sora:wght@400;500;600;700&amp;family=Space+Grotesk:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<script src="https://unpkg.com/lucide@0.468.0/dist/umd/lucide.min.js"></script>
+<style>
+:root {
+    --page: #151719;
+    --page-ink: #f4f5f6;
+    --page-muted: #9da3aa;
+    --page-line: #303438;
+    --accent: #eaa115;
+    --surface: #f4f5f6;
+    --surface-2: #ffffff;
+    --surface-3: #e9ebed;
+    --ink: #1e2022;
+    --muted: #667085;
+    --line: #d7dadd;
+    --good: #19715c;
+    --warn: #b86f00;
+    --danger: #c43d32;
+    --info: #2864dc;
+    --radius: 5px;
+    --font: "Archivo", sans-serif;
+    --mono: "IBM Plex Mono", monospace;
+    --shadow: 0 18px 48px rgba(0, 0, 0, .24);
+    --rail: #1e2022;
+    --rail-ink: #f4f5f6;
+    --rail-muted: #aeb4bc;
+}
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body {
+    margin: 0;
+    color: var(--page-ink);
+    background-color: var(--page);
+    background-image:
+        linear-gradient(var(--page-line) 1px, transparent 1px),
+        linear-gradient(90deg, var(--page-line) 1px, transparent 1px);
+    background-size: 64px 64px;
+    font-family: "Archivo", sans-serif;
+    line-height: 1.5;
+}
+button { font: inherit; }
+.page-shell { width: min(1540px, calc(100% - 48px)); margin: 0 auto; padding: 44px 0 80px; }
+.intro { display: grid; grid-template-columns: minmax(0, 1fr) minmax(280px, 460px); gap: 56px; align-items: end; }
+.kicker { color: #f0b53f; font: 600 11px/1.2 "IBM Plex Mono", monospace; text-transform: uppercase; letter-spacing: .12em; }
+h1 { max-width: 760px; margin: 14px 0 16px; font-size: clamp(36px, 5vw, 72px); line-height: .98; letter-spacing: 0; }
+.intro p { max-width: 650px; margin: 0; color: var(--page-muted); font-size: 16px; }
+.recommendation { border-left: 3px solid var(--accent); padding: 4px 0 4px 18px; color: #d6d9dc; }
+.recommendation strong { display: block; color: #fff; margin-bottom: 4px; }
+.option-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 12px; margin: 38px 0 28px; }
+.option-card {
+    min-width: 0; padding: 0; overflow: hidden; color: var(--page-ink); text-align: left; cursor: pointer;
+    background: #1d2023; border: 1px solid #373b3f; border-radius: 7px; transition: transform 160ms ease, border-color 160ms ease, background 160ms ease;
+}
+.option-card:hover { transform: translateY(-3px); border-color: #656b72; }
+.option-card[aria-selected="true"] { border-color: var(--choice-accent); background: #25282b; box-shadow: inset 0 -3px var(--choice-accent); }
+.mini-ui { height: 94px; display: grid; grid-template-columns: 25% 1fr; background: var(--choice-bg); border-bottom: 1px solid #373b3f; }
+.mini-rail { background: var(--choice-rail); padding: 12px 8px; }
+.mini-logo { width: 17px; height: 17px; margin-bottom: 15px; border: 2px solid var(--choice-accent); }
+.mini-line { width: 100%; height: 3px; margin: 7px 0; background: var(--choice-muted); opacity: .55; }
+.mini-main { padding: 12px 10px; }
+.mini-head { width: 45%; height: 6px; margin-bottom: 11px; background: var(--choice-ink); }
+.mini-metrics { display: grid; grid-template-columns: repeat(3, 1fr); gap: 5px; }
+.mini-metric { height: 25px; border: 1px solid var(--choice-line); background: var(--choice-card); }
+.mini-table { height: 18px; margin-top: 6px; border: 1px solid var(--choice-line); background: var(--choice-card); }
+.option-copy { padding: 12px; }
+.option-number { color: var(--choice-accent); font: 500 10px/1 var(--choice-mono); }
+.option-name { display: block; margin: 5px 0 2px; font: 600 14px/1.2 var(--choice-font); }
+.option-note { display: block; overflow: hidden; color: #9299a1; font-size: 11px; white-space: nowrap; text-overflow: ellipsis; }
+.stage-head { display: flex; align-items: end; justify-content: space-between; gap: 24px; margin: 42px 0 14px; }
+.stage-head h2 { margin: 0; font-size: 22px; letter-spacing: 0; }
+.stage-head p { margin: 5px 0 0; color: var(--page-muted); font-size: 13px; }
+.stage-actions { display: flex; gap: 8px; }
+.stage-button { display: inline-flex; align-items: center; gap: 7px; min-height: 36px; padding: 0 12px; color: #dfe2e5; background: #222529; border: 1px solid #3b4045; border-radius: 5px; cursor: pointer; }
+.stage-button:hover { border-color: #6e757c; color: #fff; }
+.stage-button svg { width: 15px; height: 15px; }
+.mode-switch { display: inline-grid; grid-template-columns: 1fr 1fr; padding: 3px; background: #202327; border: 1px solid #3b4045; border-radius: 7px; }
+.mode-button { min-width: 92px; min-height: 34px; display: inline-flex; align-items: center; justify-content: center; gap: 7px; padding: 0 12px; color: #929aa2; background: transparent; border: 0; border-radius: 4px; cursor: pointer; font-size: 12px; }
+.mode-button:hover { color: #fff; }
+.mode-button[aria-pressed="true"] { color: #151719; background: #f2ad3d; }
+.mode-button svg { width: 14px; height: 14px; }
+.browser { overflow: hidden; color: var(--ink); background: var(--surface); border: 1px solid #41464b; border-radius: 8px; box-shadow: var(--shadow); transition: background 220ms ease, color 220ms ease; }
+.browser-bar { height: 38px; display: flex; align-items: center; gap: 7px; padding: 0 13px; color: #8f969d; background: #202327; border-bottom: 1px solid #373b40; }
+.browser-dot { width: 8px; height: 8px; border-radius: 50%; background: #555b61; }
+.browser-dot:first-child { background: #d26054; }
+.browser-dot:nth-child(2) { background: #d7a640; }
+.browser-dot:nth-child(3) { background: #4c9a72; }
+.address { width: min(360px, 42%); height: 22px; margin-left: 9px; display: flex; align-items: center; padding: 0 10px; background: #17191c; border: 1px solid #34383c; border-radius: 4px; font: 400 10px/1 var(--mono); }
+.console { min-height: 720px; display: grid; grid-template-columns: 228px minmax(0, 1fr); font-family: var(--font); }
+.rail { display: flex; flex-direction: column; padding: 18px 12px 14px; color: var(--rail-ink); background: var(--rail); border-right: 1px solid var(--line); }
+.console-brand { display: flex; align-items: center; gap: 10px; min-height: 38px; padding: 0 8px 16px; border-bottom: 1px solid color-mix(in srgb, var(--rail-ink) 16%, transparent); font-weight: 700; }
+.factory-mark { width: 27px; height: 27px; position: relative; flex: 0 0 auto; color: var(--accent); border: 2px solid currentColor; }
+.factory-mark::before { content: ""; position: absolute; width: 9px; height: 9px; right: -5px; bottom: -5px; background: var(--accent); }
+.console-brand span:last-child { font-size: 12px; letter-spacing: .03em; }
+.org-switch { display: flex; align-items: center; justify-content: space-between; margin: 14px 4px 13px; padding: 9px 10px; color: var(--rail-ink); background: color-mix(in srgb, var(--rail-ink) 8%, transparent); border: 1px solid color-mix(in srgb, var(--rail-ink) 15%, transparent); border-radius: var(--radius); font-size: 12px; }
+.org-switch svg { width: 14px; }
+.nav-label { margin: 13px 10px 6px; color: var(--rail-muted); font: 500 9px/1 var(--mono); text-transform: uppercase; letter-spacing: .1em; }
+.nav-item { display: flex; align-items: center; gap: 10px; min-height: 34px; padding: 0 10px; color: var(--rail-muted); border-radius: var(--radius); font-size: 12px; }
+.nav-item svg { width: 15px; height: 15px; }
+.nav-item.active { color: var(--rail-ink); background: color-mix(in srgb, var(--accent) 18%, transparent); box-shadow: inset 2px 0 var(--accent); }
+.nav-badge { min-width: 19px; margin-left: auto; padding: 2px 5px; color: var(--rail); background: var(--accent); border-radius: 999px; font: 500 9px/1.2 var(--mono); text-align: center; }
+.rail-foot { margin-top: auto; padding: 12px 10px 2px; border-top: 1px solid color-mix(in srgb, var(--rail-ink) 14%, transparent); color: var(--rail-muted); font: 400 10px/1.4 var(--mono); }
+.rail-foot strong { display: flex; align-items: center; gap: 7px; color: var(--rail-ink); font-weight: 500; }
+.live-dot { width: 7px; height: 7px; display: inline-block; border-radius: 50%; background: var(--good); box-shadow: 0 0 0 4px color-mix(in srgb, var(--good) 18%, transparent); animation: pulse 2.2s ease-in-out infinite; }
+.workspace { min-width: 0; background: var(--surface); }
+.topbar { min-height: 58px; display: flex; align-items: center; gap: 13px; padding: 0 22px; background: var(--surface-2); border-bottom: 1px solid var(--line); }
+.mobile-menu { display: none; }
+.breadcrumb { color: var(--muted); font-size: 12px; }
+.breadcrumb strong { color: var(--ink); font-weight: 600; }
+.topbar-spacer { flex: 1; }
+.icon-button { width: 32px; height: 32px; display: grid; place-items: center; padding: 0; color: var(--muted); background: transparent; border: 1px solid transparent; border-radius: var(--radius); cursor: pointer; }
+.icon-button:hover { color: var(--ink); border-color: var(--line); background: var(--surface-3); }
+.icon-button svg { width: 16px; }
+.command-hint { display: flex; align-items: center; gap: 8px; height: 32px; padding: 0 10px; color: var(--muted); background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); font-size: 11px; }
+.command-hint svg { width: 14px; }
+.command-hint kbd { padding: 2px 5px; color: var(--muted); background: var(--surface-2); border: 1px solid var(--line); border-radius: 3px; font: 500 9px/1 var(--mono); }
+.content { padding: 25px 26px 32px; }
+.title-row { display: flex; justify-content: space-between; gap: 24px; align-items: start; }
+.eyebrow { margin-bottom: 5px; color: var(--accent); font: 500 9px/1.3 var(--mono); text-transform: uppercase; letter-spacing: .1em; }
+.title-row h3 { margin: 0; color: var(--ink); font-size: 24px; line-height: 1.15; letter-spacing: 0; }
+.title-row p { margin: 6px 0 0; color: var(--muted); font-size: 12px; }
+.primary-action { display: inline-flex; align-items: center; gap: 8px; min-height: 36px; padding: 0 13px; color: var(--surface-2); background: var(--ink); border: 1px solid var(--ink); border-radius: var(--radius); cursor: pointer; font-size: 11px; font-weight: 600; }
+.primary-action:hover { color: var(--rail); background: var(--accent); border-color: var(--accent); transform: translateY(-1px); }
+.primary-action svg { width: 14px; }
+.primary-action.running svg { animation: spin 1s linear infinite; }
+.metrics { display: grid; grid-template-columns: repeat(4, 1fr); margin: 23px 0 20px; border: 1px solid var(--line); border-radius: var(--radius); overflow: hidden; }
+.metric { min-width: 0; padding: 15px 16px; background: var(--surface-2); border-right: 1px solid var(--line); }
+.metric:last-child { border-right: 0; }
+.metric-label { display: flex; justify-content: space-between; gap: 8px; color: var(--muted); font-size: 10px; }
+.metric-label svg { width: 13px; }
+.metric-value { margin: 6px 0 2px; font-size: 23px; font-weight: 600; font-variant-numeric: tabular-nums; }
+.metric-delta { color: var(--good); font: 400 9px/1.3 var(--mono); }
+.metric-delta.warn { color: var(--warn); }
+.main-grid { display: grid; grid-template-columns: minmax(0, 1.55fr) minmax(260px, .8fr); gap: 18px; }
+.section { min-width: 0; }
+.section-head { min-height: 36px; display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.section-head h4 { margin: 0; color: var(--ink); font-size: 12px; font-weight: 600; }
+.section-head a { color: var(--info); font-size: 10px; text-decoration: none; }
+.table-wrap { overflow: hidden; background: var(--surface-2); border: 1px solid var(--line); border-radius: var(--radius); }
+.jobs { width: 100%; border-collapse: collapse; table-layout: fixed; }
+.jobs th { padding: 9px 12px; color: var(--muted); background: var(--surface-3); border-bottom: 1px solid var(--line); font: 500 8px/1.2 var(--mono); text-align: left; text-transform: uppercase; letter-spacing: .07em; }
+.jobs td { padding: 11px 12px; color: var(--muted); border-bottom: 1px solid var(--line); font-size: 10px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.jobs tr:last-child td { border-bottom: 0; }
+.jobs tbody tr { transition: background 140ms ease; }
+.jobs tbody tr:hover { background: color-mix(in srgb, var(--accent) 7%, var(--surface-2)); }
+.job-name { color: var(--ink); font-weight: 600; }
+.mono { font-family: var(--mono); }
+.status { display: inline-flex; align-items: center; gap: 5px; padding: 3px 6px; color: var(--muted); background: var(--surface-3); border: 1px solid var(--line); border-radius: 999px; font: 500 8px/1 var(--mono); }
+.status::before { content: ""; width: 5px; height: 5px; border-radius: 50%; background: currentColor; }
+.status.running { color: var(--info); }
+.status.done { color: var(--good); }
+.activity { margin-top: 18px; }
+.event-list { background: var(--surface-2); border: 1px solid var(--line); border-radius: var(--radius); }
+.event { position: relative; display: grid; grid-template-columns: 24px minmax(0, 1fr) auto; gap: 9px; padding: 11px 12px; border-bottom: 1px solid var(--line); }
+.event:last-child { border-bottom: 0; }
+.event-icon { width: 23px; height: 23px; display: grid; place-items: center; color: var(--info); background: color-mix(in srgb, var(--info) 10%, var(--surface-2)); border-radius: 50%; }
+.event-icon svg { width: 12px; }
+.event-title { color: var(--ink); font-size: 10px; font-weight: 600; }
+.event-copy, .event-time { color: var(--muted); font-size: 9px; }
+.event-time { font-family: var(--mono); white-space: nowrap; }
+.approval { overflow: hidden; background: var(--surface-2); border: 1px solid var(--line); border-top: 3px solid var(--warn); border-radius: var(--radius); }
+.approval-body { padding: 15px; }
+.approval-label { display: flex; align-items: center; gap: 6px; color: var(--warn); font: 500 9px/1.3 var(--mono); text-transform: uppercase; }
+.approval-label svg { width: 13px; }
+.approval h5 { margin: 9px 0 6px; color: var(--ink); font-size: 13px; }
+.approval p { margin: 0; color: var(--muted); font-size: 10px; line-height: 1.55; }
+.code-line { margin: 12px 0; padding: 9px; color: var(--ink); background: var(--surface-3); border: 1px solid var(--line); border-radius: calc(var(--radius) - 1px); font: 400 9px/1.4 var(--mono); overflow: hidden; text-overflow: ellipsis; }
+.approval-meta { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 11px; }
+.meta-item { padding: 8px; background: var(--surface); border: 1px solid var(--line); }
+.meta-item span { display: block; color: var(--muted); font-size: 8px; }
+.meta-item strong { display: block; margin-top: 2px; color: var(--ink); font: 500 9px/1.2 var(--mono); }
+.approval-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; padding: 10px 15px 15px; }
+.decision { min-height: 32px; color: var(--ink); background: transparent; border: 1px solid var(--line); border-radius: var(--radius); cursor: pointer; font-size: 10px; font-weight: 600; }
+.decision:hover { border-color: var(--ink); }
+.decision.approve { color: var(--surface-2); background: var(--good); border-color: var(--good); }
+.decision.approve:hover { filter: brightness(.92); }
+.approval.resolved { border-top-color: var(--good); animation: resolve 420ms ease both; }
+.approval.resolved .approval-body, .approval.resolved .approval-actions { display: none; }
+.resolution { display: none; min-height: 180px; place-items: center; padding: 24px; color: var(--good); text-align: center; }
+.approval.resolved .resolution { display: grid; }
+.resolution svg { width: 28px; margin: 0 auto 8px; }
+.resolution strong { display: block; color: var(--ink); font-size: 12px; }
+.insight { margin-top: 16px; padding: 14px; background: color-mix(in srgb, var(--info) 6%, var(--surface-2)); border: 1px solid color-mix(in srgb, var(--info) 28%, var(--line)); border-radius: var(--radius); }
+.insight-top { display: flex; align-items: center; gap: 7px; color: var(--info); font: 500 9px/1 var(--mono); text-transform: uppercase; }
+.insight-top svg { width: 13px; }
+.insight p { margin: 8px 0 0; color: var(--ink); font-size: 10px; line-height: 1.5; }
+.system-notes { display: grid; grid-template-columns: 1.15fr .85fr; gap: 14px; margin-top: 16px; }
+.system-panel { padding: 17px; color: var(--page-muted); background: #1d2023; border: 1px solid #373b3f; border-radius: 6px; }
+.system-panel h3 { margin: 0 0 10px; color: #f1f3f4; font-size: 13px; }
+.palette { display: flex; min-height: 48px; overflow: hidden; border: 1px solid #40454a; border-radius: 4px; }
+.swatch { flex: 1; position: relative; background: var(--swatch); }
+.swatch span { position: absolute; inset: auto 6px 5px; color: var(--label); font: 500 8px/1 var(--mono); }
+.type-sample { display: grid; grid-template-columns: 1fr auto; gap: 18px; align-items: center; }
+.type-sample strong { display: block; color: #f1f3f4; font: 600 20px/1.2 var(--font); }
+.type-sample span { color: #9ca3aa; font: 400 10px/1.4 var(--mono); }
+.tags { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 12px; }
+.tag { padding: 4px 7px; color: #b8bec4; border: 1px solid #454a50; border-radius: 999px; font-size: 9px; }
+.footer-note { display: flex; justify-content: space-between; gap: 30px; margin-top: 28px; padding-top: 18px; color: #888f96; border-top: 1px solid #34383d; font-size: 11px; }
+.footer-note a { color: #d7a73d; }
+
+body[data-theme="ledger"] {
+    --accent: #315fd6; --surface: #fafaf8; --surface-2: #ffffff; --surface-3: #f0f1ef;
+    --ink: #171a1f; --muted: #626a75; --line: #d9dcdf; --good: #158064; --warn: #a86600;
+    --danger: #c84536; --info: #315fd6; --radius: 3px; --font: "Manrope", sans-serif;
+    --mono: "JetBrains Mono", monospace; --rail: #f1f2f0; --rail-ink: #171a1f; --rail-muted: #66707a;
+    --shadow: 0 20px 55px rgba(0, 0, 0, .2);
+}
+body[data-theme="ledger"] .factory-mark { transform: rotate(45deg); }
+body[data-theme="ledger"] .factory-mark::before { transform: rotate(-45deg); }
+body[data-theme="human"] {
+    --accent: #d99a24; --surface: #f7f5f0; --surface-2: #fffefa; --surface-3: #eeece5;
+    --ink: #252724; --muted: #676b65; --line: #d8d4c9; --good: #47705b; --warn: #a46712;
+    --danger: #b84a3c; --info: #3f72a8; --radius: 7px; --font: "Public Sans", sans-serif;
+    --mono: "IBM Plex Mono", monospace; --rail: #2a342e; --rail-ink: #f7f5f0; --rail-muted: #bbc3bb;
+    --shadow: 0 22px 60px rgba(24, 30, 26, .22);
+}
+body[data-theme="human"] .title-row h3 { font-family: "Newsreader", serif; font-size: 28px; }
+body[data-theme="blueprint"] {
+    --accent: #e87824; --surface: #f8fafc; --surface-2: #ffffff; --surface-3: #eef3f9;
+    --ink: #162033; --muted: #607087; --line: #cbd7e6; --good: #16806c; --warn: #bc5a13;
+    --danger: #c93f49; --info: #174ea6; --radius: 1px; --font: "Space Grotesk", sans-serif;
+    --mono: "IBM Plex Mono", monospace; --rail: #174ea6; --rail-ink: #ffffff; --rail-muted: #bfcef0;
+    --shadow: 8px 8px 0 rgba(11, 43, 91, .25);
+}
+body[data-theme="blueprint"] .workspace {
+    background-image: linear-gradient(#dfe8f3 1px, transparent 1px), linear-gradient(90deg, #dfe8f3 1px, transparent 1px);
+    background-size: 24px 24px;
+}
+body[data-theme="night"] {
+    --accent: #f2ad3d; --surface: #151719; --surface-2: #1d2023; --surface-3: #252a2e;
+    --ink: #f2f1ec; --muted: #9ba3aa; --line: #353b40; --good: #5ac7a7; --warn: #f2ad3d;
+    --danger: #ef6a5b; --info: #6ea2ff; --radius: 6px; --font: "Sora", sans-serif;
+    --mono: "DM Mono", monospace; --rail: #101214; --rail-ink: #f2f1ec; --rail-muted: #8f979e;
+    --shadow: 0 24px 70px rgba(0, 0, 0, .42);
+}
+body[data-theme="night"][data-mode="light"] {
+    --accent: #d48a12; --surface: #f3f5f6; --surface-2: #ffffff; --surface-3: #e8ecee;
+    --ink: #191c1f; --muted: #626b72; --line: #d5dade; --good: #247e69; --warn: #ad6d08;
+    --danger: #c64f45; --info: #356fcb; --rail: #191c1f; --rail-ink: #f5f6f3; --rail-muted: #aeb5ba;
+    --shadow: 0 24px 60px rgba(28, 34, 38, .2);
+}
+@keyframes pulse { 50% { opacity: .55; box-shadow: 0 0 0 7px color-mix(in srgb, var(--good) 4%, transparent); } }
+@keyframes spin { to { transform: rotate(360deg); } }
+@keyframes resolve { 50% { transform: scale(.985); } }
+@media (max-width: 1120px) {
+    .option-grid { grid-template-columns: repeat(3, 1fr); }
+    .console { grid-template-columns: 196px minmax(0, 1fr); }
+    .metrics { grid-template-columns: repeat(2, 1fr); }
+    .metric:nth-child(2) { border-right: 0; }
+    .metric:nth-child(-n+2) { border-bottom: 1px solid var(--line); }
+}
+@media (max-width: 800px) {
+    .page-shell { width: min(100% - 24px, 620px); padding-top: 28px; }
+    .intro { grid-template-columns: 1fr; gap: 22px; }
+    .option-grid { grid-template-columns: 1fr 1fr; }
+    .stage-head { align-items: start; flex-direction: column; }
+    .browser-bar { display: none; }
+    .console { min-height: 760px; grid-template-columns: 1fr; }
+    .rail { display: none; }
+    .mobile-menu { display: grid; }
+    .command-hint { display: none; }
+    .content { padding: 20px 15px 28px; }
+    .title-row { align-items: stretch; flex-direction: column; }
+    .primary-action { align-self: start; }
+    .main-grid, .system-notes { grid-template-columns: 1fr; }
+    .jobs th:nth-child(3), .jobs td:nth-child(3), .jobs th:nth-child(4), .jobs td:nth-child(4) { display: none; }
+    .footer-note { flex-direction: column; gap: 7px; }
+}
+@media (max-width: 480px) {
+    .option-grid { grid-template-columns: 1fr; }
+    .mini-ui { display: none; }
+    .metrics { grid-template-columns: 1fr 1fr; }
+    .topbar { padding: 0 12px; }
+    .breadcrumb { overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+}
+@media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { scroll-behavior: auto !important; animation: none !important; transition: none !important; }
+}
+</style>
+</head>
+<body data-theme="night" data-mode="dark">
+<main class="page-shell">
+    <section class="intro">
+        <div>
+            <div class="kicker">Agent Factory / Selected identity</div>
+            <h1>Alloy, built for mission control.</h1>
+            <p>A focused operational system for managing human and agent work. Dark is the signature experience; light preserves the same geometry, hierarchy, and signal colors for brighter environments.</p>
+        </div>
+        <div class="recommendation"><strong>Alloy design language</strong>Graphite structure, warm amber actions, mint success, blue information, and coral risk. Sora keeps the interface modern; DM Mono makes machine state easy to scan.</div>
+    </section>
+
+    <div class="stage-head">
+        <div><h2 id="direction-title">Alloy Night</h2><p id="direction-summary">A focused real-time command center with luminous state signals and a cinematic edge.</p></div>
+        <div class="mode-switch" role="group" aria-label="Color theme">
+            <button class="mode-button" type="button" data-mode-choice="dark" aria-pressed="true"><i data-lucide="moon"></i>Dark</button>
+            <button class="mode-button" type="button" data-mode-choice="light" aria-pressed="false"><i data-lucide="sun"></i>Light</button>
+        </div>
+    </div>
+
+    <section class="browser" aria-label="Interactive web console preview">
+        <div class="browser-bar"><span class="browser-dot"></span><span class="browser-dot"></span><span class="browser-dot"></span><span class="address">127.0.0.1:8787/orgs/acme/overview</span></div>
+        <div class="console">
+            <aside class="rail">
+                <div class="console-brand"><span class="factory-mark"></span><span>AGENT FACTORY</span></div>
+                <div class="org-switch"><span>Acme Operations</span><i data-lucide="chevrons-up-down"></i></div>
+                <div class="nav-label">Command</div>
+                <div class="nav-item active"><i data-lucide="layout-dashboard"></i>Overview</div>
+                <div class="nav-item"><i data-lucide="network"></i>Workforce</div>
+                <div class="nav-item"><i data-lucide="list-checks"></i>Jobs <span class="nav-badge">6</span></div>
+                <div class="nav-item"><i data-lucide="radio"></i>Operations</div>
+                <div class="nav-label">Intelligence</div>
+                <div class="nav-item"><i data-lucide="messages-square"></i>Channel</div>
+                <div class="nav-item"><i data-lucide="lightbulb"></i>Insights</div>
+                <div class="nav-item"><i data-lucide="database"></i>Context</div>
+                <div class="nav-label">Governance</div>
+                <div class="nav-item"><i data-lucide="shield-check"></i>Approvals <span class="nav-badge">2</span></div>
+                <div class="nav-item"><i data-lucide="settings-2"></i>Settings</div>
+                <div class="rail-foot"><strong><span class="live-dot"></span>Runtime connected</strong>local / fake provider</div>
+            </aside>
+            <div class="workspace">
+                <header class="topbar">
+                    <button class="icon-button mobile-menu" type="button" aria-label="Open navigation"><i data-lucide="menu"></i></button>
+                    <div class="breadcrumb">Organizations&nbsp; / &nbsp;<strong>Acme Operations</strong></div>
+                    <div class="topbar-spacer"></div>
+                    <div class="command-hint"><i data-lucide="search"></i>Find anything <kbd>Ctrl K</kbd></div>
+                    <button class="icon-button" type="button" aria-label="Notifications"><i data-lucide="bell"></i></button>
+                    <button class="icon-button" type="button" aria-label="Help"><i data-lucide="circle-help"></i></button>
+                </header>
+                <div class="content">
+                    <div class="title-row">
+                        <div><div class="eyebrow">Thursday / Mission control</div><h3>Good morning, Jordan.</h3><p>Your workforce is active. Two decisions need your attention.</p></div>
+                        <button class="primary-action" id="run-brief" type="button"><i data-lucide="sparkles"></i><span>Run morning brief</span></button>
+                    </div>
+                    <div class="metrics">
+                        <div class="metric"><div class="metric-label">Active roles <i data-lucide="users"></i></div><div class="metric-value">18</div><div class="metric-delta">+2 this quarter</div></div>
+                        <div class="metric"><div class="metric-label">Jobs today <i data-lucide="list-checks"></i></div><div class="metric-value">24</div><div class="metric-delta">17 completed</div></div>
+                        <div class="metric"><div class="metric-label">Open insights <i data-lucide="lightbulb"></i></div><div class="metric-value">7</div><div class="metric-delta warn">3 need review</div></div>
+                        <div class="metric"><div class="metric-label">Pending approvals <i data-lucide="shield-alert"></i></div><div class="metric-value">2</div><div class="metric-delta warn">oldest 11 min</div></div>
+                    </div>
+                    <div class="main-grid">
+                        <div class="section">
+                            <div class="section-head"><h4>Recent jobs</h4><a href="#jobs">View ledger</a></div>
+                            <div class="table-wrap" id="jobs">
+                                <table class="jobs">
+                                    <thead><tr><th style="width:38%">Work</th><th style="width:19%">Status</th><th style="width:22%">Role</th><th>Started</th></tr></thead>
+                                    <tbody>
+                                        <tr><td class="job-name">Synthesize customer signals</td><td><span class="status running">Running</span></td><td>Research lead</td><td class="mono">09:41</td></tr>
+                                        <tr><td class="job-name">Review onboarding friction</td><td><span class="status done">Complete</span></td><td>Observer</td><td class="mono">09:18</td></tr>
+                                        <tr><td class="job-name">Draft Q4 outreach sequence</td><td><span class="status done">Complete</span></td><td>Growth ops</td><td class="mono">08:52</td></tr>
+                                        <tr><td class="job-name">Audit stale context records</td><td><span class="status">Queued</span></td><td>Chief of staff</td><td class="mono">08:46</td></tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                            <div class="activity">
+                                <div class="section-head"><h4>Live activity</h4><a href="#stream">Open stream</a></div>
+                                <div class="event-list" id="stream">
+                                    <div class="event"><span class="event-icon"><i data-lucide="file-check-2"></i></span><span><span class="event-title">Research synthesis completed</span><br><span class="event-copy">12 findings saved to shared context</span></span><span class="event-time">now</span></div>
+                                    <div class="event"><span class="event-icon"><i data-lucide="message-square-more"></i></span><span><span class="event-title">Lead posted in #general</span><br><span class="event-copy">Morning priorities are ready for review</span></span><span class="event-time">2m</span></div>
+                                    <div class="event"><span class="event-icon"><i data-lucide="shield-question"></i></span><span><span class="event-title">Tool call awaiting approval</span><br><span class="event-copy">Growth ops requested write access</span></span><span class="event-time">11m</span></div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="section">
+                            <div class="section-head"><h4>Approval inbox</h4><a href="#approvals">2 pending</a></div>
+                            <div class="approval" id="approvals">
+                                <div class="approval-body">
+                                    <div class="approval-label"><i data-lucide="shield-alert"></i>Medium risk / review</div>
+                                    <h5>Write campaign brief</h5>
+                                    <p>Growth ops wants to create a new brief inside the confined organization workspace.</p>
+                                    <div class="code-line">write_file("campaigns/q4-brief.md")</div>
+                                    <div class="approval-meta"><div class="meta-item"><span>Role</span><strong>growth_ops_1</strong></div><div class="meta-item"><span>Requested</span><strong>11 min ago</strong></div></div>
+                                </div>
+                                <div class="approval-actions"><button class="decision" type="button" data-decision="Denied">Deny</button><button class="decision approve" type="button" data-decision="Approved">Approve once</button></div>
+                                <div class="resolution"><div><i data-lucide="circle-check-big"></i><strong id="resolution-copy">Decision recorded</strong><span>Audit event added to the job ledger.</span></div></div>
+                            </div>
+                            <div class="insight"><div class="insight-top"><i data-lucide="lightbulb"></i>Observer insight</div><p>Three roles are waiting on the same market context. Promoting the latest research summary could unblock the queue.</p></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section class="system-notes">
+        <div class="system-panel"><h3 id="palette-heading">Alloy Night palette</h3><div class="palette" id="palette"></div><div class="tags" id="traits"></div></div>
+        <div class="system-panel"><h3>Type system</h3><div class="type-sample"><div><strong id="type-heading">Sora</strong><span id="type-body">Modern geometry designed for high-contrast monitoring</span></div><span id="type-mono">DM Mono<br>JOB-02F9</span></div></div>
+    </section>
+    <div class="footer-note"><span>Alloy design system preview - switch between dark and light above.</span><span>References: <a href="https://linear.app/">Linear</a>, <a href="https://carbondesignsystem.com/">Carbon</a>, <a href="https://primer.style/">Primer</a>, <a href="https://atlassian.design/">Atlassian</a>, <a href="https://muz.li/blog/best-dashboard-design-examples-inspirations-for-2026/">Muzli 2026</a></span></div>
+</main>
+<script>
+const modes = {
+    dark: {
+        title: "Alloy Night",
+        summary: "A focused real-time command center with luminous state signals and a cinematic edge.",
+        colors: [["#151719", "#fff"], ["#F2AD3D", "#151719"], ["#252A2E", "#fff"], ["#5AC7A7", "#151719"], ["#6EA2FF", "#151719"], ["#EF6A5B", "#151719"]],
+        traits: ["Signature theme", "High contrast", "Live monitoring", "Dark-first", "6px radius"]
+    },
+    light: {
+        title: "Alloy Light",
+        summary: "The same operational hierarchy on cool daylight surfaces, with a graphite navigation anchor.",
+        colors: [["#191C1F", "#fff"], ["#D48A12", "#191C1F"], ["#F3F5F6", "#191C1F"], ["#247E69", "#fff"], ["#356FCB", "#fff"], ["#C64F45", "#fff"]],
+        traits: ["Daylight theme", "Cool neutral", "Persistent dark rail", "Shared semantics", "6px radius"]
+    }
+};
+const modeButtons = [...document.querySelectorAll("[data-mode-choice]")];
+const palette = document.getElementById("palette");
+const approval = document.getElementById("approvals");
+
+function renderMode(name) {
+    const mode = modes[name];
+    document.body.dataset.mode = name;
+    modeButtons.forEach(button => button.setAttribute("aria-pressed", String(button.dataset.modeChoice === name)));
+    document.getElementById("direction-title").textContent = mode.title;
+    document.getElementById("direction-summary").textContent = mode.summary;
+    document.getElementById("palette-heading").textContent = `${mode.title} palette`;
+    palette.innerHTML = mode.colors.map(([color, label]) => `<span class="swatch" style="--swatch:${color};--label:${label}"><span>${color}</span></span>`).join("");
+    document.getElementById("traits").innerHTML = mode.traits.map(trait => `<span class="tag">${trait}</span>`).join("");
+    approval.classList.remove("resolved");
+}
+modeButtons.forEach(button => button.addEventListener("click", () => renderMode(button.dataset.modeChoice)));
+document.querySelectorAll("[data-decision]").forEach(button => button.addEventListener("click", () => {
+    document.getElementById("resolution-copy").textContent = `${button.dataset.decision} - decision recorded`;
+    approval.classList.add("resolved");
+}));
+document.getElementById("run-brief").addEventListener("click", event => {
+    const button = event.currentTarget;
+    const label = button.querySelector("span");
+    button.classList.add("running");
+    label.textContent = "Brief in progress";
+    window.setTimeout(() => { button.classList.remove("running"); label.textContent = "Brief ready"; }, 1600);
+});
+renderMode("dark");
+lucide.createIcons();
+</script>
+</body>
+</html>

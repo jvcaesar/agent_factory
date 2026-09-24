@@ -1,7 +1,8 @@
-# Roadmap — Upcoming Steps
+# Agent Factory Roadmap
 
-> Ordered so each milestone builds on the last. Milestone 3 (bootstrap) is done;
-> the remaining milestones turn the generated charts into a *running factory*.
+> Milestones 1-6 are the completed Release 1.0 foundation. For active work and
+> the next task, see [CURRENT.md](CURRENT.md). For the detailed current release
+> plan, see [Release 2.0](../releases/v2.0/README.md).
 
 ## M1 — Runtime engine ✅ (implemented)
 Convert the generated config into live agents.

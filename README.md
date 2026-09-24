@@ -29,34 +29,22 @@ reusable primitives:
 
 ## Documentation
 
-The `docs/` folder is the project's source of truth:
+The [`docs/`](docs/README.md) index is the documentation source of truth:
 
-- [`docs/product/USER_GUIDE.md`](docs/product/USER_GUIDE.md) — step-by-step user guide with real command examples and expected output ([styled HTML version](docs/product/USER_GUIDE.html))
-- [`docs/product/PRODUCT.md`](docs/product/PRODUCT.md) — product overview & marketing one-pager: features, benefits, personas, user stories, comparison ([dark-themed HTML version](docs/product/PRODUCT.html))
-- [`docs/planning/PROJECT_PLAN.md`](docs/planning/PROJECT_PLAN.md) — the detailed plan being used for implementation
-- [`docs/milestones/IMPLEMENTED_MILESTONE3.md`](docs/milestones/IMPLEMENTED_MILESTONE3.md) — everything implemented in the current step (M3 bootstrap)
-- [`docs/milestones/IMPLEMENTED_MILESTONE1.md`](docs/milestones/IMPLEMENTED_MILESTONE1.md) — everything implemented in the current step (M1 runtime engine)
-- [`docs/milestones/IMPLEMENTED_MILESTONE2.md`](docs/milestones/IMPLEMENTED_MILESTONE2.md) — everything implemented in the current step (M2 ambition loop)
-- [`docs/milestones/IMPLEMENTED_MILESTONE4.md`](docs/milestones/IMPLEMENTED_MILESTONE4.md) — everything implemented in the current step (M4 insights / observers / mission control)
-- [`docs/milestones/IMPLEMENTED_MILESTONE5.md`](docs/milestones/IMPLEMENTED_MILESTONE5.md) — everything implemented in the current step (M5 role packs)
-- [`docs/milestones/IMPLEMENTED_MILESTONE6.md`](docs/milestones/IMPLEMENTED_MILESTONE6.md) — everything implemented in the current step (M6 multiplayer / shared channel + wider tool surface)
-- [`docs/planning/ROADMAP.md`](docs/planning/ROADMAP.md) — the roadmap (M1–M6)
-- [`docs/architecture/ARCHITECTURE.md`](docs/architecture/ARCHITECTURE.md) — module map, data flow, contracts, seams for later milestones
-- [`docs/architecture/DESIGN_PRINCIPLES.md`](docs/architecture/DESIGN_PRINCIPLES.md) — the generic patterns and guiding rules
-- [`docs/architecture/DECISION_LOG.md`](docs/architecture/DECISION_LOG.md) — running record of design decisions
-- [`CHANGELOG.md`](CHANGELOG.md) — version history (0.1.0 MVP → 1.0.0)
-- [`docs/planning/RELEASE_CHECKLIST_1.0.md`](docs/planning/RELEASE_CHECKLIST_1.0.md) — the concrete, trackable checklist for shipping MVP → Release 1.0
-- [`docs/notes/TRANSCRIPT_NOTES.md`](docs/notes/TRANSCRIPT_NOTES.md) — distilled ideas from the source video (with timestamps)
-- [`docs/product/SPEC_AUTHORING.md`](docs/product/SPEC_AUTHORING.md) — how to write `--spec` YAML by hand
-- [`docs/product/HOWTO_BOOTSTRAP.md`](docs/product/HOWTO_BOOTSTRAP.md) — what each bootstrap command does, and which ones to actually run
+- [Current implementation status](docs/planning/CURRENT.md) — active phase, next task, and blockers
+- [Release 2.0 workspace](docs/releases/v2.0/README.md) — checklist, implementation plans, QA, and dated phase records
+- [User guide](docs/product/USER_GUIDE.md) ([styled HTML](docs/product/USER_GUIDE.html))
+- [Product overview](docs/product/PRODUCT.md) ([styled HTML](docs/product/PRODUCT.html))
+- [Architecture](docs/architecture/ARCHITECTURE.md) and [design decisions](docs/architecture/DECISION_LOG.md)
+- [Release 1.0.0 archive](docs/releases/v1.0.0/README.md) and [milestone history](docs/milestones/README.md)
+- [Changelog](CHANGELOG.md) and [roadmap](docs/planning/ROADMAP.md)
 
 ## Status
 
-**Release 1.0** (2026-09-08) is out — see
-[`docs/planning/RELEASE_CHECKLIST_1.0.md`](docs/planning/RELEASE_CHECKLIST_1.0.md)
-for the concrete, trackable checklist that shipped it, and
-[`docs/planning/QA_1.0.md`](docs/planning/QA_1.0.md) for live end-to-end proof
-runs. What 1.0 supports:
+**Release 1.0** (2026-09-08) is out. Release 2.0 is planned and has not started;
+see the [current implementation status](docs/planning/CURRENT.md) for the next
+task. The [Release 1.0.0 archive](docs/releases/v1.0.0/README.md) contains its
+checklist, QA evidence, and release notes. What 1.0 supports:
 
 - **Providers:** `openai` (default), `ollama` (local Gemma/Qwen), and `fake`
   (offline/deterministic, for tests) — see [Providers](#providers-m1) below.

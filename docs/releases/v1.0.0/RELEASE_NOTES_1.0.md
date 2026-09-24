@@ -44,7 +44,7 @@
 - **Ruff lint gate**: `[tool.ruff]` config (E/F/W/I/B/UP/SIM/C4, E501 intentionally ignored) + `dev` extra; `ruff check src tests` is clean
 - **`--version` flag** and a real package `__init__.py` exposing `agent_factory.__version__`
 - **`CHANGELOG.md`** (this file)
-- **`docs/planning/RELEASE_CHECKLIST_1.0.md`** — tracked checklist for the MVP → 1.0 hardening phase
+- **`docs/releases/v1.0.0/RELEASE_CHECKLIST_1.0.md`** — tracked checklist for the MVP → 1.0 hardening phase
 - **Opt-in live-provider smoke tests** (`tests/integration/`, gated by `AGENT_FACTORY_LIVE_TESTS=1`): exercise the real OpenAI adapter and the real Ollama adapter
 - **`agent_factory tools` command** and public `agent_factory.runtime.tools.tool_surface()` snapshot: report every declared tool id as REAL (4: `files`, `web`, `memory`, `channel`) or STUB (13)
 

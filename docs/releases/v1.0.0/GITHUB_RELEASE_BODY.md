@@ -52,4 +52,4 @@ python -m unittest discover -s tests   # 163 tests, all offline / green
 
 All 10 CI jobs green on the `v1.0.0` tag.
 
-See [CHANGELOG.md](CHANGELOG.md) for the full change list.
+See [CHANGELOG.md](../../../CHANGELOG.md) for the full change list.

@@ -14,7 +14,7 @@ All notable changes to **Agent Factory** are recorded here. Format follows
 - **`--version` flag** and a real package `__init__.py` exposing
   `agent_factory.__version__`.
 - **`CHANGELOG.md`** (this file).
-- **`docs/planning/RELEASE_CHECKLIST_1.0.md`** — tracked checklist for the MVP → 1.0 hardening phase.
+- **`docs/releases/v1.0.0/RELEASE_CHECKLIST_1.0.md`** — tracked checklist for the MVP → 1.0 hardening phase.
 - **Opt-in live-provider smoke tests** (`tests/integration/`, gated by
   `AGENT_FACTORY_LIVE_TESTS=1`): exercise the real OpenAI adapter (verified
   live 2026-09-08) and the real Ollama adapter; each test skips with a clear
