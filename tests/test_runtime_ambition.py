@@ -142,6 +142,19 @@ class TestRunAmbitionLoop(unittest.TestCase):
         self.assertTrue(all(store.get(j)["status"] == "done" for _, _, j in executed))
         store.close()
 
+    def test_cancellation_before_proposal_skips_provider(self):
+        store = Store(":memory:")
+        proposals, executed = run_ambition_loop(
+            make_org(),
+            LEAD,
+            FakeLLM(responses=[]),
+            store,
+            should_cancel=lambda: True,
+        )
+        self.assertEqual(proposals, [])
+        self.assertEqual(executed, [])
+        store.close()
+
     def test_high_risk_proposal_skipped(self):
         store = Store(":memory:")
         org = make_org()

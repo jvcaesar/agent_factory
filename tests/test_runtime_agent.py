@@ -143,12 +143,89 @@ class TestRunAgent(unittest.TestCase):
         )
         out = run_agent(
             make_org(ROLE_WRITE), ROLE_WRITE, "task", llm, root=root,
-            approval_fn=lambda _t: True, max_steps=5,
+            approval_fn=lambda _t, _i: True, max_steps=5,
         )
         self.assertTrue(out.finished)
         self.assertTrue(target.exists())
         self.assertEqual(target.read_text(encoding="utf-8"), "hello")
         tmp.cleanup()
+
+    def test_approval_callback_receives_tool_input(self):
+        tmp = tempfile.TemporaryDirectory()
+        root = pathlib.Path(tmp.name)
+        received = []
+        llm = FakeLLM(
+            responses=[
+                tool_call("files_write", {"path": "out.txt", "content": "hello"}),
+                action(type="final", output="done"),
+            ]
+        )
+
+        def approve(tool, tool_input):
+            received.append((tool.name, dict(tool_input)))
+            return False
+
+        out = run_agent(
+            make_org(ROLE_WRITE),
+            ROLE_WRITE,
+            "task",
+            llm,
+            root=root,
+            approval_fn=approve,
+            max_steps=5,
+        )
+        self.assertTrue(out.finished)
+        self.assertEqual(
+            received,
+            [("files_write", {"path": "out.txt", "content": "hello"})],
+        )
+        self.assertFalse((root / "out.txt").exists())
+        tmp.cleanup()
+
+    def test_cancellation_before_first_step_blocks_job(self):
+        store = Store(":memory:")
+        job_id = store.create_running_job("Acme", ROLE_READ.id, "task", "fake")
+        llm = FakeLLM(responses=[action(type="final", output="unused")])
+        out = run_agent(
+            make_org(ROLE_READ),
+            ROLE_READ,
+            "task",
+            llm,
+            store=store,
+            job_id=job_id,
+            should_cancel=lambda: True,
+        )
+        self.assertTrue(out.cancelled)
+        self.assertFalse(out.finished)
+        self.assertEqual(out.steps, 0)
+        self.assertEqual(store.get(job_id)["status"], "blocked")
+        self.assertEqual(store.get(job_id)["error"], "cancelled")
+        store.close()
+
+    def test_cancellation_between_steps_does_not_mark_error(self):
+        store = Store(":memory:")
+        job_id = store.create_running_job("Acme", ROLE_READ.id, "task", "fake")
+        checks = iter([False, True])
+        llm = FakeLLM(
+            responses=[
+                tool_call("files_read", {"path": "missing.txt"}),
+                action(type="final", output="unused"),
+            ]
+        )
+        out = run_agent(
+            make_org(ROLE_READ),
+            ROLE_READ,
+            "task",
+            llm,
+            store=store,
+            job_id=job_id,
+            should_cancel=lambda: next(checks),
+        )
+        self.assertTrue(out.cancelled)
+        self.assertEqual(out.steps, 1)
+        self.assertEqual(store.get(job_id)["status"], "blocked")
+        self.assertNotEqual(store.get(job_id)["status"], "error")
+        store.close()
 
     def test_unknown_tool_errors_but_recovers(self):
         llm = FakeLLM(

@@ -96,22 +96,22 @@ Status values: `Not Started` (default) · `In Progress` · `Done` · `Blocked`.
 | Task | Description | Status | Notes |
 |---|---|---|---|
 | B0.1 | Lock data-model + type contracts (this doc) | Done | 2026-09-24: multi-org stores, migrations, transitions, cancellation, approvals, worker lifecycle, and dispatch contracts locked. |
-| B1.1 | `Store` concurrency: WAL + serialized writes + safe connections | Not Started | |
-| B1.2 | `test_store_concurrency.py` | Not Started | |
-| B2.1 | `operations` table + schema migration | Not Started | |
-| B2.2 | `operations` Store methods (+ atomic claim) | Not Started | |
-| B2.3 | `operations` tests | Not Started | |
-| B3.1 | `should_cancel` hook in `run_agent` | Not Started | |
-| B3.2 | Widen `ApprovalFn` to `(tool, tool_input)` + update call sites | Not Started | |
-| B3.3 | Cancellation + approval-arg tests | Not Started | |
-| B4.1 | `approvals` table + schema migration | Not Started | |
-| B4.2 | `approvals` Store methods | Not Started | |
-| B4.3 | `store_backed_approval` block-and-wait callback | Not Started | |
-| B4.4 | `approvals` tests | Not Started | |
-| B5.1 | `WorkerPool` class + lifecycle (start/stop/drain) | Not Started | |
-| B5.2 | Dispatch by operation `kind` | Not Started | |
-| B5.3 | Cancel + approval integration in the pool | Not Started | |
-| B5.4 | Worker-pool tests (FakeLLM) | Not Started | |
+| B1.1 | `Store` concurrency: WAL + serialized writes + safe connections | Done | 2026-09-24: thread-local connections, serialized writes, shared memory, atomic running child jobs; 169 tests green. |
+| B1.2 | `test_store_concurrency.py` | Done | 2026-09-24: 6 tests passed twice; full suite 175 tests green. |
+| B2.1 | `operations` table + schema migration | Done | 2026-09-24: transactional v1→v2 migration preserves rows; 176 tests green. |
+| B2.2 | `operations` Store methods (+ atomic claim) | Done | 2026-09-24: validation, canonical JSON, transitions, cancellation, and claims; 182 tests green. |
+| B2.3 | `operations` tests | Done | 2026-09-24: 12 tests passed twice; full suite 187 tests green. |
+| B3.1 | `should_cancel` hook in `run_agent` | Done | 2026-09-24: explicit cancellation outcome and all dispatch checkpoints; 187 tests green. |
+| B3.2 | Widen `ApprovalFn` to `(tool, tool_input)` + update call sites | Done | 2026-09-24: runtime, CLI, and tests updated; 187 tests green. |
+| B3.3 | Cancellation + approval-arg tests | Done | 2026-09-24: 7 new behavior tests; full suite 194 tests green. |
+| B4.1 | `approvals` table + schema migration | Done | 2026-09-24: direct v2 and chained v1 migrations; 196 tests green. |
+| B4.2 | `approvals` Store methods | Done | 2026-09-24: canonical rows and pending-only transitions; 202 tests green. |
+| B4.3 | `store_backed_approval` block-and-wait callback | Done | 2026-09-24: approve/deny/timeout/cancel/interrupt stable across 3 runs; 207 tests green. |
+| B4.4 | `approvals` tests | Done | 2026-09-24: 16 tests passed twice; full suite 210 tests green. |
+| B5.1 | `WorkerPool` class + lifecycle (start/stop/drain) | Done | 2026-09-24: 6 lifecycle tests; full suite 216 tests green. |
+| B5.2 | Dispatch by operation `kind` | Done | 2026-09-24: claimed jobs and all 5 operation kinds; full suite 222 tests green. |
+| B5.3 | Cancel + approval integration in the pool | Done | 2026-09-24: in-flight cancel and two-worker ask/deny flows; 225 tests green. |
+| B5.4 | Worker-pool tests (FakeLLM) | Done | 2026-09-24: 20 tests passed twice; Phase 1 exit suite 230 tests green. |
 
 ---
 

@@ -117,6 +117,20 @@ class TestObserve(unittest.TestCase):
         self.assertEqual(len(store.list_insights(status="open")), 2)
         store.close()
 
+    def test_cancellation_after_provider_call_prevents_persistence(self):
+        store = Store(":memory:")
+        checks = iter([False, True])
+        findings = observe(
+            make_org(),
+            OBSERVER,
+            store,
+            FakeLLM(responses=[json.dumps(OBSERVE_JSON)]),
+            should_cancel=lambda: next(checks),
+        )
+        self.assertEqual(findings, [])
+        self.assertEqual(store.list_insights(status="open"), [])
+        store.close()
+
 
 class TestInsightStore(unittest.TestCase):
     def setUp(self):
@@ -156,6 +170,18 @@ class TestDailyBrief(unittest.TestCase):
         org = make_org()
         brief = build_daily_brief(org, OBSERVER, store, llm)
         self.assertIn("requeue job 3", brief)
+        store.close()
+
+    def test_cancellation_before_brief_skips_provider(self):
+        store = Store(":memory:")
+        brief = build_daily_brief(
+            make_org(),
+            OBSERVER,
+            store,
+            FakeLLM(responses=[]),
+            should_cancel=lambda: True,
+        )
+        self.assertEqual(brief, "")
         store.close()
 
 

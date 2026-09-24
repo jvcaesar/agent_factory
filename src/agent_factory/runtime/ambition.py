@@ -156,6 +156,7 @@ def run_ambition_loop(
     max_actions: int = 2,
     max_risk: str = "medium",
     temperature: float = 0.2,
+    should_cancel: Callable[[], bool] | None = None,
 ) -> tuple[list[Proposal], list[ExecutedAction]]:
     """Run one full ambition pass. Returns (proposals, executed).
 
@@ -166,6 +167,8 @@ def run_ambition_loop(
     a per-agent model/provider for both the proposing role and each worker. If
     omitted, the single ``llm`` is used for everything.
     """
+    if should_cancel is not None and should_cancel():
+        return [], []
     client_of = role_client or (lambda _r: llm)
     context_text = store.context_blob()
     proposals = propose_actions(
@@ -174,6 +177,8 @@ def run_ambition_loop(
 
     executed: list[ExecutedAction] = []
     for index, proposal in enumerate(proposals[:max_actions]):
+        if should_cancel is not None and should_cancel():
+            break
         if RISK_ORDER.get(proposal.risk, 2) > RISK_ORDER.get(max_risk, 2):
             store.upsert_context(
                 f"ambition/skipped-{proposal.slug()}",
@@ -183,9 +188,12 @@ def run_ambition_loop(
             continue
         worker = _pick_worker(org, role, index)
         worker_llm = client_of(worker)
-        job_id = store.enqueue(org.name, worker.id, proposal.action, provider=worker_llm.name)
-        if not store.start(job_id):
-            raise RuntimeError(f"could not start queued job {job_id}")
+        job_id = store.create_running_job(
+            org.name,
+            worker.id,
+            proposal.action,
+            provider=worker_llm.name,
+        )
         outcome = run_agent(
             org,
             worker,
@@ -196,6 +204,7 @@ def run_ambition_loop(
             store=store,
             job_id=job_id,
             temperature=temperature,
+            should_cancel=should_cancel,
         )
         store.upsert_context(
             f"ambition/{proposal.slug()}",

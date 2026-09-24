@@ -10,7 +10,7 @@ Design goals:
 
 from __future__ import annotations
 
-from collections.abc import Mapping
+from collections.abc import Callable, Mapping
 from dataclasses import dataclass, field
 from pathlib import Path
 
@@ -35,6 +35,7 @@ class AgentOutcome:
     output: str = ""
     steps: int = 0
     events: list[str] = field(default_factory=list)
+    cancelled: bool = False
 
 
 class AgentLimitError(Exception):
@@ -135,10 +136,11 @@ def run_agent(
     temperature: float = 0.2,
     store: Store | None = None,
     job_id: int | None = None,
+    should_cancel: Callable[[], bool] | None = None,
 ) -> AgentOutcome:
     """Run one role to completion. Returns an :class:`AgentOutcome`."""
     tools = tools_for_role(role, root=root, org=org, store=store)
-    deny_all: ApprovalFn = approval_fn or (lambda _t: False)
+    deny_all: ApprovalFn = approval_fn or (lambda _t, _i: False)
     system = build_system_prompt(org, role, tools, _read_sop(root, role))
     messages: list[ChatMessage] = [ChatMessage("system", system), ChatMessage("user", task)]
     outcome = AgentOutcome(finished=False, events=[])
@@ -150,6 +152,12 @@ def run_agent(
 
     try:
         for step in range(max_steps):
+            if should_cancel is not None and should_cancel():
+                outcome.cancelled = True
+                _event("cancelled", "operation cancelled")
+                if store is not None and job_id is not None:
+                    store.block(job_id, "cancelled")
+                return outcome
             result = llm.complete(messages, temperature=temperature)
             action = parse_action(result.text)
             outcome.steps = step + 1
@@ -170,7 +178,7 @@ def run_agent(
                 continue
 
             if tool.requires_approval:
-                approved = deny_all(tool)
+                approved = deny_all(tool, action.tool_input)
                 if not approved:
                     _event("approval", f"denied approval for {tool.name}")
                     messages.append(ChatMessage("user", f"Your call to {tool.name} was NOT approved. Do not retry it; end with a 'final' answer instead."))

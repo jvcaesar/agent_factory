@@ -29,10 +29,8 @@ def run_job(
     temperature: float = 0.2,
     provider: str | None = None,
 ):
-    """Enqueue a job on ``role`` and run it. Returns (job_id, outcome)."""
-    job_id = store.enqueue(org.name, role.id, task, provider)
-    if not store.start(job_id):
-        raise RuntimeError(f"could not start queued job {job_id}")
+    """Create a running job on ``role`` and execute it. Returns (job_id, outcome)."""
+    job_id = store.create_running_job(org.name, role.id, task, provider)
     outcome = run_agent(
         org,
         role,

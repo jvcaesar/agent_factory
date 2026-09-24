@@ -172,6 +172,22 @@ class TestChannelWorker(unittest.TestCase):
         self.assertEqual(answered, [])
         store.close()
 
+    def test_cancellation_after_claim_returns_message_to_pending(self):
+        store = Store(":memory:")
+        message_id = post_to_channel(store, "general", "Please answer")
+        checks = iter([False, True])
+        answered = run_channel_worker(
+            make_org(),
+            store,
+            FakeLLM(responses=[]),
+            channel="general",
+            should_cancel=lambda: next(checks),
+        )
+        self.assertEqual(answered, [])
+        self.assertEqual(store.list_messages(channel="general")[0]["id"], message_id)
+        self.assertEqual(store.list_messages(channel="general")[0]["status"], "pending")
+        store.close()
+
     def test_max_messages_limits_batch(self):
         store = Store(":memory:")
         org = make_org()

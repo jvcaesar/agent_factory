@@ -7,14 +7,58 @@ The interface is intentionally narrow so it can be swapped for Postgres later
 
 from __future__ import annotations
 
+import json
 import sqlite3
-from collections.abc import Iterator
+import threading
+from collections.abc import Iterator, Mapping
 from contextlib import contextmanager
 from pathlib import Path
 
 VALID_INSIGHT_LEVELS = {"low", "info", "warning", "critical"}
 VALID_INSIGHT_KINDS = {"friction", "access_gap", "contradiction", "blocker", "opportunity"}
 VALID_INSIGHT_STATUSES = {"open", "accepted", "dismissed"}
+CURRENT_SCHEMA_VERSION = 3
+VALID_OPERATION_STATUSES = {
+    "queued",
+    "running",
+    "done",
+    "error",
+    "blocked",
+    "cancelled",
+}
+VALID_APPROVAL_RISKS = {"low", "medium", "high"}
+VALID_APPROVAL_STATUSES = {"pending", "approved", "denied", "expired", "cancelled"}
+TERMINAL_OPERATION_STATUSES = {"done", "error", "blocked", "cancelled"}
+OPERATION_TRANSITIONS = {
+    "queued": {"running", "cancelled"},
+    "running": TERMINAL_OPERATION_STATUSES,
+}
+OPERATION_DEFAULTS = {
+    "run": {"provider": None, "model": None, "approval_mode": "deny"},
+    "ambition": {
+        "max_actions": 3,
+        "max_risk": "medium",
+        "approval_mode": "deny",
+        "provider": None,
+        "model": None,
+    },
+    "observe": {"role": None, "provider": None, "model": None},
+    "brief": {"role": None, "provider": None, "model": None},
+    "channel_worker": {
+        "role": None,
+        "max_messages": 10,
+        "approval_mode": "deny",
+        "provider": None,
+        "model": None,
+    },
+}
+OPERATION_REQUIRED = {
+    "run": {"role", "task"},
+    "ambition": {"role"},
+    "observe": set(),
+    "brief": set(),
+    "channel_worker": {"channel"},
+}
 
 
 _SCHEMA = """
@@ -83,33 +127,207 @@ CREATE TABLE IF NOT EXISTS messages (
 );
 """
 
+_OPERATIONS_SCHEMA = """
+CREATE TABLE operations (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    org TEXT NOT NULL,
+    kind TEXT NOT NULL,
+    params TEXT NOT NULL DEFAULT '{}',
+    status TEXT NOT NULL DEFAULT 'queued',
+    result TEXT,
+    error TEXT,
+    job_id INTEGER REFERENCES jobs(id),
+    cancel_requested INTEGER NOT NULL DEFAULT 0,
+    created_at TEXT NOT NULL DEFAULT (datetime('now')),
+    updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+)
+"""
+
+_APPROVALS_SCHEMA = """
+CREATE TABLE approvals (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    org TEXT NOT NULL,
+    job_id INTEGER REFERENCES jobs(id),
+    operation_id INTEGER REFERENCES operations(id),
+    role TEXT NOT NULL,
+    tool TEXT NOT NULL,
+    action_args TEXT NOT NULL DEFAULT '{}',
+    risk TEXT NOT NULL DEFAULT 'high',
+    status TEXT NOT NULL DEFAULT 'pending',
+    decided_by TEXT,
+    created_at TEXT NOT NULL DEFAULT (datetime('now')),
+    decided_at TEXT
+)
+"""
+
+
+def normalize_operation_params(kind: str, params: Mapping[str, object]) -> dict[str, object]:
+    """Validate and default one operation payload for durable canonical storage."""
+    if kind not in OPERATION_DEFAULTS:
+        raise ValueError(f"invalid operation kind: {kind!r}")
+    if not isinstance(params, Mapping):
+        raise TypeError("operation params must be a mapping")
+
+    allowed = set(OPERATION_DEFAULTS[kind]) | OPERATION_REQUIRED[kind]
+    unknown = set(params) - allowed
+    if unknown:
+        raise ValueError(f"unknown {kind} operation params: {sorted(unknown)!r}")
+
+    normalized = {**OPERATION_DEFAULTS[kind], **dict(params)}
+    for field in OPERATION_REQUIRED[kind]:
+        value = normalized.get(field)
+        if not isinstance(value, str) or not value.strip():
+            raise ValueError(f"{kind} operation requires non-empty {field!r}")
+        normalized[field] = value.strip()
+
+    for field in ("role", "channel", "provider", "model"):
+        value = normalized.get(field)
+        if value is not None and (not isinstance(value, str) or not value.strip()):
+            raise ValueError(f"operation param {field!r} must be a non-empty string or null")
+        if isinstance(value, str):
+            normalized[field] = value.strip()
+
+    if "approval_mode" in normalized and normalized["approval_mode"] not in {
+        "allow",
+        "deny",
+        "ask",
+    }:
+        raise ValueError("approval_mode must be 'allow', 'deny', or 'ask'")
+    if "max_risk" in normalized and normalized["max_risk"] not in {
+        "low",
+        "medium",
+        "high",
+    }:
+        raise ValueError("max_risk must be 'low', 'medium', or 'high'")
+    for field in ("max_actions", "max_messages"):
+        value = normalized.get(field)
+        if value is not None and (not isinstance(value, int) or isinstance(value, bool) or value < 1):
+            raise ValueError(f"operation param {field!r} must be a positive integer")
+
+    json.dumps(normalized)
+    return normalized
+
 
 class Store:
     def __init__(self, path: str | Path):
         self.path = Path(path)
-        if self.path.name != ":memory:":
+        self._memory = self.path.name == ":memory:"
+        if not self._memory:
             self.path.parent.mkdir(parents=True, exist_ok=True)
-        self._conn = sqlite3.connect(str(self.path))
-        self._conn.row_factory = sqlite3.Row
-        self._conn.execute("PRAGMA foreign_keys = ON")
-        self._conn.executescript(_SCHEMA)
-        self._conn.executescript(
-            """
-            CREATE INDEX IF NOT EXISTS idx_jobs_status_id ON jobs(status, id);
-            CREATE INDEX IF NOT EXISTS idx_results_job_id ON results(job_id, id);
-            CREATE INDEX IF NOT EXISTS idx_events_job_id ON events(job_id, id);
-            CREATE INDEX IF NOT EXISTS idx_context_updated_id ON context(updated_at, id);
-            CREATE INDEX IF NOT EXISTS idx_insights_status ON insights(status, id);
-            CREATE INDEX IF NOT EXISTS idx_messages_channel_status ON messages(channel, status, id);
-            """
+        self._database = (
+            f"file:agent_factory_{id(self)}?mode=memory&cache=shared"
+            if self._memory
+            else str(self.path)
         )
-        self._conn.execute(
-            "INSERT OR IGNORE INTO meta (key, value) VALUES ('schema_version', '1')"
+        self._uri = self._memory
+        self._local = threading.local()
+        self._connections: set[sqlite3.Connection] = set()
+        self._connections_lock = threading.Lock()
+        self._write_lock = threading.RLock()
+        self._closed = False
+
+        connection = self._connection()
+        with self._write_lock:
+            connection.executescript(_SCHEMA)
+            connection.executescript(
+                """
+                CREATE INDEX IF NOT EXISTS idx_jobs_status_id ON jobs(status, id);
+                CREATE INDEX IF NOT EXISTS idx_results_job_id ON results(job_id, id);
+                CREATE INDEX IF NOT EXISTS idx_events_job_id ON events(job_id, id);
+                CREATE INDEX IF NOT EXISTS idx_context_updated_id ON context(updated_at, id);
+                CREATE INDEX IF NOT EXISTS idx_insights_status ON insights(status, id);
+                CREATE INDEX IF NOT EXISTS idx_messages_channel_status ON messages(channel, status, id);
+                """
+            )
+            connection.execute(
+                "INSERT OR IGNORE INTO meta (key, value) VALUES ('schema_version', '1')"
+            )
+            connection.commit()
+        try:
+            self._migrate()
+        except Exception:
+            self.close()
+            raise
+
+    def _new_connection(self) -> sqlite3.Connection:
+        connection = sqlite3.connect(
+            self._database,
+            uri=self._uri,
+            check_same_thread=False,
         )
-        self._conn.commit()
+        connection.row_factory = sqlite3.Row
+        connection.execute("PRAGMA foreign_keys = ON")
+        connection.execute("PRAGMA busy_timeout = 5000")
+        if self._memory:
+            connection.execute("PRAGMA read_uncommitted = ON")
+        else:
+            connection.execute("PRAGMA journal_mode = WAL")
+        with self._connections_lock:
+            if self._closed:
+                connection.close()
+                raise RuntimeError("store is closed")
+            self._connections.add(connection)
+        return connection
+
+    def _connection(self) -> sqlite3.Connection:
+        if self._closed:
+            raise RuntimeError("store is closed")
+        connection = getattr(self._local, "connection", None)
+        if connection is None:
+            connection = self._new_connection()
+            self._local.connection = connection
+        return connection
+
+    def _migrate(self) -> None:
+        version = self.schema_version()
+        if version > CURRENT_SCHEMA_VERSION:
+            raise RuntimeError(
+                f"database schema {version} is newer than supported "
+                f"version {CURRENT_SCHEMA_VERSION}"
+            )
+        if version < 2:
+            with self._tx() as connection:
+                connection.execute(_OPERATIONS_SCHEMA)
+                connection.execute(
+                    "CREATE INDEX idx_operations_status_id "
+                    "ON operations(status, id)"
+                )
+                connection.execute(
+                    "CREATE INDEX idx_operations_org_status_id "
+                    "ON operations(org, status, id)"
+                )
+                connection.execute(
+                    "UPDATE meta SET value='2' WHERE key='schema_version'"
+                )
+            version = 2
+        if version < 3:
+            with self._tx() as connection:
+                connection.execute(_APPROVALS_SCHEMA)
+                connection.execute(
+                    "CREATE INDEX idx_approvals_status_id ON approvals(status, id)"
+                )
+                connection.execute(
+                    "CREATE INDEX idx_approvals_org_status_id "
+                    "ON approvals(org, status, id)"
+                )
+                connection.execute(
+                    "UPDATE meta SET value='3' WHERE key='schema_version'"
+                )
+
+    @property
+    def _conn(self) -> sqlite3.Connection:
+        """Return the calling thread's connection for compatibility."""
+        return self._connection()
 
     def close(self) -> None:
-        self._conn.close()
+        with self._connections_lock:
+            if self._closed:
+                return
+            self._closed = True
+            connections = list(self._connections)
+            self._connections.clear()
+        for connection in connections:
+            connection.close()
 
     def __enter__(self) -> Store:
         return self
@@ -119,18 +337,36 @@ class Store:
 
     @contextmanager
     def _tx(self) -> Iterator[sqlite3.Connection]:
-        try:
-            yield self._conn
-            self._conn.commit()
-        except Exception:
-            self._conn.rollback()
-            raise
+        with self._write_lock:
+            connection = self._connection()
+            try:
+                yield connection
+                connection.commit()
+            except Exception:
+                connection.rollback()
+                raise
 
     # -- jobs ----------------------------------------------------------------
     def enqueue(self, org: str, role: str, task: str, provider: str | None = None) -> int:
         with self._tx() as c:
             cur = c.execute(
                 "INSERT INTO jobs (org, role, task, provider) VALUES (?,?,?,?)",
+                (org, role, task, provider),
+            )
+            return int(cur.lastrowid)
+
+    def create_running_job(
+        self,
+        org: str,
+        role: str,
+        task: str,
+        provider: str | None = None,
+    ) -> int:
+        """Create a running job already owned by the synchronous caller."""
+        with self._tx() as c:
+            cur = c.execute(
+                "INSERT INTO jobs (org, role, task, provider, status) "
+                "VALUES (?,?,?,?, 'running')",
                 (org, role, task, provider),
             )
             return int(cur.lastrowid)
@@ -202,6 +438,217 @@ class Store:
         return self._conn.execute(
             "SELECT * FROM jobs ORDER BY id DESC LIMIT ?", (limit,)
         ).fetchall()
+
+    # -- operations ----------------------------------------------------------
+    def create_operation(self, org: str, kind: str, params: Mapping[str, object]) -> int:
+        normalized = normalize_operation_params(kind, params)
+        encoded = json.dumps(
+            normalized,
+            ensure_ascii=False,
+            sort_keys=True,
+            separators=(",", ":"),
+        )
+        with self._tx() as connection:
+            cursor = connection.execute(
+                "INSERT INTO operations (org, kind, params) VALUES (?,?,?)",
+                (org, kind, encoded),
+            )
+            return int(cursor.lastrowid)
+
+    def get_operation(self, operation_id: int) -> sqlite3.Row | None:
+        return self._conn.execute(
+            "SELECT * FROM operations WHERE id=?", (operation_id,)
+        ).fetchone()
+
+    def list_operations(
+        self,
+        org: str | None = None,
+        status: str | None = None,
+        limit: int = 100,
+    ) -> list[sqlite3.Row]:
+        if status is not None and status not in VALID_OPERATION_STATUSES:
+            raise ValueError(f"invalid operation status: {status!r}")
+        if limit < 1:
+            raise ValueError("limit must be positive")
+        query = "SELECT * FROM operations WHERE 1=1"
+        values: list[object] = []
+        if org is not None:
+            query += " AND org=?"
+            values.append(org)
+        if status is not None:
+            query += " AND status=?"
+            values.append(status)
+        query += " ORDER BY id DESC LIMIT ?"
+        values.append(limit)
+        return self._conn.execute(query, values).fetchall()
+
+    def transition_operation(
+        self,
+        operation_id: int,
+        from_status: str,
+        to_status: str,
+        *,
+        result: str | None = None,
+        error: str | None = None,
+        job_id: int | None = None,
+    ) -> sqlite3.Row | None:
+        if to_status not in OPERATION_TRANSITIONS.get(from_status, set()):
+            raise ValueError(f"invalid operation transition: {from_status} -> {to_status}")
+        with self._tx() as connection:
+            return connection.execute(
+                """
+                UPDATE operations
+                SET status=?, result=?, error=?, job_id=?, updated_at=datetime('now')
+                WHERE id=? AND status=?
+                RETURNING *
+                """,
+                (to_status, result, error, job_id, operation_id, from_status),
+            ).fetchone()
+
+    def request_operation_cancel(self, operation_id: int) -> sqlite3.Row | None:
+        with self._tx() as connection:
+            row = connection.execute(
+                "SELECT status FROM operations WHERE id=?", (operation_id,)
+            ).fetchone()
+            if row is None:
+                return None
+            if row["status"] == "queued":
+                return connection.execute(
+                    """
+                    UPDATE operations
+                    SET status='cancelled', cancel_requested=1,
+                        updated_at=datetime('now')
+                    WHERE id=? AND status='queued'
+                    RETURNING *
+                    """,
+                    (operation_id,),
+                ).fetchone()
+            if row["status"] == "running":
+                return connection.execute(
+                    """
+                    UPDATE operations
+                    SET cancel_requested=1, updated_at=datetime('now')
+                    WHERE id=? AND status='running'
+                    RETURNING *
+                    """,
+                    (operation_id,),
+                ).fetchone()
+            return None
+
+    def operation_cancel_requested(self, operation_id: int) -> bool:
+        row = self._conn.execute(
+            "SELECT cancel_requested FROM operations WHERE id=?", (operation_id,)
+        ).fetchone()
+        return bool(row and row["cancel_requested"])
+
+    def claim_next_operation(self) -> sqlite3.Row | None:
+        with self._tx() as connection:
+            return connection.execute(
+                """
+                UPDATE operations
+                SET status='running', updated_at=datetime('now')
+                WHERE id = (
+                    SELECT id FROM operations
+                    WHERE status='queued' AND cancel_requested=0
+                    ORDER BY id LIMIT 1
+                ) AND status='queued' AND cancel_requested=0
+                RETURNING *
+                """
+            ).fetchone()
+
+    # -- approvals -----------------------------------------------------------
+    def create_approval(
+        self,
+        org: str,
+        role: str,
+        tool: str,
+        action_args: Mapping[str, object],
+        *,
+        risk: str,
+        job_id: int | None = None,
+        operation_id: int | None = None,
+    ) -> int:
+        if risk not in VALID_APPROVAL_RISKS:
+            raise ValueError(f"invalid approval risk: {risk!r}")
+        encoded = json.dumps(
+            dict(action_args),
+            ensure_ascii=False,
+            sort_keys=True,
+            separators=(",", ":"),
+        )
+        with self._tx() as connection:
+            cursor = connection.execute(
+                """
+                INSERT INTO approvals
+                    (org, role, tool, action_args, risk, job_id, operation_id)
+                VALUES (?,?,?,?,?,?,?)
+                """,
+                (org, role, tool, encoded, risk, job_id, operation_id),
+            )
+            return int(cursor.lastrowid)
+
+    def get_approval(self, approval_id: int) -> sqlite3.Row | None:
+        return self._conn.execute(
+            "SELECT * FROM approvals WHERE id=?", (approval_id,)
+        ).fetchone()
+
+    def list_approvals(
+        self,
+        *,
+        org: str | None = None,
+        status: str = "pending",
+        limit: int = 100,
+    ) -> list[sqlite3.Row]:
+        if status not in VALID_APPROVAL_STATUSES:
+            raise ValueError(f"invalid approval status: {status!r}")
+        if limit < 1:
+            raise ValueError("limit must be positive")
+        query = "SELECT * FROM approvals WHERE status=?"
+        values: list[object] = [status]
+        if org is not None:
+            query += " AND org=?"
+            values.append(org)
+        query += " ORDER BY id ASC LIMIT ?"
+        values.append(limit)
+        return self._conn.execute(query, values).fetchall()
+
+    def resolve_approval(
+        self,
+        approval_id: int,
+        decision: str,
+        *,
+        decided_by: str = "",
+    ) -> sqlite3.Row | None:
+        if decision not in {"approved", "denied"}:
+            raise ValueError("approval decision must be 'approved' or 'denied'")
+        with self._tx() as connection:
+            return connection.execute(
+                """
+                UPDATE approvals
+                SET status=?, decided_by=?, decided_at=datetime('now')
+                WHERE id=? AND status='pending'
+                RETURNING *
+                """,
+                (decision, decided_by, approval_id),
+            ).fetchone()
+
+    def _finish_pending_approval(self, approval_id: int, status: str) -> bool:
+        with self._tx() as connection:
+            cursor = connection.execute(
+                """
+                UPDATE approvals
+                SET status=?, decided_at=datetime('now')
+                WHERE id=? AND status='pending'
+                """,
+                (status, approval_id),
+            )
+            return cursor.rowcount == 1
+
+    def expire_approval(self, approval_id: int) -> bool:
+        return self._finish_pending_approval(approval_id, "expired")
+
+    def cancel_approval(self, approval_id: int) -> bool:
+        return self._finish_pending_approval(approval_id, "cancelled")
 
     # -- results / events ----------------------------------------------------
     def add_result(self, job_id: int, role: str, output: str) -> None:

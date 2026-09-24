@@ -1,6 +1,6 @@
 # Release 2.0 Checklist — Agent Factory
 
-> **Status:** PHASE 0 COMPLETE; Phase 1 is ready but not started. Feature work is specified in two companion plans;
+> **Status:** PHASE 1 COMPLETE; Phase 2 is ready but not started. Feature work is specified in two companion plans;
 > this checklist is the release-level tracker that folds them in and adds the
 > release-engineering gates 1.0 used.
 > **Purpose:** take the repo from "Release 1.0 (single-process CLI)" to
@@ -44,11 +44,11 @@ advertised-but-missing features).
 | P0-01 | Baseline tag (`v1.0.0`) & clean tree | 0 | S | Done (2026-09-24) |
 | P0-02 | Record verified baseline numbers | 0 | S | Done (2026-09-24) |
 | P0-03 | Lock backend data-model and type contracts (`B0.1`) | 0 | S | Done (2026-09-24) |
-| RC-01 | Backend **B1** — `Store` concurrency (WAL + serialized writes) | 1 | M | ☐ |
-| RC-02 | Backend **B2** — `operations` model | 1 | M | ☐ |
-| RC-03 | Backend **B3** — cancellation + `ApprovalFn` widening | 1 | S | ☐ |
-| RC-04 | Backend **B4** — durable approvals + `store_backed_approval` | 1 | M | ☐ |
-| RC-05 | Backend **B5** — bounded worker pool | 1 | L | ☐ |
+| RC-01 | Backend **B1** — `Store` concurrency (WAL + serialized writes) | 1 | M | Done (2026-09-24) |
+| RC-02 | Backend **B2** — `operations` model | 1 | M | Done (2026-09-24) |
+| RC-03 | Backend **B3** — cancellation + `ApprovalFn` widening | 1 | S | Done (2026-09-24) |
+| RC-04 | Backend **B4** — durable approvals + `store_backed_approval` | 1 | M | Done (2026-09-24) |
+| RC-05 | Backend **B5** — bounded worker pool | 1 | L | Done (2026-09-24) |
 | RC-06 | Web **P0** — scaffolding & API contract | 2 | M | ☐ |
 | RC-07 | Web **P1** — read API + app infra | 2 | M | ☐ |
 | RC-08 | Web **P2** — action endpoints + SSE | 2 | M | ☐ |
@@ -100,23 +100,23 @@ advertised-but-missing features).
 > `ruff` clean after every phase, with **zero web/Node imports** under
 > `src/agent_factory/runtime/`.
 
-- [ ] **RC-01 — B1: `Store` concurrency**
+- [x] **RC-01 — B1: `Store` concurrency** *(Done 2026-09-24)*
   - WAL journal mode, thread-local connections, all writes serialized through one write lock, and atomic running child-job creation.
   - **Done when:** `tests/test_store_concurrency.py` green (no `database is locked`, no double-claim under contention); full suite still green.
 
-- [ ] **RC-02 — B2: `operations` model**
+- [x] **RC-02 — B2: `operations` model** *(Done 2026-09-24)*
   - `operations` table + `create/list/get/update_status/request_cancel/claim_next_operation`; additive schema migration (`schema_version` bump).
   - **Done when:** `tests/test_runtime_operations.py` green; an existing org DB (`orgs/Acme`) migrates without touching existing rows.
 
-- [ ] **RC-03 — B3: cancellation + `ApprovalFn` widening**
+- [x] **RC-03 — B3: cancellation + `ApprovalFn` widening** *(Done 2026-09-24)*
   - `should_cancel` hook in `run_agent`'s step loop; `ApprovalFn` widened to `(tool, tool_input) -> bool`; every call site updated (`_approval_policy`, ambition, channel, tests).
   - **Done when:** full suite green after the signature change (proves all call sites updated); cancel + approval-arg tests pass.
 
-- [ ] **RC-04 — B4: durable approvals**
+- [x] **RC-04 — B4: durable approvals** *(Done 2026-09-24)*
   - `approvals` table + `create/list_pending/get/resolve/expire`; `store_backed_approval` block-and-wait callback (timeout + cancel aware).
   - **Done when:** `tests/test_runtime_approvals.py` covers approve / deny / timeout / cancel, all green.
 
-- [ ] **RC-05 — B5: bounded worker pool**
+- [x] **RC-05 — B5: bounded worker pool** *(Done 2026-09-24)*
   - `runtime/worker.py` `WorkerPool` (default size 2), drains jobs + operations, serialized writes, cancel + `store_backed_approval` integration, dispatch by `kind`.
   - **Done when:** `tests/test_runtime_worker.py` green — job + each operation kind reach `done`; a pending approval on one worker doesn't block a second worker.
 

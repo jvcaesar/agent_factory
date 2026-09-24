@@ -22,7 +22,7 @@ from __future__ import annotations
 import ipaddress
 import os
 import socket
-from collections.abc import Callable
+from collections.abc import Callable, Mapping
 from dataclasses import dataclass, replace
 from pathlib import Path
 from urllib.parse import urljoin, urlparse
@@ -32,7 +32,7 @@ from .state import Store
 
 # A tool function takes a dict of inputs and returns a text result.
 ToolFunc = Callable[[dict], str]
-ApprovalFn = Callable[["Tool"], bool]
+ApprovalFn = Callable[["Tool", Mapping[str, object]], bool]
 
 _MAX_WEB_RESPONSE_BYTES = 1024 * 1024
 _MAX_WEB_REDIRECTS = 5

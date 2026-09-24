@@ -72,14 +72,14 @@ class TestStore(unittest.TestCase):
         mem = Store(":memory:")
         jid = mem.enqueue("Acme", "w", "t", "fake")
         self.assertIsNotNone(mem.get(jid))
-        self.assertEqual(mem.schema_version(), 1)
+        self.assertEqual(mem.schema_version(), 3)
         mem.close()
 
     def test_schema_version_is_recorded(self):
-        self.assertEqual(self.store.schema_version(), 1)
+        self.assertEqual(self.store.schema_version(), 3)
         row = self.store._conn.execute("SELECT key, value FROM meta WHERE key='schema_version'").fetchone()
         self.assertIsNotNone(row)
-        self.assertEqual(int(row["value"]), 1)
+        self.assertEqual(int(row["value"]), 3)
 
 
 if __name__ == "__main__":

@@ -109,6 +109,7 @@ def run_channel_worker(
     approval_fn: ApprovalFn | None = None,
     max_messages: int = 5,
     temperature: float = 0.2,
+    should_cancel: Callable[[], bool] | None = None,
 ) -> list[tuple[dict, AgentOutcome, int]]:
     """Process pending channel messages and post an agent reply for each.
 
@@ -124,8 +125,13 @@ def run_channel_worker(
     answered: list[tuple[dict, AgentOutcome, int]] = []
 
     for _ in range(max_messages):
+        if should_cancel is not None and should_cancel():
+            break
         message = store.claim_next_in_channel(channel)
         if message is None:
+            break
+        if should_cancel is not None and should_cancel():
+            store.complete_message(message["id"], "pending")
             break
         role = _resolve_role(org, dict(message), role_resolver)
         role_llm = client_of(role)
@@ -135,11 +141,9 @@ def run_channel_worker(
             "Answer it directly, taking whatever granted-tool actions are useful. "
             "Finish with a 'final' answer that will be posted back to the channel."
         )
-        job_id = store.enqueue(
+        job_id = store.create_running_job(
             org.name, role.id, f"channel reply: {message['content'][:60]}", provider=role_llm.name
         )
-        if not store.start(job_id):
-            raise RuntimeError(f"could not start channel reply job {job_id}")
         outcome = run_agent(
             org,
             role,
@@ -150,7 +154,11 @@ def run_channel_worker(
             store=store,
             job_id=job_id,
             temperature=temperature,
+            should_cancel=should_cancel,
         )
+        if outcome.cancelled:
+            store.complete_message(message["id"], "pending")
+            break
         store.post_message(
             channel,
             author_role=role.id,

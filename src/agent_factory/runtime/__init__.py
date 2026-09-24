@@ -15,6 +15,7 @@ from .agent import (
     run_agent,
 )
 from .ambition import Proposal, propose_actions, run_ambition_loop
+from .approvals import store_backed_approval
 from .channel import (
     Message,
     channel_blob,
@@ -35,6 +36,7 @@ from .toolservers import (
     register_tool_server,
     server_tools,
 )
+from .worker import WorkerPool
 
 __all__ = [
     "Action",
@@ -59,6 +61,7 @@ __all__ = [
     "Tool",
     "ToolFunc",
     "ApprovalFn",
+    "store_backed_approval",
     "approval_needed",
     "tools_for_role",
     "ServerTool",
@@ -68,4 +71,5 @@ __all__ = [
     "register_tool_server",
     "server_tools",
     "run_job",
+    "WorkerPool",
 ]

@@ -244,15 +244,18 @@ def cmd_validate(args: argparse.Namespace) -> int:
 def _approval_policy(args) -> Callable:
     mode = args.approval
     if mode == "allow":
-        return lambda _t: True
+        return lambda _t, _i: True
     if mode == "deny":
-        return lambda _t: False
+        return lambda _t, _i: False
     # "ask" — prompt the user per tool call.
     from .runtime.tools import Tool
 
-    def _ask(tool: Tool) -> bool:
+    def _ask(tool: Tool, tool_input) -> bool:
         while True:
-            raw = input(f"APPROVE tool call '{tool.name}'? [{tool.description}] (y/n): ").strip().lower()
+            raw = input(
+                f"APPROVE tool call '{tool.name}' with input {dict(tool_input)!r}? "
+                f"[{tool.description}] (y/n): "
+            ).strip().lower()
             if raw in ("y", "yes"):
                 return True
             if raw in ("n", "no"):

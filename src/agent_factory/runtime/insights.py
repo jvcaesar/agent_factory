@@ -13,6 +13,7 @@
 from __future__ import annotations
 
 import re
+from collections.abc import Callable
 from dataclasses import dataclass
 
 from ..config import Org, Role
@@ -152,12 +153,17 @@ def observe(
     *,
     temperature: float = 0.2,
     max_count: int = 5,
+    should_cancel: Callable[[], bool] | None = None,
 ) -> list[Observation]:
     """Run one observer pass: scan state, parse findings, and persist insights."""
+    if should_cancel is not None and should_cancel():
+        return []
     summary = _sanitize_prompt_text(_state_summary(store))
     context_text = _sanitize_prompt_text(store.context_blob())
     messages = [ChatMessage("user", _observe_prompt(org, role, summary, context_text, max_count))]
     result = llm.complete(messages, temperature=temperature)
+    if should_cancel is not None and should_cancel():
+        return []
     observations = parse_observations(result.text, max_count=max_count)
     seen: set[str] = set()
     for obs in observations:
@@ -224,11 +230,16 @@ def build_daily_brief(
     llm: LLMClient,
     *,
     temperature: float = 0.2,
+    should_cancel: Callable[[], bool] | None = None,
 ) -> str:
     """Generate a "what to do today" brief from open insights + state."""
+    if should_cancel is not None and should_cancel():
+        return ""
     open_items = store.list_insights(status="open", limit=20)
     summary = _sanitize_prompt_text(_state_summary(store))
     context_text = _sanitize_prompt_text(store.context_blob())
     prompt = _brief_prompt(org, role, summary, open_items, context_text)
     result = llm.complete([ChatMessage("user", prompt)], temperature=temperature)
+    if should_cancel is not None and should_cancel():
+        return ""
     return result.text.strip()
