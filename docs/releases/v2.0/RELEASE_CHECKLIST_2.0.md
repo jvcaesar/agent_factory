@@ -1,6 +1,6 @@
 # Release 2.0 Checklist — Agent Factory
 
-> **Status:** DRAFT (not started). Feature work is specified in two companion plans;
+> **Status:** PHASE 0 COMPLETE; Phase 1 is ready but not started. Feature work is specified in two companion plans;
 > this checklist is the release-level tracker that folds them in and adds the
 > release-engineering gates 1.0 used.
 > **Purpose:** take the repo from "Release 1.0 (single-process CLI)" to
@@ -41,9 +41,9 @@ advertised-but-missing features).
 
 | ID | Item | Phase | Est. | Status |
 |----|------|-------|------|--------|
-| P0-01 | Baseline tag (`v1.0.0`) & clean tree | 0 | S | ☐ |
-| P0-02 | Record verified baseline numbers | 0 | S | ☐ |
-| P0-03 | Lock backend data-model and type contracts (`B0.1`) | 0 | S | ☐ |
+| P0-01 | Baseline tag (`v1.0.0`) & clean tree | 0 | S | Done (2026-09-24) |
+| P0-02 | Record verified baseline numbers | 0 | S | Done (2026-09-24) |
+| P0-03 | Lock backend data-model and type contracts (`B0.1`) | 0 | S | Done (2026-09-24) |
 | RC-01 | Backend **B1** — `Store` concurrency (WAL + serialized writes) | 1 | M | ☐ |
 | RC-02 | Backend **B2** — `operations` model | 1 | M | ☐ |
 | RC-03 | Backend **B3** — cancellation + `ApprovalFn` widening | 1 | S | ☐ |
@@ -72,11 +72,11 @@ advertised-but-missing features).
 
 ## Phase 0 — Baseline (do first)
 
-- [ ] **P0-01 — Baseline tag + clean tree**
+- [x] **P0-01 — Baseline tag + clean tree** *(Done 2026-09-24)*
   - Confirm `v1.0.0` is tagged and `git status` is clean before any 2.0 work; branch off `main`.
   - **Done when:** `git tag -l` shows `v1.0.0`, working tree clean, a `release/2.0` (or feature) branch exists.
 
-- [ ] **P0-02 — Record verified baseline numbers**
+- [x] **P0-02 — Record verified baseline numbers** *(Done 2026-09-24)*
   - Capture the pre-feature baseline to diff 2.0 against: **169** offline tests
     (`py -m unittest discover -s tests`; the shipped 1.0 suite had 163 and the
     documentation-governance work adds 6), **13** CLI commands (`bootstrap, packs,
@@ -85,7 +85,7 @@ advertised-but-missing features).
     version `1.0.0`. (2.0 adds the `web` command → 14, plus new web tests.)
   - **Done when:** the numbers here match a fresh suite/CLI run at branch point.
 
-- [ ] **P0-03 — Lock backend contracts (`B0.1`)**
+- [x] **P0-03 — Lock backend contracts (`B0.1`)** *(Done 2026-09-24)*
   - Review and finalize the operations, approvals, worker-pool, cancellation, and `ApprovalFn` contracts in the backend plan before implementation.
   - **Done when:** backend task `B0.1` is `Done`, deviations are recorded, and later backend phases can implement against stable contracts.
 
@@ -101,7 +101,7 @@ advertised-but-missing features).
 > `src/agent_factory/runtime/`.
 
 - [ ] **RC-01 — B1: `Store` concurrency**
-  - WAL journal mode, thread-safe connection (`check_same_thread=False`), all writes serialized through one write lock; public method surface unchanged.
+  - WAL journal mode, thread-local connections, all writes serialized through one write lock, and atomic running child-job creation.
   - **Done when:** `tests/test_store_concurrency.py` green (no `database is locked`, no double-claim under contention); full suite still green.
 
 - [ ] **RC-02 — B2: `operations` model**
@@ -143,8 +143,8 @@ advertised-but-missing features).
   - **Done when:** `tests/test_web_actions.py` green — each action drains to `done` via FakeLLM; SSE emits transitions.
 
 - [ ] **RC-09 — P3: approvals API** *(needs RC-04)*
-  - `GET …/approvals?status=pending`, `POST /approvals/{id}/decide`, approval SSE events.
-  - **Done when:** `tests/test_web_approvals.py` green — pending appears; approve/deny alters the operation; second worker unblocked.
+  - `GET …/approvals?status=pending`, org-scoped `POST …/approvals/{id}/decide`, approval SSE events.
+  - **Done when:** `tests/test_web_approvals.py` green — pending appears; approve executes the tool, deny prevents the tool call without forcing a blocked operation, races return 409, and a second worker remains unblocked.
 
 - [ ] **RC-10 — P4: frontend SPA**
   - Typed client + TanStack Query hooks, app shell + routing, read views, action forms (RHF + Zod), live Approval Inbox, Bootstrap Wizard, SSE + polling fallback, production build served from `webapp/static`.

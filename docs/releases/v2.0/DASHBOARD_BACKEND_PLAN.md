@@ -27,8 +27,9 @@ needs **B2 + B5**, and its Phase 3 needs **B4**.
 ## Design decisions (locked)
 
 - **Worker concurrency = bounded pool (Option B).** A pool of `N` worker threads (default `2`,
-  configurable) drains queued jobs and operations. **All writes are serialized** through a
-  single write path in `Store`; readers use SQLite WAL. The pool is bounded (not single) so an
+  configurable) drains queued jobs and operations across org-local databases. **All writes per
+  Store are serialized** through one write path; thread-local SQLite connections plus WAL allow
+  reads without sharing a connection across threads. The pool is bounded (not single) so an
   operation that is *blocked waiting for a human approval* parks on its own worker thread
   without stalling other queued work.
 - **Approvals v1 = durable pending record + block-and-wait.** When the agent loop hits a tool
@@ -39,6 +40,17 @@ needs **B2 + B5**, and its Phase 3 needs **B4**.
 - **No behavior change for existing CLI flows.** `run`, `ambition`, `observe`, `brief`, and
   `channel worker` keep working exactly as today when driven from the CLI; the new pieces are
   additive and opt-in.
+- **Org identity = confined path key.** Each org keeps its own
+  `<org>/.agentfactory/jobs.db`; the `operations.org` and `approvals.org` values are the
+  URL/path key resolved beneath the configured orgs root, not the display value `Org.name`.
+  Operation and approval ids are database-local, so every API route that addresses one also
+  includes `{org}`.
+- **Cancellation is operation-scoped in 2.0.** Queued operations cancel atomically; running
+  operations observe cooperative checkpoints. Existing jobs retain their current status model;
+  a child job interrupted by operation cancellation becomes `blocked` with error `cancelled`.
+- **Approval denial preserves current agent behavior.** `False` means the requested tool does
+  not execute, but the agent may recover and continue. Denial alone does not force an operation
+  to `blocked`; final operation status follows the eventual agent outcome.
 
 ## Ground truth reused (do not reimplement)
 
@@ -83,7 +95,7 @@ Status values: `Not Started` (default) · `In Progress` · `Done` · `Blocked`.
 
 | Task | Description | Status | Notes |
 |---|---|---|---|
-| B0.1 | Lock data-model + type contracts (this doc) | Not Started | |
+| B0.1 | Lock data-model + type contracts (this doc) | Done | 2026-09-24: multi-org stores, migrations, transitions, cancellation, approvals, worker lifecycle, and dispatch contracts locked. |
 | B1.1 | `Store` concurrency: WAL + serialized writes + safe connections | Not Started | |
 | B1.2 | `test_store_concurrency.py` | Not Started | |
 | B2.1 | `operations` table + schema migration | Not Started | |
@@ -151,6 +163,40 @@ CREATE TABLE IF NOT EXISTS approvals (
 );
 ```
 
+### Schema migration contract
+
+- Schema `v1` is the current Release 1.0 schema.
+- Migration `v1 -> v2` creates `operations` and its status/claim indexes.
+- Migration `v2 -> v3` creates `approvals` and its pending/status indexes.
+- Migrations run in order inside transactions. Update the `meta.schema_version` value only after
+  the corresponding migration succeeds; `INSERT OR IGNORE` is not an upgrade mechanism.
+- Opening a current database is idempotent. Opening a manually seeded v1 database reaches the
+  latest implemented version without modifying existing rows.
+
+### Operation state and payload contract
+
+Allowed transitions are `queued -> running|cancelled` and
+`running -> done|error|blocked|cancelled`. Terminal states are immutable. Claiming excludes
+rows with `cancel_requested=1`. Mutators return the updated row, or `None` when the row does not
+exist or the requested transition lost a race; API code distinguishes not-found from conflict
+by reading the row.
+
+`params` is canonical JSON with these per-kind fields:
+
+| Kind | Required | Optional/defaulted |
+|---|---|---|
+| `run` | `role`, `task` | `provider=null`, `model=null`, `approval_mode="deny"` |
+| `ambition` | `role` | `max_actions=3`, `max_risk="medium"`, `approval_mode="deny"`, `provider=null`, `model=null` |
+| `observe` | none | `role=null` (use configured/default observer), `provider=null`, `model=null` |
+| `brief` | none | `role=null` (use lead), `provider=null`, `model=null` |
+| `channel_worker` | `channel` | `role=null` (use lead), `max_messages=10`, `approval_mode="deny"`, `provider=null`, `model=null` |
+
+Unknown kinds and invalid params are rejected before insertion. Provider/model precedence is
+request override, then role/environment defaults through `client_for_role`. `result` is a
+human-readable summary: final agent text for `run`, action-count summary for `ambition`,
+insight-count/brief text for `observe`/`brief`, and processed-message count for
+`channel_worker`.
+
 ### `ApprovalFn` signature change
 
 ```python
@@ -169,17 +215,26 @@ the second argument. The default in `run_agent` becomes `lambda _t, _i: False`.
 class WorkerPool:
     def __init__(
         self,
-        store: Store,
-        build_llm,                 # (provider, model) -> LLMClient  (reuse CLI helper)
-        load_org,                  # (org_name) -> (Org, root_path)  (reuse loader)
+    org_keys,                  # () -> Iterable[str] of confined org path keys
+    open_store,                # (org_key) -> cached org-local Store
+    load_org,                  # (org_key) -> (Org, root_path)
         *,
         size: int = 2,
         poll_interval: float = 0.5,
         approval_timeout: float | None = None,
+    on_transition=None,        # (org_key, entity_type, id, status) -> None
     ) -> None: ...
-    def start(self) -> None: ...           # spawn `size` daemon worker threads
-    def stop(self, *, drain: bool = False) -> None: ...  # signal + join
+  def start(self) -> None: ...
+  def stop(self, *, drain: bool = False, timeout: float = 5.0) -> None: ...
 ```
+
+The app owns the Store cache and closes stores only after workers join. `size` must be at least
+one; `start` and `stop` are idempotent. Workers round-robin orgs and alternate jobs/operations
+to prevent starvation, contain exceptions per claimed unit, and survive a failed unit.
+`on_transition` is runtime-neutral; web code binds it to SSE without runtime importing FastAPI.
+Non-draining shutdown cancels active approval waits and operations. Draining shutdown finishes
+runnable work but also cancels approval waits so `timeout=None` cannot hang shutdown; exceeding
+the join timeout raises `TimeoutError`.
 
 ---
 
@@ -191,12 +246,16 @@ writer threads, without changing any existing method's external behavior.
 ### B1.1 — WAL + serialized writes + safe connections
 - Depends on: B0.1.
 - In [state.py](../../../src/agent_factory/runtime/state.py):
-  - Open the connection with `check_same_thread=False`; on init run `PRAGMA journal_mode=WAL`
-    and `PRAGMA busy_timeout=<ms>` alongside the existing `PRAGMA foreign_keys=ON`.
+  - Give each thread a lazy SQLite connection; on each connection run
+    `PRAGMA journal_mode=WAL`, `PRAGMA busy_timeout=<ms>`, and `PRAGMA foreign_keys=ON`.
+    Preserve `:memory:` support with a named shared-cache URI plus an anchor connection.
   - Add a private `threading.Lock` (`self._write_lock`); acquire it inside `_tx()` so **all
-    writes are serialized** through one path. Reads do not take the lock (WAL allows concurrent
-    readers).
-  - Keep the public method surface identical. This is an internal hardening change.
+    writes are serialized** through one path. Reads use the calling thread's connection and do
+    not take the write lock.
+  - Add `create_running_job(...) -> int`, which atomically inserts a job in `running` state.
+    Use it for synchronous child jobs in `run_job`, ambition, and channel flows so a pool cannot
+    steal an `enqueue()` row before the caller invokes `start()`.
+  - `Store.close()` closes registered connections only after worker threads have joined.
 - Verify: existing `test_runtime_state.py` and the full suite still pass unchanged.
 
 ### B1.2 — Concurrency test
@@ -204,7 +263,8 @@ writer threads, without changing any existing method's external behavior.
 - New `tests/test_store_concurrency.py`: spin up several threads that interleave
   `enqueue`/`pull_next`/`complete` and reader calls (`list_jobs`, `stats`) against one `Store`;
   assert no `database is locked` errors, no lost updates, and that `pull_next` never hands the
-  same job to two threads (atomic claim holds under contention).
+  same job to two threads (atomic claim holds under contention). Also prove an atomically
+  created running child job cannot be claimed by the pool.
 - Verify: `py -m unittest tests.test_store_concurrency -v` green; run it a few times for flakiness.
 
 **Phase B1 exit criteria:** full offline suite green; new concurrency test green; `ruff` clean.
@@ -218,9 +278,8 @@ the pool can drain it race-free (mirroring `pull_next`).
 
 ### B2.1 — Table + migration
 - Depends on: B1.1.
-- Add the `operations` DDL (above) to the schema bootstrap in `Store`; bump `schema_version`.
-  Migration is additive and idempotent (`CREATE TABLE IF NOT EXISTS`), so existing org DBs
-  upgrade transparently on first open.
+- Implement the transactional `v1 -> v2` migration defined above. Existing org DBs upgrade
+  transparently on first open; the version changes only after DDL and indexes succeed.
 - Verify: opening a pre-existing org DB (e.g. `orgs/Acme`) creates the table without touching
   existing rows; `schema_version()` reflects the bump.
 
@@ -230,12 +289,12 @@ the pool can drain it race-free (mirroring `pull_next`).
   - `create_operation(org, kind, params: dict) -> int`
   - `get_operation(op_id) -> sqlite3.Row | None`
   - `list_operations(org=None, status=None, limit=100) -> list[Row]`
-  - `update_operation_status(op_id, status, *, result=None, error=None, job_id=None) -> None`
-  - `request_operation_cancel(op_id) -> None` (sets `cancel_requested=1`)
+  - `transition_operation(op_id, from_status, to_status, *, result=None, error=None, job_id=None) -> sqlite3.Row | None`
+  - `request_operation_cancel(op_id) -> sqlite3.Row | None` (queued → cancelled; running sets the flag)
   - `operation_cancel_requested(op_id) -> bool`
   - `claim_next_operation() -> Row | None` — atomic `UPDATE ... WHERE id=(SELECT id ... WHERE
-    status='queued' ORDER BY id LIMIT 1) AND status='queued' RETURNING *` (same pattern as
-    `pull_next`).
+    status='queued' AND cancel_requested=0 ORDER BY id LIMIT 1) AND status='queued' RETURNING *`
+    (same pattern as `pull_next`).
 - Verify: unit-level calls exercise each method; `claim_next_operation` returns each queued op
   exactly once under two competing threads.
 
@@ -258,8 +317,13 @@ Goal: two small, additive seams in the agent loop that the pool and durable appr
 - In [agent.py](../../../src/agent_factory/runtime/agent.py), add
   `should_cancel: Callable[[], bool] | None = None` to `run_agent(...)`. At the top of each
   `for step in range(max_steps)` iteration, if `should_cancel and should_cancel()`, record a
-  `cancelled` event and return an `AgentOutcome(finished=False, ...)` (or `store.block(job_id,
-  "cancelled")` when a store/job is attached). Default `None` preserves today's behavior.
+  `cancelled` event, block an attached child job with error `cancelled`, and return an
+  `AgentOutcome(finished=False, cancelled=True, ...)`. Add `cancelled: bool = False` to the
+  outcome instead of inferring cancellation from event text. Default `None` preserves behavior.
+  Propagate the hook through every operation target: ambition checks before proposal, between
+  proposals, and in child agents; channel checks before each message and in child agents;
+  observe/brief check before and after their single provider call. An in-flight provider call
+  is not interruptible.
 - Verify: a FakeLLM test where `should_cancel` flips to `True` after step 1 stops the loop
   promptly and records the cancellation; with the default `None`, existing agent tests are
   unchanged.
@@ -293,16 +357,20 @@ job/operation can pause for a human decision surfaced anywhere (CLI or web).
 
 ### B4.1 — Table + migration
 - Depends on: B1.1.
-- Add the `approvals` DDL (above); bump `schema_version`; idempotent/additive as in B2.1.
+- Implement the transactional `v2 -> v3` migration defined above; update the version only after
+  the table and indexes exist.
 - Verify: table created on open of an existing DB; no impact on existing rows.
 
 ### B4.2 — Store methods **[P]**
 - Depends on: B4.1.
 - Add: `create_approval(org, role, tool, action_args: dict, *, risk, job_id=None,
   operation_id=None) -> int`; `get_approval(approval_id) -> Row | None`;
-  `list_pending_approvals(org=None, limit=100) -> list[Row]`;
-  `resolve_approval(approval_id, decision: str, *, decided_by="") -> None`
-  (`decision ∈ {approved, denied}`, stamps `decided_at`); `expire_approval(approval_id)`.
+  `list_approvals(*, status="pending", limit=100) -> list[Row]`;
+  `resolve_approval(approval_id, decision: str, *, decided_by="") -> Row | None`;
+  `expire_approval(approval_id) -> bool`; `cancel_approval(approval_id) -> bool`.
+  Resolve/expire/cancel use `WHERE status='pending'`, so exactly one racer wins. Decisions are
+  `approved|denied`; timeout becomes `expired`; operation/shutdown cancellation becomes
+  `cancelled`.
 - Verify: create → list_pending → resolve transitions persist and `decided_at` is set.
 
 ### B4.3 — `store_backed_approval` callback
@@ -315,8 +383,9 @@ job/operation can pause for a human decision surfaced anywhere (CLI or web).
      JSON preview of `tool_input`);
   2. **blocks**, polling `get_approval` every `poll_interval` until status is
      `approved`/`denied`, or `timeout` elapses (→ `expire_approval`, return `False`), or
-     `should_cancel()` is `True` (→ `expire_approval`, return `False`);
+    `should_cancel()` is `True` (→ `cancel_approval`, return `False`);
   3. returns `True` only on `approved`.
+  - A `False` result denies only that tool call; it does not by itself block the job or operation.
 - Verify: a threaded test — one thread runs the callback (parks on pending), another calls
   `resolve_approval(..., "approved")`; the callback returns `True`. Repeat for `denied` → `False`,
   and a timeout path → `False`.
@@ -339,19 +408,20 @@ approvals, with writes serialized per B1.
 ### B5.1 — `WorkerPool` + lifecycle
 - Depends on: B1.1, B2.2.
 - New `src/agent_factory/runtime/worker.py` implementing the `WorkerPool`
-  interface above. `size` daemon threads; each loops: try `store.pull_next()` (a job) then
-  `store.claim_next_operation()` (an operation); if both `None`, sleep `poll_interval`; else
-  execute the claimed unit. `stop(drain=False)` signals a stop event and joins; `drain=True`
-  finishes the queue first.
+  interface above. `size` daemon threads round-robin org-local Stores and alternate the first
+  claim type between job and operation; if no work exists, sleep `poll_interval`. Apply the
+  locked lifecycle, exception-containment, transition-callback, and shutdown rules above.
 - Verify: start a pool against an empty store, confirm threads idle without busy-spinning
   (respect `poll_interval`); `stop()` joins cleanly with no lingering threads.
 
 ### B5.2 — Dispatch by kind
 - Depends on: B5.1, B2.2.
-- Job units: build the `LLMClient` from the job row's provider/model, then call `run_agent(...,
-  store=store, job_id=row["id"], approval_fn=..., should_cancel=...)`.
+- Job units: a row returned by `pull_next()` is already `running`; do not call `run_job`, which
+  would enqueue another row. Load its role and call `client_for_role(role,
+  provider_override=row["provider"], model_override=None)`, then `run_agent(..., store=store,
+  job_id=row["id"], approval_fn=...)`. Jobs have no model column and no direct cancellation API.
 - Operation units: dispatch `kind` →
-  `run` (enqueue+run a job for `role`/`task`), `ambition` (`run_ambition_loop`),
+  `run` (create an atomic running child job for `role`/`task`), `ambition` (`run_ambition_loop`),
   `observe`/`brief` ([insights.py](../../../src/agent_factory/runtime/insights.py)),
   `channel_worker` ([channel.py](../../../src/agent_factory/runtime/channel.py)). Record
   `running → done|error` on the operation, linking `job_id` where one is spawned.
@@ -360,8 +430,8 @@ approvals, with writes serialized per B1.
 
 ### B5.3 — Cancel + approval integration
 - Depends on: B5.2, B3.1, B4.3.
-- Pass `should_cancel=lambda: store.operation_cancel_requested(op_id)` (and the analogous job
-  check) into `run_agent`. Construct the pool's `approval_fn` via `store_backed_approval(...)`
+- Pass `should_cancel=lambda: store.operation_cancel_requested(op_id)` through every operation
+  dispatch target. Construct the pool's `approval_fn` via `store_backed_approval(...)`
   bound to the current org/role/job/operation and the pool's `approval_timeout`. Because the
   pool has `size ≥ 2`, a worker parked on a pending approval does not stall other queued work.
 - Verify: with a FakeLLM that requests a high-risk tool, an operation parks with a pending
@@ -371,9 +441,11 @@ approvals, with writes serialized per B1.
 ### B5.4 — Worker-pool tests
 - Depends on: B5.3.
 - `tests/test_runtime_worker.py` (FakeLLM, short intervals): job drains to `done`; each
-  operation kind drains to `done`; cancel flips an in-flight unit to `blocked/cancelled`;
-  approval approve/deny alters the outcome; a pending approval on one worker does not block a
-  second worker.
+  operation kind drains to `done`; queued/running cancellation follows the locked transition
+  contract; approval approve/deny affects the tool call without forcing denial to block the
+  operation; cross-org ids stay isolated; work is fair; a unit exception does not kill a
+  worker; shutdown while approval-blocked is bounded; a pending approval on one worker does not
+  block a second worker.
 - Verify: `py -m unittest tests.test_runtime_worker -v` green; run twice for flakiness.
 
 **Phase B5 exit criteria:** the pool executes jobs + all operation kinds, honors cancel and
@@ -389,12 +461,14 @@ durable approvals, keeps writes serialized, and is fully covered by offline Fake
   approval gate (B3.2).
 - [tools.py](../../../src/agent_factory/runtime/tools.py) — `ApprovalFn` widening (B3.2);
   `store_backed_approval` (B4.3, or a new `runtime/approvals.py`).
-- [orchestrator.py](../../../src/agent_factory/runtime/orchestrator.py) — reused by the pool (B5).
+- [orchestrator.py](../../../src/agent_factory/runtime/orchestrator.py) — updated to use atomic
+  running child-job creation; the pool does not call `run_job` for claimed rows.
 - [ambition.py](../../../src/agent_factory/runtime/ambition.py),
   [insights.py](../../../src/agent_factory/runtime/insights.py),
   [channel.py](../../../src/agent_factory/runtime/channel.py) — dispatch targets (B5.2).
-- [cli.py](../../../src/agent_factory/cli.py) — `_approval_policy` signature update (B3.2); the
-  provider/model → `LLMClient` helper reused by the pool (B5.2).
+- [cli.py](../../../src/agent_factory/cli.py) — `_approval_policy` signature update (B3.2).
+- `src/agent_factory/llm/factory.py` — reuse `client_for_role`; do not duplicate provider/model
+  resolution or reuse argparse-specific CLI policy construction in the worker.
 - New: `src/agent_factory/runtime/worker.py` (B5).
 - New tests: `tests/test_store_concurrency.py`, `tests/test_runtime_operations.py`,
   `tests/test_runtime_approvals.py`, `tests/test_runtime_worker.py` (plus additions to
@@ -402,7 +476,7 @@ durable approvals, keeps writes serialized, and is fully covered by offline Fake
 
 ## Verification (plan-level)
 
-1. `py -m unittest discover -s tests -v` — the full offline suite (163 pre-existing + new
+1. `py -m unittest discover -s tests -v` — the full offline suite (169 at the Phase 0 baseline + new
    tests) is green with no network and no API keys, after **every** phase.
 2. `ruff check` — clean across `src/` and `tests/`.
 3. Opening an existing org DB (`orgs/Acme`) migrates schema additively (new tables appear;

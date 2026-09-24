@@ -1,7 +1,7 @@
 # Release 2.0
 
-> **Status:** Draft; implementation not started  
-> **Current phase:** Phase 0 - Baseline  
+> **Status:** Phase 0 complete; Phase 1 ready to start
+> **Current phase:** Phase 1 - Backend engine (Not Started)
 > **Current status:** [Current implementation status](../../planning/CURRENT.md)
 
 Release 2.0 adds the local management dashboard, durable operations and approvals, and the worker pool. This undated folder remains the stable home for the release throughout planning, implementation, QA, and release.
@@ -20,8 +20,8 @@ Create exactly one dated implementation folder when each release-checklist phase
 
 | Release phase | Scope | Implementation record |
 |---|---|---|
-| Phase 0 | Baseline | Not started |
-| Phase 1 | Backend engine | Not started |
+| Phase 0 | Baseline | [Done - 2026-09-24](implementation/2026-09-24-phase-0-baseline/README.md) |
+| Phase 1 | Backend engine | Not started - next eligible phase |
 | Phase 2 | Web Console | Not started |
 | Phase 3 | Release quality | Not started |
 | Phase 4 | Packaging and release | Not started |

@@ -28,7 +28,7 @@ paths. Paste captured output below; head each block `=== <case> (rc=N) clean ===
 - [ ] `GET /api/orgs/<unknown>/status` → 404
 - [ ] `POST /api/bootstrap` missing `org_name` → 422 `{errors}`
 - [ ] `POST /api/bootstrap` duplicate org → 409
-- [ ] `POST /api/approvals/{id}/decide` already-decided → 409
+- [ ] `POST /api/orgs/{org}/approvals/{id}/decide` already-decided → 409
 - [ ] any `/api/*` with a bad bearer token (when `--token` set) → 401
 
 ```
@@ -51,7 +51,7 @@ and drive the whole loop from the browser. Capture screenshots or trimmed output
 - [ ] `brief` action → narrative brief rendered
 - [ ] `channel post → worker` → agent reply appears in-channel
 - [ ] high-risk action → pending approval in the Inbox → **approve** → tool runs
-- [ ] same high-risk action → **deny** path → operation blocked
+- [ ] same high-risk action → **deny** path → tool does not execute; operation follows the eventual agent outcome
 
 **Provider(s) exercised:** _(e.g. OpenAI `gpt-4o-mini`, Ollama `gemma3:12b`)_
 **Org used:** _(e.g. `orgs/QA_2.0`)_

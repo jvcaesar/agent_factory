@@ -41,7 +41,7 @@ All web work is additive to the CLI — no existing command behavior changes.
   `<org_root>/.agentfactory/jobs.db` (confirmed in [cli.py](../../../src/agent_factory/cli.py), e.g. line 280-281).
   Read methods: `list_jobs`, `list_messages`, `list_insights`, `stats`, `recent_events`,
   `list_context`/`search_context`, `pending_messages`. **New in the backend plan:**
-  `list_operations`/`get_operation` and `list_pending_approvals`/`get_approval` (consumed here).
+  `list_operations`/`get_operation` and `list_approvals`/`get_approval` (consumed here).
 - `WorkerPool` — planned in `src/agent_factory/runtime/worker.py` (backend plan B5). The web
   process starts one pool in the app lifespan and enqueues jobs/operations for it to execute.
 - `store_backed_approval` + the `operations`/`approvals` tables — backend plan B4/B2. The web
@@ -222,7 +222,8 @@ writes) so FastAPI request threads read the store safely while the pool writes. 
 - Depends on: 1.3, 1.4, backend B1 + B5.
 - In `app.py`: `create_app(orgs_root, *, dev=False, token=None, pool_size=2) -> FastAPI`. Store
   config in `app.state`. Use a **lifespan** that starts a `WorkerPool(size=pool_size)` and the SSE
-  event bus on startup and stops them (drain) on shutdown. Include routers under `/api`. Mount
+  event bus on startup and stops them with bounded `stop(drain=False)` on shutdown. The app owns
+  the org-local Store cache and closes it after workers join. Include routers under `/api`. Mount
   `webapp/static` via `StaticFiles(html=True)` at `/` if it exists; else a plain `GET /` returns a
   JSON hint (`"frontend not built; run npm run build in frontend/ or npm run dev"`).
 - Verify: `TestClient(create_app(tmp))` serves `/api/orgs` (200) and, with no `static/`, `GET /`
@@ -267,7 +268,9 @@ return its id; the **worker pool** executes it; the browser follows progress ove
   - `POST /api/orgs/{org}/channel/post` (`ChannelPostRequest`) → `Store.post_message` (synchronous,
     no LLM → `201`).
   - `POST /api/orgs/{org}/context` (`ContextRequest`) → `Store.upsert_context` (synchronous → `201`).
-  - `POST /api/orgs/{org}/operations/{id}/cancel` → `Store.request_operation_cancel`.
+  - `POST /api/orgs/{org}/operations/{id}/cancel` → `Store.request_operation_cancel`; queued
+    operations become `cancelled`, running operations set the cooperative cancel flag, terminal
+    operations return 409.
   - `approval_mode` reuses the CLI `allow|deny|ask` semantics: `ask` maps to the durable approval
     flow (Phase 3); `allow`/`deny` map to the fixed policies.
 - Verify: posting each action creates a queued operation the pool then drains (see 2.3); cancel
@@ -303,20 +306,21 @@ Surface durable pending approvals and let the operator decide. **Depends on back
 ### 3.1 — Approval endpoints
 - Depends on: 1.5, backend B4.
 - In `routes_approvals.py`:
-  - `GET /api/orgs/{org}/approvals?status=pending&limit=` → `Store.list_pending_approvals` →
+  - `GET /api/orgs/{org}/approvals?status=pending&limit=` → `Store.list_approvals` →
     `list[ApprovalRow]` (includes `tool`, `action_args`, `risk`, `role`, linked job/operation).
-  - `POST /api/approvals/{id}/decide` (`ApprovalDecision`: `decision: approved|denied`,
+  - `POST /api/orgs/{org}/approvals/{id}/decide` (`ApprovalDecision`: `decision: approved|denied`,
     `decided_by?`) → `Store.resolve_approval`; returns the updated row.
 - Verify: with a paused FakeLLM operation (from B4/B5) that created a pending approval, `GET`
   lists it; `POST .../decide {approved}` lets the tool run and the operation finish; `{denied}`
-  blocks it.
+  prevents that tool call while allowing the agent to recover or finish normally.
 
 ### 3.2 — Approval SSE events + tests
 - Depends on: 3.1, 2.2.
 - Publish `approval` envelopes (`created`, `resolved`) on the org SSE stream so the Approval
   Inbox updates live.
-- `tests/test_web_approvals.py`: pending appears via API + SSE; approve → operation completes;
-  deny → operation blocked; a second queued operation still runs on another pool worker while one
+- `tests/test_web_approvals.py`: pending appears via API + SSE; approve → tool executes; deny →
+  tool does not execute and the operation follows its eventual agent outcome; duplicate/racing
+  decisions return 409; cross-org approval ids remain isolated; a second queued operation still runs on another pool worker while one
   is parked (proves Option-B pool behavior end-to-end through the API).
 - Verify: `py -m unittest tests.test_web_approvals -v` green.
 
@@ -433,7 +437,8 @@ tooltips and accessible names for unfamiliar icon-only controls.
 ### 4.5 — Approval Inbox (live) **[P]**
 - Depends on: 4.1, 4.2, Phase 3.
 - `routes/Approvals.tsx` + `components/approvals/` — list pending approvals (tool, args, risk,
-  role) with the Alloy `ApprovalPanel`; Approve/Deny buttons → `POST /approvals/{id}/decide`;
+  role) with the Alloy `ApprovalPanel`; Approve/Deny buttons →
+  `POST /orgs/{org}/approvals/{id}/decide`;
   live via SSE. Risk is communicated with label + icon + color, and approval resolution uses a
   short, non-layout-shifting state transition.
 - Verify: a pending approval appears without manual refresh; deciding it updates the list and the
@@ -505,7 +510,7 @@ desktop/mobile widths.
 
 ### 5.4 — Full regression + roadmap update
 - Depends on: 5.1, 5.2, 5.3.
-- Run the full offline suite (`py -m unittest discover -s tests -v`) — 163 pre-existing tests plus
+- Run the full offline suite (`py -m unittest discover -s tests -v`) — 169 Phase 0 baseline tests plus
   the new web tests — and `ruff check` repo-wide, and `cd frontend && npm run build && tsc
   --noEmit`. Add a Release 2.0 entry mirroring [RELEASE_CHECKLIST_1.0.md](../v1.0.0/RELEASE_CHECKLIST_1.0.md)
   and annotate [ROADMAP.md](../../planning/ROADMAP.md).
@@ -601,7 +606,7 @@ is configured, `/api/*` requires `Authorization: Bearer <token>`.
 | Method & Path | Request | Response | Errors |
 |---|---|---|---|
 | `GET /orgs/{org}/approvals?status=pending&limit=` | — | `ApprovalRow[]` = `{id, role, tool, action_args, risk, status, job_id, operation_id, created_at}[]` | 400, 404 |
-| `POST /approvals/{id}/decide` | `ApprovalDecision` = `{decision: "approved"\|"denied", decided_by?}` | `ApprovalRow` | 404, 409 (already decided), 422 |
+| `POST /orgs/{org}/approvals/{id}/decide` | `ApprovalDecision` = `{decision: "approved"\|"denied", decided_by?}` | `ApprovalRow` | 400, 404, 409 (already decided), 422 |
 
 ### Bootstrap
 | Method & Path | Request | Response | Errors |
@@ -633,7 +638,7 @@ keep-alive comments. Clients invalidate the matching TanStack Query cache on eac
 ## Verification (release-level, see also per-task verification above)
 1. Backend engine: [DASHBOARD_BACKEND_PLAN.md](DASHBOARD_BACKEND_PLAN.md) plan-level verification
    passes (offline suite green; WAL/operations/approvals/worker covered).
-2. `py -m unittest discover -s tests -v` green (163 pre-existing + new web tests); `ruff check`
+2. `py -m unittest discover -s tests -v` green (169 at the Phase 0 baseline + new web tests); `ruff check`
    clean repo-wide; `cd frontend && npm run build && tsc --noEmit` clean.
 3. Manual: `pip install -e .[web]`, build + copy the frontend, `agent-factory web --org orgs`,
    open the printed URL; create an org via the wizard; run an action and watch it move to `done`

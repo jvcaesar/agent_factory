@@ -1,21 +1,20 @@
 # Current Implementation Status
 
 - **Release:** 2.0
-- **Release status:** Draft; implementation not started
-- **Current phase:** Phase 0 - Baseline
+- **Release status:** Phase 0 complete; Phase 1 ready to start
+- **Current phase:** Phase 1 - Backend engine
 - **Phase status:** Not Started
-- **Next task:** `P0-01` - confirm the `v1.0.0` tag, clean working tree, and Release 2.0 branch
+- **Next task:** `RC-01` / `B1.1` - Store concurrency with WAL, thread-local connections, serialized writes, and atomic running child jobs
 - **Blockers:** None recorded
 - **Last reviewed:** 2026-09-24
+- **Latest completed phase record:** [2026-09-24 Phase 0 - Baseline](../releases/v2.0/implementation/2026-09-24-phase-0-baseline/README.md)
 
 ## Start here
 
 1. Read the [Release 2.0 checklist](../releases/v2.0/RELEASE_CHECKLIST_2.0.md), especially Phase 0.
 2. Read the [Release 2.0 index](../releases/v2.0/README.md) and applicable companion plans.
-3. When Phase 0 implementation begins, copy the [phase template](../releases/v2.0/implementation/PHASE_TEMPLATE.md) to `docs/releases/v2.0/implementation/YYYY-MM-DD-phase-0-baseline/README.md`.
-4. Update this page with the active record link, status, next task, and blockers.
-
-No dated Phase 0 folder exists yet because the phase has not started.
+3. Read the [completed Phase 0 record](../releases/v2.0/implementation/2026-09-24-phase-0-baseline/README.md) for locked contracts and handoff cautions.
+4. When Phase 1 begins, create its dated record from the [phase template](../releases/v2.0/implementation/PHASE_TEMPLATE.md), then mark `RC-01` and `B1.1` `In Progress` before implementation.
 
 ## Sources of truth
 
